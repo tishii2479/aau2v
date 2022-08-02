@@ -1,5 +1,7 @@
 from random import randint, choice, shuffle
+from sklearn.preprocessing import LabelEncoder
 import torch
+from torch.utils.data import Dataset
 
 
 def create_toydata(num_topic: int, data_size: int):
@@ -21,11 +23,9 @@ def create_toydata(num_topic: int, data_size: int):
     for i in range(num_topic):
         for _ in range(data_size):
             doc = []
-            for _ in range(randint(30, 50)):
-                doc.append(choice(key_words[i]))
             for _ in range(randint(150, 200)):
                 doc.append(choice(words))
-            shuffle(doc)
+                doc.append(choice(key_words[i]))
             documents.append(doc)
 
     for i in range(num_topic):
@@ -43,3 +43,32 @@ def create_labeled_toydata(num_topic: int):
         for _ in range(5):
             labels.append(i)
     return (documents, labels), (words, word_embedding)
+
+
+def to_sequential_data(
+    sequences,
+    length: int,
+    item_le: LabelEncoder
+):
+    data = []
+    for i, sequence in enumerate(sequences):
+        for j in range(len(sequence) - length):
+            seq_index = i
+            item_indicies = item_le.transform(sequence[j:j + length])
+            target_index = item_le.transform([sequence[j + length]])[0]
+            data.append((seq_index, item_indicies, target_index))
+    return data
+
+
+class ToydataDataset(Dataset):
+    def __init__(self, num_topic: int = 5, window_size: int = 8, data_size: int = 20):
+        (self.sequences, _), (self.items, _) = create_toydata(num_topic, data_size)
+        self.item_le = LabelEncoder().fit(self.items)
+        self.data = to_sequential_data(
+            self.sequences, window_size, self.item_le)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx]

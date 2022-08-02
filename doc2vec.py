@@ -1,7 +1,9 @@
 from gensim.models.doc2vec import Doc2Vec
 from gensim.models.doc2vec import TaggedDocument
+from sklearn.cluster import KMeans
 
 from toydata import create_toydata
+from util import visualize_cluster
 
 
 def main():
@@ -28,6 +30,20 @@ def main():
     # 文書タグ0(1つ目の文書)と類似している文書を上から3件(topnで指定)取得し、文書タグと類似度のセットが返ってくる
     for tag in ['0', '10', '20', '30']:
         print(model.dv.most_similar(tag, topn=data_size))
+
+    seq_embedding = [model.dv[str(i)] for i in range(len(documents))]
+
+    kmeans = KMeans(n_clusters=num_topic)
+    kmeans.fit(seq_embedding)
+
+    answer_labels = []
+    for i in range(num_topic):
+        answer_labels += [i] * data_size
+    print(answer_labels)
+    print(kmeans.labels_)
+
+    visualize_cluster(seq_embedding,
+                      num_topic, kmeans.labels_, answer_labels)
 
 # 結果イメージ[(タグ, 類似度), ......]
 # [('10', 0.99978), ('2', 0.98553), ('8', 0.98123)]
