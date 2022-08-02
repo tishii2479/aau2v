@@ -22,10 +22,10 @@ class Trainer:
 
         if model == 'model':
             self.model = Model(num_seq, num_item, d_model,
-                               dataset.transformed_sequences)
+                               dataset.sequences)
         elif model == 'doc2vec':
             self.model = MyDoc2Vec(
-                num_seq, num_item, d_model, dataset.transformed_sequences)
+                num_seq, num_item, d_model, dataset.sequences)
         else:
             assert False, f'{model} is not a model name.'
 
@@ -50,7 +50,7 @@ class Trainer:
                 total_loss += loss.item()
 
             total_loss /= len(self.data_loader)
-            if epoch % 10 == 0:
+            if epoch % 1 == 0:
                 print(epoch, total_loss)
 
             losses.append(total_loss)

@@ -8,13 +8,10 @@ import numpy as np
 
 
 class SequenceDataset(Dataset):
-    def __init__(self, data, num_topic: int = 5, window_size: int = 8, data_size: int = 20):
-        (self.sequences, _), (self.items, _) = data
-        self.item_le = LabelEncoder().fit(self.items)
+    def __init__(self, sequences, item_le: LabelEncoder, window_size: int = 8, data_size: int = 20):
+        self.sequences = sequences
         self.data = to_sequential_data(
-            self.sequences, window_size, self.item_le)
-        self.transformed_sequences = [self.item_le.transform(
-            sequence) for sequence in self.sequences]
+            sequences, window_size, item_le)
 
     def __len__(self):
         return len(self.data)
@@ -47,21 +44,16 @@ def create_toydata(num_topic: int, data_size: int):
                 doc.append(choice(key_words[i]))
             documents.append(doc)
 
-    for i in range(num_topic):
-        words += key_words[i]
-
-    word_embedding = torch.eye(len(words))
-
-    return (documents, None), (words, word_embedding)
+    return documents
 
 
-def create_labeled_toydata(num_topic: int):
-    (documents, _), (words, word_embedding) = create_toydata(num_topic)
+def create_labeled_toydata(num_topic: int, data_size: int):
+    documents = create_toydata(num_topic, data_size)
     labels = []
     for i in range(num_topic):
-        for _ in range(5):
+        for _ in range(data_size):
             labels.append(i)
-    return (documents, labels), (words, word_embedding)
+    return documents, labels
 
 
 def to_sequential_data(
@@ -70,12 +62,15 @@ def to_sequential_data(
     item_le: LabelEncoder
 ):
     data = []
+    print('to_sequential_data start')
     for i, sequence in enumerate(sequences):
+        print(i, len(sequences))
         for j in range(len(sequence) - length):
             seq_index = i
-            item_indicies = item_le.transform(sequence[j:j + length])
-            target_index = item_le.transform([sequence[j + length]])[0]
+            item_indicies = sequence[j:j + length]
+            target_index = sequence[j + length]
             data.append((seq_index, item_indicies, target_index))
+    print('to_sequential data end')
     return data
 
 
@@ -85,18 +80,10 @@ def create_hm_data():
 
     raw_sequences = [sequence.split(' ')
                      for sequence in sequences.sequence.values[:1000]]
-    seq_labels = None
 
     item_names = items.name.values
     item_ids = items.article_id.values
 
-    item_list = [item_ids[i] for i in range(len(item_ids))]
+    item_name_dict = {item_ids[i]: item_names[i] for i in range(len(item_ids))}
 
-    word2vec_model = Word2Vec.load('weights/word2vec.model')
-
-    print(f'calculating item embedding, size: {len(items)}')
-    item_embedding = torch.Tensor(
-        np.array([word2vec_model.wv[id] for id in items.article_id.values]))
-    print('calculating item embedding is done.')
-
-    return (raw_sequences, seq_labels), (item_list, item_embedding)
+    return raw_sequences, item_name_dict
