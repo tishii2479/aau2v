@@ -2,7 +2,7 @@ from gensim.models.doc2vec import Doc2Vec
 from gensim.models.doc2vec import TaggedDocument
 from sklearn.cluster import KMeans
 
-from toydata import create_toydata
+from data import create_toydata
 from util import visualize_cluster
 
 

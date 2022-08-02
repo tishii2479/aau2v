@@ -2,6 +2,25 @@ from random import randint, choice, shuffle
 from sklearn.preprocessing import LabelEncoder
 import torch
 from torch.utils.data import Dataset
+from gensim.models.word2vec import Word2Vec
+import pandas as pd
+import numpy as np
+
+
+class SequenceDataset(Dataset):
+    def __init__(self, data, num_topic: int = 5, window_size: int = 8, data_size: int = 20):
+        (self.sequences, _), (self.items, _) = data
+        self.item_le = LabelEncoder().fit(self.items)
+        self.data = to_sequential_data(
+            self.sequences, window_size, self.item_le)
+        self.transformed_sequences = [self.item_le.transform(
+            sequence) for sequence in self.sequences]
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx]
 
 
 def create_toydata(num_topic: int, data_size: int):
@@ -60,15 +79,24 @@ def to_sequential_data(
     return data
 
 
-class ToydataDataset(Dataset):
-    def __init__(self, num_topic: int = 5, window_size: int = 8, data_size: int = 20):
-        (self.sequences, _), (self.items, _) = create_toydata(num_topic, data_size)
-        self.item_le = LabelEncoder().fit(self.items)
-        self.data = to_sequential_data(
-            self.sequences, window_size, self.item_le)
+def create_hm_data():
+    sequences = pd.read_csv('data/hm/purchase_history.csv')
+    items = pd.read_csv('data/hm/items.csv', dtype={'article_id': str})
 
-    def __len__(self):
-        return len(self.data)
+    raw_sequences = [sequence.split(' ')
+                     for sequence in sequences.sequence.values[:1000]]
+    seq_labels = None
 
-    def __getitem__(self, idx):
-        return self.data[idx]
+    item_names = items.name.values
+    item_ids = items.article_id.values
+
+    item_list = [item_ids[i] for i in range(len(item_ids))]
+
+    word2vec_model = Word2Vec.load('weights/word2vec.model')
+
+    print(f'calculating item embedding, size: {len(items)}')
+    item_embedding = torch.Tensor(
+        np.array([word2vec_model.wv[id] for id in items.article_id.values]))
+    print('calculating item embedding is done.')
+
+    return (raw_sequences, seq_labels), (item_list, item_embedding)

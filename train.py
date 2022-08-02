@@ -4,7 +4,7 @@ from gensim.models import word2vec
 import torch
 
 from util import visualize_cluster
-from toydata import ToydataDataset
+from data import SequenceDataset, create_toydata
 from trainer import Trainer
 
 
@@ -15,13 +15,13 @@ def main():
 
     d_model = 100
     batch_size = 64
-    epochs = 10
+    epochs = 30
     lr = 0.0005
 
     use_learnable_embedding = False
 
-    dataset = ToydataDataset(
-        num_topic=num_topic, window_size=window_size, data_size=data_size)
+    dataset = SequenceDataset(
+        data=create_toydata(num_topic, data_size), num_topic=num_topic, window_size=window_size, data_size=data_size)
 
     num_seq = len(dataset.sequences)
     num_item = len(dataset.items)

@@ -1,7 +1,7 @@
 from torch.optim import Adam
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import torch
-import torch.nn.functional as F
+from data import SequenceDataset
 
 from model import Model, MyDoc2Vec
 
@@ -9,7 +9,7 @@ from model import Model, MyDoc2Vec
 class Trainer:
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: SequenceDataset,
         num_seq: int,
         num_item: int,
         model: str = 'model',
@@ -21,9 +21,11 @@ class Trainer:
         self.epochs = epochs
 
         if model == 'model':
-            self.model = Model(num_seq, num_item, d_model)
+            self.model = Model(num_seq, num_item, d_model,
+                               dataset.transformed_sequences)
         elif model == 'doc2vec':
-            self.model = MyDoc2Vec(num_seq, num_item, d_model)
+            self.model = MyDoc2Vec(
+                num_seq, num_item, d_model, dataset.transformed_sequences)
         else:
             assert False, f'{model} is not a model name.'
 
@@ -39,8 +41,8 @@ class Trainer:
             for data in self.data_loader:
                 seq_index, item_indicies, target_index = data
 
-                h = self.model.forward(seq_index, item_indicies)
-                loss = F.cross_entropy(h, target_index)
+                loss = self.model.forward(
+                    seq_index, item_indicies, target_index)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
@@ -60,6 +62,6 @@ class Trainer:
         self.model.eval()
         for data in self.data_loader:
             seq_index, item_indicies, target_index = data
-            h = self.model.forward(seq_index, item_indicies)
-            print(h[0:100:20], target_index[0:100:20])
+            loss = self.model.forward(seq_index, item_indicies, target_index)
+            print(loss)
             break
