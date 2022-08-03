@@ -1,5 +1,5 @@
 from data import create_hm_data
-from doc2vec import AttentiveDoc2Vec
+from model import AttentiveDoc2Vec
 
 
 def main() -> None:
