@@ -64,7 +64,6 @@ def to_sequential_data(
     data = []
     print('to_sequential_data start')
     for i, sequence in enumerate(sequences):
-        print(i, len(sequences))
         for j in range(len(sequence) - length):
             seq_index = i
             item_indicies = sequence[j:j + length]

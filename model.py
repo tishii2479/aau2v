@@ -97,7 +97,8 @@ class Model(nn.Module):
         num_item: int,
         d_model: int,
         sequences,
-        concat: bool = False
+        concat: bool = False,
+        sample_size: int = 30
     ):
         super().__init__()
         self.d_model = d_model
@@ -113,7 +114,8 @@ class Model(nn.Module):
         self.W_item_value = nn.Linear(d_model, d_model)
 
         output_dim = d_model * 2 if concat else d_model
-        self.output = NegativeSampling(output_dim, num_item, sequences)
+        self.output = NegativeSampling(
+            output_dim, num_item, sequences, sample_size)
 
     def forward(
         self,
