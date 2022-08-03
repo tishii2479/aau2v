@@ -36,7 +36,7 @@ def show_top_items(
 
 top_items = []
 
-with open('cluster_list.txt', 'r') as f:
+with open('../data/cluster_list.txt', 'r') as f:
     infos: List[Tuple[List[str], List[str]]] = []
     for i in range(10):
         size = int(f.readline())

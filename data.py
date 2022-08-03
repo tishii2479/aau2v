@@ -3,6 +3,7 @@ from random import choice, randint
 from typing import Dict, List, Tuple
 
 import pandas as pd
+import tqdm
 from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import Dataset
 
@@ -18,7 +19,8 @@ class SequenceDataset(Dataset):
         self.item_le = LabelEncoder().fit(self.items)
 
         print('transform sequence start')
-        self.sequences = [self.item_le.transform(sequence) for sequence in self.raw_sequences]
+        self.sequences = [
+            self.item_le.transform(sequence) for sequence in tqdm.tqdm(self.raw_sequences)]
         print('transform sequence end')
 
         self.num_seq = len(self.sequences)

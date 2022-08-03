@@ -41,7 +41,8 @@ class EmbeddingDot(nn.Module):
     def forward(self, h: Tensor, indicies: Tensor) -> Tensor:
         w = self.embedding.forward(indicies)
         w = torch.reshape(w, (-1, indicies.size(1), self.d_model))
-        return torch.matmul(h, w.mT)
+        out = torch.matmul(h, w.mT)
+        return out
 
 
 class NegativeSampling(nn.Module):
