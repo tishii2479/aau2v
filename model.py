@@ -1,5 +1,6 @@
 import collections
 from math import sqrt
+from typing import List
 
 import numpy as np
 import torch
@@ -7,35 +8,33 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 
-def attention(Q: Tensor, K: Tensor, V: Tensor):
+def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
     a = F.softmax(torch.matmul(Q, K.mT) / sqrt(K.size(2)), dim=2)
     return torch.matmul(a, V)
 
 
 class UnigramSampler:
-    def __init__(self, sequences, power):
-        self.vocab_size = None
-        self.word_p = None
-
-        counts = collections.Counter()
+    def __init__(self, sequences: List[List[int]], power: float) -> None:
+        counts: collections.Counter = collections.Counter()
         for sequence in sequences:
             for item in sequence:
                 counts[item] += 1
 
-        vocab_size = len(counts)
-        self.vocab_size = vocab_size
+        self.vocab_size = len(counts)
 
-        self.word_p = np.zeros(vocab_size)
-        for i in range(vocab_size):
+        self.word_p = np.zeros(self.vocab_size)
+        for i in range(self.vocab_size):
             self.word_p[i] = counts[i]
 
         self.word_p = np.power(self.word_p, power)
         self.word_p /= np.sum(self.word_p)
 
-    def get_negative_sample(self, batch_size: int, sample_size: int):
+    def get_negative_sample(
+        self, batch_size: int, sample_size: int
+    ) -> np.ndarray:
         # Ignores even if correct label is included
-        negative_sample = np.random.choice(self.vocab_size, size=(batch_size, sample_size),
-                                           replace=True, p=self.word_p)
+        negative_sample = np.random.choice(self.vocab_size, size=(
+            batch_size, sample_size), replace=True, p=self.word_p)
         return negative_sample
 
 
@@ -45,21 +44,28 @@ class EmbeddingDot(nn.Module):
         self.d_model = d_model
         self.embedding = nn.Embedding(num_item, d_model)
 
-    def forward(self, h: Tensor, indicies: Tensor):
+    def forward(self, h: Tensor, indicies: Tensor) -> Tensor:
         w = self.embedding.forward(indicies)
         w = torch.reshape(w, (-1, indicies.size(1), self.d_model))
         return torch.matmul(h, w.mT)
 
 
 class NegativeSampling(nn.Module):
-    def __init__(self, d_model: int, num_item: int, sequences, power: float = 0.75, sample_size: int = 5):
+    def __init__(
+        self,
+        d_model: int,
+        num_item: int,
+        sequences: List[List[int]],
+        power: float = 0.75,
+        sample_size: int = 5
+    ) -> None:
         super().__init__()
         self.d_model = d_model
         self.sample_size = sample_size
         self.sampler = UnigramSampler(sequences, power)
         self.embedding = EmbeddingDot(d_model, num_item)
 
-    def forward(self, h, target_index):
+    def forward(self, h: Tensor, target_index: Tensor) -> Tensor:
         r'''
         Args:
             h size of (batch_size)
@@ -96,10 +102,10 @@ class Model(nn.Module):
         num_seq: int,
         num_item: int,
         d_model: int,
-        sequences,
+        sequences: List[List[int]],
         concat: bool = False,
         sample_size: int = 30
-    ):
+    ) -> None:
         super().__init__()
         self.d_model = d_model
         self.concat = concat
@@ -122,7 +128,7 @@ class Model(nn.Module):
         seq_index: Tensor,
         item_indicies: Tensor,
         target_index: Tensor
-    ):
+    ) -> Tensor:
         r'''
         seq_index:
             type: `int` or `long`
@@ -148,12 +154,12 @@ class Model(nn.Module):
         return loss
 
     @property
-    def seq_embedding(self):
-        return self.W_seq.weight
+    def seq_embedding(self) -> Tensor:
+        return self.W_seq.weight.data
 
     @property
-    def item_embedding(self):
-        return self.W_item.weight
+    def item_embedding(self) -> Tensor:
+        return self.W_item.weight.data
 
 
 class MyDoc2Vec(nn.Module):
@@ -162,8 +168,8 @@ class MyDoc2Vec(nn.Module):
         num_seq: int,
         num_item: int,
         d_model: int,
-        sequences
-    ):
+        sequences: List[List[int]]
+    ) -> None:
         super().__init__()
         self.d_model = d_model
 
@@ -177,7 +183,7 @@ class MyDoc2Vec(nn.Module):
         seq_index: Tensor,
         item_indicies: Tensor,
         target_index: Tensor
-    ):
+    ) -> Tensor:
         r'''
         seq_index:
             type: `int` or `long`
@@ -201,9 +207,9 @@ class MyDoc2Vec(nn.Module):
         return loss
 
     @property
-    def seq_embedding(self):
+    def seq_embedding(self) -> Tensor:
         return self.W_seq.weight
 
     @property
-    def item_embedding(self):
+    def item_embedding(self) -> Tensor:
         return self.W_item.weight

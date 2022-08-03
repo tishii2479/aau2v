@@ -1,8 +1,11 @@
+from typing import List
+
+import torch
+from torch import nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-import torch
-from data import SequenceDataset
 
+from data import SequenceDataset
 from model import Model, MyDoc2Vec
 
 
@@ -19,6 +22,7 @@ class Trainer:
         lr: float = 0.00005,
     ):
         self.epochs = epochs
+        self.model: nn.Module
 
         if model == 'model':
             self.model = Model(num_seq, num_item, d_model,
@@ -33,11 +37,11 @@ class Trainer:
         self.dataset = dataset
         self.data_loader = DataLoader(dataset, batch_size=batch_size)
 
-    def train(self):
+    def train(self) -> List[float]:
         self.model.train()
         losses = []
         for epoch in range(self.epochs):
-            total_loss = 0
+            total_loss = 0.
             for data in self.data_loader:
                 seq_index, item_indicies, target_index = data
 
@@ -57,8 +61,8 @@ class Trainer:
 
         return losses
 
-    @torch.no_grad()
-    def test(self):
+    @torch.no_grad()  # type: ignore
+    def test(self) -> None:
         self.model.eval()
         for data in self.data_loader:
             seq_index, item_indicies, target_index = data

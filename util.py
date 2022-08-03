@@ -1,7 +1,8 @@
-from typing import List
-from matplotlib import cm
+from typing import List, Optional, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import cm
 from sklearn.decomposition import PCA
 from torch import Tensor
 
@@ -10,8 +11,8 @@ def visualize_cluster(
     features: List[Tensor],
     num_cluster: int,
     cluster_labels: List[int],
-    answer_labels: List[int] = None
-):
+    answer_labels: Optional[List[int]] = None
+) -> None:
     r'''
     Visualize cluster to 2d
     '''
@@ -37,10 +38,10 @@ def visualize_cluster(
 def top_cluster_items(
     num_cluster: int,
     cluster_labels: List[int],
-    sequences,
+    sequences: List[List[int]],
     num_top_item: int,
     num_item: int
-):
+) -> List[Tuple[List[int], List[float]]]:
     r'''
     Args:
         num_cluster: number of clusters
@@ -62,10 +63,11 @@ def top_cluster_items(
 
     top_items = []
     for cluster in range(num_cluster):
-        # Get item index of top `num_top_item` items which has larget item_count
+        # Get item index of top items which has largest item_count
         top_items_for_cluster = list(
             item_counts[cluster].argsort()[::-1][:num_top_item])
-        top_items_for_cluster_counts = list(
-            np.sort(item_counts[cluster])[::-1][:num_top_item] / cluster_size[cluster])
+        top_item_counts = np.sort(item_counts[cluster])[::-1][:num_top_item]
+        top_items_for_cluster_counts = \
+            list(top_item_counts / cluster_size[cluster])
         top_items.append((top_items_for_cluster, top_items_for_cluster_counts))
     return top_items
