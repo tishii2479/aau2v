@@ -68,10 +68,6 @@ class NegativeSampling(nn.Module):
         '''
         batch_size = target_index.size(0)
 
-        # (batch_size, negative_sample_size)
-        negative_sample = torch.tensor(self.sampler.get_negative_sample(
-            batch_size, self.negative_sample_size), dtype=torch.long)
-
         h = torch.reshape(h, (batch_size, 1, self.d_model))
 
         # positive
@@ -82,6 +78,10 @@ class NegativeSampling(nn.Module):
         positive_loss = F.binary_cross_entropy(out, label)
 
         # negative
+        # (batch_size, negative_sample_size)
+        negative_sample = torch.tensor(self.sampler.get_negative_sample(
+            batch_size, self.negative_sample_size), dtype=torch.long)
+
         out = torch.sigmoid(self.embedding.forward(h, negative_sample))
         label = torch.zeros(batch_size, self.negative_sample_size)
         out = torch.reshape(out, (batch_size, self.negative_sample_size))
