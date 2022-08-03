@@ -1,11 +1,10 @@
 import collections
 from itertools import chain
 
+from data import create_hm_data
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
-
-from data import create_hm_data
 from util import top_cluster_items, visualize_cluster
 
 
@@ -40,9 +39,9 @@ def main() -> None:
         num_cluster, cluster_labels, sequences,
         num_top_item=10, num_item=len(items))
 
-    for cluster, (top_items, ratios) in enumerate(top_items):
+    for cluster, (item_list, ratios) in enumerate(top_items):
         print(f'Top items for cluster {cluster} (size {seq_cnt[cluster]}): \n')
-        for index, item in enumerate(item_le.inverse_transform(top_items)):
+        for index, item in enumerate(item_le.inverse_transform(item_list)):
             print(item_name_dict[item] + ' ' + str(ratios[index]))
         print()
 
