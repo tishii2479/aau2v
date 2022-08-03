@@ -30,11 +30,11 @@ class UnigramSampler:
         self.word_p /= np.sum(self.word_p)
 
     def get_negative_sample(
-        self, batch_size: int, sample_size: int
+        self, batch_size: int, negative_sample_size: int
     ) -> np.ndarray:
         # Ignores even if correct label is included
         negative_sample = np.random.choice(self.vocab_size, size=(
-            batch_size, sample_size), replace=True, p=self.word_p)
+            batch_size, negative_sample_size), replace=True, p=self.word_p)
         return negative_sample
 
 
@@ -57,11 +57,11 @@ class NegativeSampling(nn.Module):
         num_item: int,
         sequences: List[List[int]],
         power: float = 0.75,
-        sample_size: int = 5
+        negative_sample_size: int = 5
     ) -> None:
         super().__init__()
         self.d_model = d_model
-        self.sample_size = sample_size
+        self.negative_sample_size = negative_sample_size
         self.sampler = UnigramSampler(sequences, power)
         self.embedding = EmbeddingDot(d_model, num_item)
 
@@ -73,9 +73,9 @@ class NegativeSampling(nn.Module):
         '''
         batch_size = target_index.size(0)
 
-        # (batch_size, sample_size)
+        # (batch_size, negative_sample_size)
         negative_sample = torch.tensor(self.sampler.get_negative_sample(
-            batch_size, self.sample_size), dtype=torch.long)
+            batch_size, self.negative_sample_size), dtype=torch.long)
 
         h = torch.reshape(h, (batch_size, 1, self.d_model))
 
@@ -88,15 +88,15 @@ class NegativeSampling(nn.Module):
 
         # negative
         out = torch.sigmoid(self.embedding.forward(h, negative_sample))
-        label = torch.zeros(batch_size, self.sample_size)
-        out = torch.reshape(out, (batch_size, self.sample_size))
+        label = torch.zeros(batch_size, self.negative_sample_size)
+        out = torch.reshape(out, (batch_size, self.negative_sample_size))
         negative_loss = F.binary_cross_entropy(out, label)
 
         loss = (positive_loss + negative_loss) / 2
         return loss
 
 
-class Model(nn.Module):
+class AttentiveModel(nn.Module):
     def __init__(
         self,
         num_seq: int,
@@ -104,7 +104,7 @@ class Model(nn.Module):
         d_model: int,
         sequences: List[List[int]],
         concat: bool = False,
-        sample_size: int = 30
+        negative_sample_size: int = 30
     ) -> None:
         super().__init__()
         self.d_model = d_model
@@ -121,7 +121,7 @@ class Model(nn.Module):
 
         output_dim = d_model * 2 if concat else d_model
         self.output = NegativeSampling(
-            output_dim, num_item, sequences, sample_size)
+            output_dim, num_item, sequences, negative_sample_size)
 
     def forward(
         self,
@@ -162,7 +162,7 @@ class Model(nn.Module):
         return self.W_item.weight.data
 
 
-class MyDoc2Vec(nn.Module):
+class OriginalModel(nn.Module):
     def __init__(
         self,
         num_seq: int,

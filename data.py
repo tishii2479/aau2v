@@ -1,16 +1,29 @@
+from itertools import chain
 from random import choice, randint
 from typing import Dict, List, Tuple
 
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import Dataset
 
 
 class SequenceDataset(Dataset):
     def __init__(
-        self, sequences: List[List[int]], window_size: int = 8
+        self,
+        raw_sequences: List[List[str]],
+        window_size: int = 8,
     ) -> None:
-        self.sequences = sequences
-        self.data = to_sequential_data(sequences, window_size)
+        self.raw_sequences = raw_sequences
+        self.items = list(set(chain.from_iterable(self.raw_sequences)))
+        self.item_le = LabelEncoder().fit(self.items)
+
+        print('transform sequence start')
+        self.sequences = [self.item_le.transform(sequence) for sequence in self.raw_sequences]
+        print('transform sequence end')
+
+        self.num_seq = len(self.sequences)
+        self.num_item = len(self.items)
+        self.data = to_sequential_data(self.sequences, window_size)
 
     def __len__(self) -> int:
         return len(self.data)
@@ -70,11 +83,11 @@ def to_sequential_data(
             item_indicies = sequence[j: j + length]
             target_index = sequence[j + length]
             data.append((seq_index, item_indicies, target_index))
-    print("to_sequential data end")
+    print("to_sequential_data end")
     return data
 
 
-def create_hm_data() -> Tuple[List[str], Dict[str, str]]:
+def create_hm_data() -> Tuple[List[List[str]], Dict[str, str]]:
     sequences = pd.read_csv("data/hm/purchase_history.csv")
     items = pd.read_csv("data/hm/items.csv", dtype={"article_id": str})
 
