@@ -6,14 +6,13 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from gensim.models import word2vec
-from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from torch import Tensor, nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from data import SequenceDataset
-from util import top_cluster_items, visualize_cluster
+from util import top_cluster_items, visualize_cluster, visualize_loss
 
 
 class AttentiveDoc2Vec:
@@ -31,7 +30,8 @@ class AttentiveDoc2Vec:
         word2vec_path: str = 'weights/word2vec.model',
         ignore_cache: bool = False,
         use_learnable_embedding: bool = False,
-        verbose: bool = False
+        verbose: bool = False,
+        load_model: bool = False
     ):
         '''Initialize Doc2Vec
 
@@ -66,6 +66,9 @@ class AttentiveDoc2Vec:
 
         self.optimizer = Adam(self.model.parameters(), lr=lr)
         self.data_loader = DataLoader(self.dataset, batch_size=batch_size)
+
+        if load_model:
+            self.model.load_state_dict(torch.load(self.model_path))  # type: ignore
 
     def learn_item_embedding(
         self,
@@ -110,8 +113,6 @@ class AttentiveDoc2Vec:
             items=self.dataset.items)
         self.learn_sequence_embedding(raw_sequences=self.dataset.raw_sequences)
 
-        self.model.load_state_dict(torch.load(self.model_path))  # type: ignore
-
         self.model.train()
         losses = []
         print('train start')
@@ -135,13 +136,15 @@ class AttentiveDoc2Vec:
                 print(epoch, total_loss)
 
             losses.append(total_loss)
+        print('train end')
 
         torch.save(self.model.state_dict(), self.model_path)
-        print(f'final loss: {losses[-1]}')
+
+        if len(losses) > 0:
+            print(f'final loss: {losses[-1]}')
 
         if show_fig:
-            plt.plot(losses)
-            plt.show()
+            visualize_loss(losses)
 
         return losses
 
@@ -188,10 +191,10 @@ class AttentiveDoc2Vec:
             print()
 
     def item_index(self, item: str | List[str]) -> int | List[int]:
-        if type(item) == list:
+        if isinstance(item, int):
             indicies: List[int] = self.dataset.item_le.transform(item)
             return indicies
-        elif type(item) == str:
+        elif isinstance(item, str):
             item_index: int = self.dataset.item_le.transform([item])[0]
             return item_index
         else:

@@ -7,7 +7,7 @@ def main() -> None:
 
     d_model = 100
     batch_size = 64
-    epochs = 5
+    epochs = 2
     lr = 0.0005
 
     raw_sequences, item_name_dict = create_hm_data()
@@ -16,7 +16,7 @@ def main() -> None:
         raw_sequences=raw_sequences, d_model=d_model,
         batch_size=batch_size, epochs=epochs, lr=lr, model='model',
         model_path='weights/model.pt', word2vec_path='weights/word2vec_hm.model',
-        verbose=True)
+        verbose=True, load_model=True)
     _ = doc2vec.train()
 
     doc2vec.top_items(num_cluster=num_cluster, item_name_dict=item_name_dict, show_fig=True)

@@ -31,7 +31,13 @@ def visualize_cluster(
             marker = '.'
         plt.scatter(x=pca_features[i, 0], y=pca_features[i, 1],
                     color=colors[cluster_labels[i]], marker=marker)
+    plt.show()
 
+
+def visualize_loss(
+    losses: List[float]
+) -> None:
+    plt.plot(losses)
     plt.show()
 
 

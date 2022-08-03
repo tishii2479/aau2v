@@ -91,13 +91,12 @@ def create_hm_data() -> Tuple[List[List[str]], Dict[str, str]]:
     sequences = pd.read_csv("data/hm/purchase_history.csv")
     items = pd.read_csv("data/hm/items.csv", dtype={"article_id": str})
 
-    raw_sequences = [
-        sequence.split(" ") for sequence in sequences.sequence.values[:1000]
-    ]
+    raw_sequences = [sequence.split(" ") for sequence in sequences.sequence.values[:1000]]
 
     item_names = items.name.values
     item_ids = items.article_id.values
 
-    item_name_dict = {item_ids[i]: item_names[i] for i in range(len(item_ids))}
+    item_name_dict = {
+        item_ids[i]: item_names[i] + '(' + item_ids[i] + ')' for i in range(len(item_ids))}
 
     return raw_sequences, item_name_dict
