@@ -242,9 +242,6 @@ class AttentiveModel(nn.Module):
         self.W_seq = nn.Embedding(num_seq, d_model)
         self.W_item = nn.Embedding(num_item, d_model)
 
-        # self.W_seq_key = nn.Linear(d_model, d_model)
-        # self.W_seq_value = nn.Linear(d_model, d_model)
-
         self.W_item_key = nn.Linear(d_model, d_model)
         self.W_item_value = nn.Linear(d_model, d_model)
 
