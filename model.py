@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 
 import torch
 import torch.nn.functional as F
+import tqdm
 from gensim.models import word2vec
 from sklearn.cluster import KMeans
 from torch import Tensor, nn
@@ -70,8 +71,8 @@ class AttentiveDoc2Vec:
             raw_sequences=raw_sequences, window_size=window_size)
 
         self.model = AttentiveModel(
-            self.dataset.num_seq, self.dataset.num_item, d_model,
-            self.dataset.sequences, negative_sample_size=negative_sample_size)
+            num_seq=self.dataset.num_seq, num_item=self.dataset.num_item, d_model=d_model,
+            sequences=self.dataset.sequences, negative_sample_size=negative_sample_size)
 
         self.optimizer = Adam(self.model.parameters(), lr=lr)
         self.data_loader = DataLoader(self.dataset, batch_size=batch_size)
@@ -104,15 +105,13 @@ class AttentiveDoc2Vec:
 
         # TODO: refactor
         seq_embedding_list = []
-        for i, sequence in enumerate(raw_sequences):
-            if self.verbose:
-                print(i, len(raw_sequences))
+        for sequence in tqdm.tqdm(raw_sequences):
             a = self.item_embeddings[self.dataset.item_le.transform(sequence)]
             seq_embedding_list.append(list(a.mean(dim=0)))
 
         seq_embedding = torch.Tensor(seq_embedding_list)
         self.model.seq_embedding.copy_(seq_embedding)
-        self.model.seq_embedding.requires_grad = self.use_learnable_embedding
+        # self.model.seq_embedding.requires_grad = self.use_learnable_embedding
 
         print('learn_sequence_embedding end')
 
@@ -127,7 +126,7 @@ class AttentiveDoc2Vec:
         print('train start')
         for epoch in range(self.epochs):
             total_loss = 0.
-            for i, data in enumerate(self.data_loader):
+            for i, data in enumerate(tqdm.tqdm(self.data_loader)):
                 seq_index, item_indicies, target_index = data
 
                 loss = self.model.forward(
@@ -244,15 +243,16 @@ class AttentiveModel(nn.Module):
         self.W_seq = nn.Embedding(num_seq, d_model)
         self.W_item = nn.Embedding(num_item, d_model)
 
-        self.W_seq_key = nn.Linear(d_model, d_model)
-        self.W_seq_value = nn.Linear(d_model, d_model)
+        # self.W_seq_key = nn.Linear(d_model, d_model)
+        # self.W_seq_value = nn.Linear(d_model, d_model)
 
         self.W_item_key = nn.Linear(d_model, d_model)
         self.W_item_value = nn.Linear(d_model, d_model)
 
         output_dim = d_model * 2 if concat else d_model
         self.output = NegativeSampling(
-            output_dim, num_item, sequences, negative_sample_size)
+            d_model=output_dim, num_item=num_item,
+            sequences=sequences, negative_sample_size=negative_sample_size)
 
     def forward(
         self,
@@ -275,16 +275,16 @@ class AttentiveModel(nn.Module):
         h_seq = self.W_seq.forward(seq_index)
         h_items = self.W_item.forward(item_indicies)
 
-        Q = torch.reshape(self.W_seq_key(h_seq), (-1, 1, self.d_model))
+        Q = torch.reshape(h_seq, (-1, 1, self.d_model))
         K = self.W_item_key(h_items)
         V = self.W_item_value(h_items)
 
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
 
         if self.concat:
-            c = torch.concat([c, self.W_seq_value(h_seq)], dim=1)
+            c = torch.concat([c, h_seq], dim=1)
         else:
-            c += self.W_seq_value(h_seq)
+            c += h_seq
         loss = self.output.forward(c, target_index)
         return loss
 
