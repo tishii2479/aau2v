@@ -79,6 +79,11 @@ class AttentiveDoc2Vec:
 
         if load_model:
             self.model.load_state_dict(torch.load(self.model_path))  # type: ignore
+        else:
+            self.learn_item_embedding(
+                raw_sequences=self.dataset.raw_sequences, d_model=self.d_model,
+                items=self.dataset.items)
+            self.learn_sequence_embedding(raw_sequences=self.dataset.raw_sequences)
 
     def learn_item_embedding(
         self,
@@ -111,16 +116,10 @@ class AttentiveDoc2Vec:
 
         seq_embedding = torch.Tensor(seq_embedding_list)
         self.model.seq_embedding.copy_(seq_embedding)
-        # self.model.seq_embedding.requires_grad = self.use_learnable_embedding
 
         print('learn_sequence_embedding end')
 
     def train(self, show_fig: bool = True) -> List[float]:
-        self.learn_item_embedding(
-            raw_sequences=self.dataset.raw_sequences, d_model=self.d_model,
-            items=self.dataset.items)
-        self.learn_sequence_embedding(raw_sequences=self.dataset.raw_sequences)
-
         self.model.train()
         losses = []
         print('train start')
