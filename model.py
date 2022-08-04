@@ -200,7 +200,7 @@ class AttentiveDoc2Vec:
             print()
 
     def item_index(self, item: str | List[str]) -> int | List[int]:
-        if isinstance(item, int):
+        if isinstance(item, list):
             indicies: List[int] = self.dataset.item_le.transform(item)
             return indicies
         elif isinstance(item, str):
@@ -210,9 +210,9 @@ class AttentiveDoc2Vec:
             raise TypeError
 
     def item_embedding(self, item: str | int) -> Tensor:
-        if type(item) == str:
+        if isinstance(item, str):
             return self.model.item_embedding[self.item_index(item)]
-        elif type(item) == int:
+        elif isinstance(item, int):
             # To avoid warning, wrap with str()
             return self.model.item_embedding[item]
         else:

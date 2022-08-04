@@ -1,6 +1,6 @@
 from argparse import ArgumentParser, Namespace
 
-from data import create_20newsgroup_data, create_hm_data
+from data import create_20newsgroup_data, create_hm_data  # noqa
 from model import AttentiveDoc2Vec
 
 
