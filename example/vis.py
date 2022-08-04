@@ -12,7 +12,7 @@ def show_top_items(
     num_cluster = len(top_item_infos)
     num_top_item = len(top_item_infos[0][0])
     axes = []
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(8, 12))
 
     for c, (top_items, ratios) in enumerate(top_item_infos):
         # for i, item in enumerate(item_le.inverse_transform(top_items)):

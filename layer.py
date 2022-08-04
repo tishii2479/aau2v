@@ -39,6 +39,16 @@ class EmbeddingDot(nn.Module):
         self.embedding = nn.Embedding(num_item, d_model)
 
     def forward(self, h: Tensor, indicies: Tensor) -> Tensor:
+        '''Forward Embedding Dot
+
+        Args:
+            h (Tensor): input, size of (batch_size, 1, d_model)
+            indicies (Tensor): indicies selected to get embedding,
+                size of (batch_size, 1 or sample_size)
+
+        Returns:
+            Tensor: output
+        '''
         w = self.embedding.forward(indicies)
         w = torch.reshape(w, (-1, indicies.size(1), self.d_model))
         out = torch.matmul(h, w.mT)
@@ -63,8 +73,8 @@ class NegativeSampling(nn.Module):
     def forward(self, h: Tensor, target_index: Tensor) -> Tensor:
         r'''
         Args:
-            h size of (batch_size)
-            target_index index, size of (batch_size)
+            h size of (batch_size, d_model)
+            target_index index, size of (batch_size, 1)
         '''
         batch_size = target_index.size(0)
 
