@@ -12,6 +12,7 @@ def main() -> None:
         parser.add_argument('--batch_size', type=int, default=64)
         parser.add_argument('--epochs', type=int, default=5)
         parser.add_argument('--lr', type=float, default=0.0005)
+        parser.add_argument('--verbose', action='store_true')
         return parser.parse_args()
 
     args = parse_args()
@@ -21,8 +22,8 @@ def main() -> None:
     doc2vec = AttentiveDoc2Vec(
         raw_sequences=raw_sequences, d_model=args.d_model,
         batch_size=args.batch_size, epochs=args.epochs, lr=args.lr, model='model',
-        model_path='weights/model_2.pt', word2vec_path='weights/word2vec_hm.model',
-        verbose=False, load_model=True)
+        model_path='weights/model_hm.pt', word2vec_path='weights/word2vec_hm.model',
+        verbose=args.verbose, load_model=True)
     _ = doc2vec.train()
 
     doc2vec.top_items(num_cluster=args.num_cluster, item_name_dict=item_name_dict, show_fig=True)

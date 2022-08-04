@@ -3,3 +3,5 @@ weights/
 data/
 .mypy_cache
 .ipynb_checkpoints
+notebooks/
+example/

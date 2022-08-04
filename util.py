@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
 from sklearn.decomposition import PCA
+from sklearn.feature_extraction.text import TfidfTransformer
 from torch import Tensor
 
 
@@ -67,12 +68,15 @@ def top_cluster_items(
         for item_index in set(sequence):
             item_counts[cluster_labels[i]][item_index] += 1
 
+    transformer = TfidfTransformer()
+    tf_idf = transformer.fit_transform(item_counts).toarray()
+
     top_items = []
     for cluster in range(num_cluster):
         # Get item index of top items which has largest item_count
         top_items_for_cluster = list(
-            item_counts[cluster].argsort()[::-1][:num_top_item])
-        top_item_counts = np.sort(item_counts[cluster])[::-1][:num_top_item]
+            tf_idf[cluster].argsort()[::-1][:num_top_item])
+        top_item_counts = np.sort(tf_idf[cluster])[::-1][:num_top_item]
         top_items_for_cluster_counts = \
             list(top_item_counts / cluster_size[cluster])
         top_items.append((top_items_for_cluster, top_items_for_cluster_counts))
