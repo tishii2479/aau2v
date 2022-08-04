@@ -28,6 +28,7 @@ def main() -> None:
     _ = doc2vec.train()
 
     doc2vec.top_items(num_cluster=args.num_cluster, item_name_dict=item_name_dict, show_fig=True)
+    _ = doc2vec.calc_coherence(num_cluster=args.num_cluster)
 
 
 if __name__ == '__main__':

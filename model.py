@@ -13,8 +13,9 @@ from torch.utils.data import DataLoader
 
 from data import SequenceDataset
 from layer import NegativeSampling
-from util import (check_model_path, top_cluster_items, visualize_cluster,
-                  visualize_loss)
+from util import (calc_cluster_occurence_array, calc_coherence,
+                  calc_sequence_occurence_array, check_model_path,
+                  top_cluster_items, visualize_cluster, visualize_loss)
 
 
 class AttentiveDoc2Vec:
@@ -152,7 +153,7 @@ class AttentiveDoc2Vec:
         if len(losses) > 0:
             print(f'final loss: {losses[-1]}')
 
-        if show_fig:
+        if show_fig and len(losses) > 0:
             visualize_loss(losses)
 
         return losses
@@ -184,10 +185,12 @@ class AttentiveDoc2Vec:
     ) -> None:
         cluster_labels = self.cluster_sequences(num_cluster, show_fig=show_fig)
         seq_cnt = collections.Counter(cluster_labels)
-        top_item_infos = top_cluster_items(
+        cluster_occurence_array, cluster_size = calc_cluster_occurence_array(
             num_cluster=num_cluster, cluster_labels=cluster_labels,
-            sequences=self.dataset.sequences,
-            num_top_item=10, num_item=self.dataset.num_item)
+            sequences=self.dataset.sequences, num_item=self.dataset.num_item)
+        top_item_infos = top_cluster_items(
+            num_cluster=num_cluster, cluster_occurence_array=cluster_occurence_array,
+            cluster_size=cluster_size, num_top_item=num_top_item)
 
         for cluster, (top_items, ratios) in enumerate(top_item_infos):
             print(f'Top items for cluster {cluster} (size {seq_cnt[cluster]}): \n')
@@ -198,6 +201,24 @@ class AttentiveDoc2Vec:
                     name = item
                 print(name + ' ' + str(ratios[index]))
             print()
+
+    def calc_coherence(
+        self, num_cluster: int = 10, num_top_item: int = 10,
+        show_fig: bool = False
+    ) -> float:
+        cluster_labels = self.cluster_sequences(num_cluster, show_fig=show_fig)
+        cluster_occurence_array, cluster_size = calc_cluster_occurence_array(
+            num_cluster=num_cluster, cluster_labels=cluster_labels,
+            sequences=self.dataset.sequences, num_item=self.dataset.num_item)
+        sequence_occurence_array = calc_sequence_occurence_array(
+            sequences=self.dataset.sequences, num_item=self.dataset.num_item)
+        top_item_infos = top_cluster_items(
+            num_cluster=num_cluster, cluster_occurence_array=cluster_occurence_array,
+            cluster_size=cluster_size, num_top_item=num_top_item)
+        coherence = calc_coherence(
+            sequence_occurence_array=sequence_occurence_array, top_item_infos=top_item_infos)
+        print(f'coherence: {coherence}')
+        return coherence
 
     def item_index(self, item: str | List[str]) -> int | List[int]:
         if isinstance(item, list):

@@ -1,4 +1,5 @@
 import os
+from math import log
 from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
@@ -45,10 +46,9 @@ def visualize_loss(
 
 def top_cluster_items(
     num_cluster: int,
-    cluster_labels: List[int],
-    sequences: List[List[int]],
+    cluster_occurence_array: np.ndarray,
+    cluster_size: List[int],
     num_top_item: int,
-    num_item: int
 ) -> List[Tuple[List[int], List[float]]]:
     r'''
     Args:
@@ -60,17 +60,10 @@ def top_cluster_items(
         num_item: number of items in data
     Return:
         top items for each cluster
-            shape: (num_topic, num_top_item)
+            shape: (num_topic, num_top_item, (item_list, item_ratio))
     '''
-    item_counts = np.zeros((num_cluster, num_item))
-    cluster_size = [0] * num_cluster
-    for i, sequence in enumerate(sequences):
-        cluster_size[cluster_labels[i]] += 1
-        for item_index in set(sequence):
-            item_counts[cluster_labels[i]][item_index] += 1
-
     transformer = TfidfTransformer()
-    tf_idf = transformer.fit_transform(item_counts).toarray()
+    tf_idf = transformer.fit_transform(cluster_occurence_array).toarray()
 
     top_items = []
     for cluster in range(num_cluster):
@@ -91,3 +84,54 @@ def check_model_path(model_path: str) -> None:
             'overwrite? [y/n] ')
         if response != 'y':
             exit(0)
+
+
+def calc_cluster_occurence_array(
+    num_cluster: int,
+    cluster_labels: List[int],
+    sequences: List[List[int]],
+    num_item: int
+) -> Tuple[np.ndarray, List[int]]:
+    occurence_array = np.zeros((num_cluster, num_item))
+    cluster_size = [0] * num_cluster
+    for i, sequence in enumerate(sequences):
+        cluster_size[cluster_labels[i]] += 1
+        for item_index in set(sequence):
+            occurence_array[cluster_labels[i]][item_index] += 1
+    return occurence_array, cluster_size
+
+
+def calc_sequence_occurence_array(
+    sequences: List[List[int]],
+    num_item: int
+) -> np.ndarray:
+    occurence_array = np.zeros((len(sequences), num_item))
+    for i, sequence in enumerate(sequences):
+        for item_index in set(sequence):
+            occurence_array[i][item_index] += 1
+    return occurence_array
+
+
+def calc_coherence(
+    sequence_occurence_array: np.ndarray,
+    top_item_infos: List[Tuple[List[int], List[float]]]
+) -> float:
+    coherence_sum = 0.
+    print(sequence_occurence_array.shape)
+    for cluster, (top_items, _) in enumerate(top_item_infos):
+        coherence = 0.
+        for i in top_items:
+            for j in top_items:
+                # ignore duplicate pairs
+                if i <= j:
+                    continue
+                d_ij = (sequence_occurence_array[:, i] > 0) & (sequence_occurence_array[:, j] > 0)
+                u_ij = d_ij.sum()
+                d_i = sequence_occurence_array[:, i]
+                u_i = d_i.sum()
+                coherence += log((u_ij + 1) / u_i)
+                # print(i, j, u_i, u_ij)
+        print(f'coherence for cluster: {cluster}: {coherence}')
+        coherence_sum += coherence
+    coherence_sum /= len(top_item_infos)
+    return coherence_sum
