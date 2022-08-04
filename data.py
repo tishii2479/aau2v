@@ -1,11 +1,14 @@
 from itertools import chain
 from random import choice, randint
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
+import gensim
 import pandas as pd
 import tqdm
+from sklearn.datasets import fetch_20newsgroups
 from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import Dataset
+from torchtext.data import get_tokenizer
 
 
 class SequenceDataset(Dataset):
@@ -104,3 +107,31 @@ def create_hm_data(
         item_ids[i]: item_names[i] + '(' + item_ids[i] + ')' for i in range(len(item_ids))}
 
     return raw_sequences, item_name_dict
+
+
+def create_20newsgroup_data(
+    max_data_size: int = 1000, min_seq_length: int = 50
+) -> Tuple[List[List[str]], Optional[Dict[str, str]]]:
+    newsgroups_train = fetch_20newsgroups(
+        data_home='data', subset='train', remove=('headers', 'footers', 'quotes'),
+        shuffle=False, random_state=0)
+    tokenizer = get_tokenizer('basic_english')
+
+    dictionary = gensim.corpora.Dictionary([
+        tokenizer(document) for document in newsgroups_train.data])
+    dictionary.filter_extremes(no_below=10, no_above=0.1)
+
+    raw_sequences = []
+
+    for document in newsgroups_train.data:
+        tokens = tokenizer(document)
+        sequence = []
+        for word in tokens:
+            if word in dictionary.token2id:
+                sequence.append(word)
+        if len(sequence) <= min_seq_length:
+            continue
+        raw_sequences.append(sequence)
+        if len(raw_sequences) == max_data_size:
+            break
+    return raw_sequences, None

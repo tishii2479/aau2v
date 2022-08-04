@@ -13,7 +13,8 @@ from torch.utils.data import DataLoader
 
 from data import SequenceDataset
 from layer import NegativeSampling
-from util import top_cluster_items, visualize_cluster, visualize_loss
+from util import (check_model_path, top_cluster_items, visualize_cluster,
+                  visualize_loss)
 
 
 class AttentiveDoc2Vec:
@@ -80,6 +81,7 @@ class AttentiveDoc2Vec:
         if load_model:
             self.model.load_state_dict(torch.load(self.model_path))  # type: ignore
         else:
+            check_model_path(self.model_path)
             self.learn_item_embedding(
                 raw_sequences=self.dataset.raw_sequences, d_model=self.d_model,
                 items=self.dataset.items)
