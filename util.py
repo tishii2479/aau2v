@@ -117,7 +117,6 @@ def calc_coherence(
     top_item_infos: List[Tuple[List[int], List[float]]]
 ) -> float:
     coherence_sum = 0.
-    print(sequence_occurence_array.shape)
     for cluster, (top_items, _) in enumerate(top_item_infos):
         coherence = 0.
         for i in top_items:

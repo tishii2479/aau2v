@@ -168,6 +168,15 @@ class AttentiveDoc2Vec:
             break
 
     def cluster_sequences(self, num_cluster: int, show_fig: bool = True) -> List[int]:
+        '''Cluster sequences using K-means
+
+        Args:
+            num_cluster (int): number of clusters
+            show_fig (bool, optional): visualize cluster. Defaults to True.
+
+        Returns:
+            List[int]: cluster labels
+        '''
         kmeans = KMeans(n_clusters=num_cluster)
         h_seq = self.seq_embeddings.detach().numpy()
         kmeans.fit(h_seq)
@@ -206,6 +215,17 @@ class AttentiveDoc2Vec:
         self, num_cluster: int = 10, num_top_item: int = 10,
         show_fig: bool = False
     ) -> float:
+        '''Calculate coherence
+
+        Args:
+            num_cluster (int, optional): Number of clusters. Defaults to 10.
+            num_top_item (int, optional): Number of top K items. Defaults to 10.
+            show_fig (bool, optional): visualize. Defaults to False.
+
+        Returns:
+            float: coherence
+        '''
+        # TODO: refactor
         cluster_labels = self.cluster_sequences(num_cluster, show_fig=show_fig)
         cluster_occurence_array, cluster_size = calc_cluster_occurence_array(
             num_cluster=num_cluster, cluster_labels=cluster_labels,
@@ -316,7 +336,7 @@ class AttentiveModel(nn.Module):
         return self.W_item.weight.data
 
 
-class OriginalModel(nn.Module):
+class OriginalDoc2Vec(nn.Module):
     def __init__(
         self,
         num_seq: int,

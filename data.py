@@ -93,10 +93,11 @@ def to_sequential_data(
 
 
 def create_hm_data(
-    purchase_history_path: str = "data/hm/filtered_purchase_history.csv"
+    purchase_history_path: str = "data/hm/filtered_purchase_history.csv",
+    item_path: str = "data/hm/items.csv",
 ) -> Tuple[List[List[str]], Dict[str, str]]:
     sequences = pd.read_csv(purchase_history_path)
-    items = pd.read_csv("data/hm/items.csv", dtype={"article_id": str})
+    items = pd.read_csv(item_path, dtype={"article_id": str})
 
     raw_sequences = [sequence.split(" ") for sequence in sequences.sequence.values[:1000]]
 
