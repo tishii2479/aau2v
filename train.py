@@ -1,6 +1,9 @@
+import os
+import pickle
 from argparse import ArgumentParser, Namespace
 
-from data import create_20newsgroup_data, create_hm_data  # noqa
+from data import (SequenceDataset, create_20newsgroup_data,  # noqa
+                  create_hm_data)
 from model import AttentiveDoc2Vec
 
 
@@ -16,14 +19,27 @@ def main() -> None:
         parser.add_argument('--load_model', action='store_true')
         return parser.parse_args()
 
+    def load_dataset(dataset_path: str = 'data/hm_dataset.pickle') -> SequenceDataset:
+        if os.path.exists(dataset_path):
+            print(f'load dataset at: {dataset_path}')
+            with open(dataset_path, 'rb') as f:
+                dataset: SequenceDataset = pickle.load(f)
+        else:
+            print(f'dataset does not exist at: {dataset_path}, create dataset')
+            raw_sequences, items = create_hm_data(max_data_size=1000)
+            dataset = SequenceDataset(
+                raw_sequences=raw_sequences, items=items, window_size=8)
+            with open(dataset_path, 'wb') as f:  # type: ignore
+                pickle.dump(dataset, f)
+        print('end loading dataset')
+        return dataset
+
     args = parse_args()
-
-    raw_sequences, items = create_hm_data(max_data_size=100)
-
+    dataset = load_dataset()
     doc2vec = AttentiveDoc2Vec(
-        raw_sequences=raw_sequences, items=items, d_model=args.d_model,
+        dataset=dataset, d_model=args.d_model,
         batch_size=args.batch_size, epochs=args.epochs, lr=args.lr, model='attentive',
-        model_path='weights/model_hm_test.pt', word2vec_path='weights/word2vec_hm.model',
+        model_path='weights/model_hm_meta.pt', word2vec_path='weights/word2vec_hm.model',
         verbose=args.verbose, load_model=args.load_model)
     _ = doc2vec.train()
 

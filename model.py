@@ -1,6 +1,6 @@
 import collections
 from math import sqrt
-from typing import Dict, List
+from typing import List
 
 import torch
 import torch.nn.functional as F
@@ -21,12 +21,10 @@ from util import (calc_cluster_occurence_array, calc_coherence,
 class AttentiveDoc2Vec:
     def __init__(
         self,
-        raw_sequences: List[List[str]],
-        items: Dict[str, Dict[str, str]],
+        dataset: SequenceDataset,
         model: str = 'attentive',
         d_model: int = 100,
         batch_size: int = 5,
-        window_size: int = 8,
         epochs: int = 100,
         negative_sample_size: int = 10,
         lr: float = 0.00005,
@@ -70,8 +68,7 @@ class AttentiveDoc2Vec:
         self.word2vec_path = word2vec_path
         self.use_learnable_embedding = use_learnable_embedding
         self.verbose = verbose
-        self.dataset = SequenceDataset(
-            raw_sequences=raw_sequences, items=items, window_size=window_size)
+        self.dataset = dataset
 
         self.model = AttentiveModel(
             num_seq=self.dataset.num_seq, num_item=self.dataset.num_item,
