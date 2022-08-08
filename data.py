@@ -1,6 +1,6 @@
 from itertools import chain
 from random import choice, randint
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import gensim
 import pandas as pd
@@ -10,13 +10,20 @@ from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import Dataset
 from torchtext.data import get_tokenizer
 
+MetaData = Dict[str, Any]
+Item = Tuple[str, MetaData]
+Sequence = List[Item]
+
 
 class SequenceDataset(Dataset):
     def __init__(
         self,
-        raw_sequences: List[List[str]],
-        window_size: int = 8,
+        raw_sequences: Dict[str, List[str]],
+        seq_metadata: Dict[str, MetaData],
+        item_metadata: Dict[str, MetaData],
+        window_size: int
     ) -> None:
+        self.item_metadata: Dict[str, List[str]] = {}
         self.raw_sequences = raw_sequences
         self.items = list(set(chain.from_iterable(self.raw_sequences)))
         self.item_le = LabelEncoder().fit(self.items)
@@ -37,6 +44,21 @@ class SequenceDataset(Dataset):
         # Returns:
         #   (seq_index, item_indicies, target_index)
         return self.data[idx]
+
+
+def to_sequential_data(
+    sequences: List[List[int]], window_size: int
+) -> List[Tuple[int, List[int], int]]:
+    data = []
+    print("to_sequential_data start")
+    for i, sequence in enumerate(sequences):
+        for j in range(len(sequence) - window_size):
+            seq_index = i
+            item_indicies = sequence[j: j + window_size]
+            target_index = sequence[j + window_size]
+            data.append((seq_index, item_indicies, target_index))
+    print("to_sequential_data end")
+    return data
 
 
 def create_toydata(num_topic: int, data_size: int) -> List[List[str]]:
@@ -75,21 +97,6 @@ def create_labeled_toydata(
         for _ in range(data_size):
             labels.append(i)
     return documents, labels
-
-
-def to_sequential_data(
-    sequences: List[List[int]], length: int
-) -> List[Tuple[int, List[int], int]]:
-    data = []
-    print("to_sequential_data start")
-    for i, sequence in enumerate(sequences):
-        for j in range(len(sequence) - length):
-            seq_index = i
-            item_indicies = sequence[j: j + length]
-            target_index = sequence[j + length]
-            data.append((seq_index, item_indicies, target_index))
-    print("to_sequential_data end")
-    return data
 
 
 def create_hm_data(
