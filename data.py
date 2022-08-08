@@ -1,12 +1,13 @@
-from itertools import chain
 from random import choice, randint
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import gensim
 import pandas as pd
+import torch
 import tqdm
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.preprocessing import LabelEncoder
+from torch import Tensor
 from torch.utils.data import Dataset
 from torchtext.data import get_tokenizer
 
@@ -15,11 +16,13 @@ class SequenceDataset(Dataset):
     def __init__(
         self,
         raw_sequences: List[List[str]],
+        items: Dict[str, Dict[str, str]],
         window_size: int = 8,
     ) -> None:
         self.raw_sequences = raw_sequences
-        self.items = list(set(chain.from_iterable(self.raw_sequences)))
-        self.item_le = LabelEncoder().fit(self.items)
+        self.items = items
+        self.item_le = LabelEncoder().fit(list(self.items.keys()))
+        self.meta_le, self.meta_dict = process_metadata(items)
 
         print('transform sequence start')
         self.sequences = [
@@ -28,15 +31,86 @@ class SequenceDataset(Dataset):
 
         self.num_seq = len(self.sequences)
         self.num_item = len(self.items)
-        self.data = to_sequential_data(self.sequences, window_size)
+        self.num_meta = len(self.meta_le.classes_)
+        print(f'num_seq: {self.num_seq}, num_item: {self.num_item}, num_meta: {self.num_meta}')
+        self.data = to_sequential_data(
+            self.sequences, self.items, self.item_le, self.meta_le, window_size=window_size)
 
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, idx: int) -> Tuple[int, List[int], int]:
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         # Returns:
-        #   (seq_index, item_indicies, target_index)
+        #   (seq_index, item_indicies, meta_indicies, target_index)
         return self.data[idx]
+
+
+def process_metadata(
+    items: Dict[str, Dict[str, str]]
+) -> Tuple[LabelEncoder, Dict[str, Set[str]]]:
+    '''Process item meta datas
+
+    Args:
+        items (Dict[str, Dict[str, str]]):
+            item data (item_id, (meta_name, meta_value))
+
+    Returns:
+        Tuple[LabelEncoder, Dict[str, List[int]]]:
+            (Label Encoder of meta data, Dictionary of list of meta datas)
+    '''
+    meta_dict: Dict[str, Set[str]] = {}
+    for _, meta_data in items.items():
+        for meta_name, meta_value in meta_data.items():
+            # temporary, fix soon
+            if meta_name == 'prod_name':
+                continue
+            if meta_name not in meta_dict:
+                meta_dict[meta_name] = set()
+            meta_dict[meta_name].add(meta_value)
+
+    all_meta_values: List[str] = []
+    for meta_name, meta_values in meta_dict.items():
+        for value in meta_values:
+            # create str that is identical
+            all_meta_values.append(meta_name + ':' + str(value))
+
+    meta_le = LabelEncoder().fit(all_meta_values)
+
+    return meta_le, meta_dict
+
+
+def to_sequential_data(
+    sequences: List[List[int]],
+    items: Dict[str, Dict[str, str]],
+    item_le: LabelEncoder,
+    meta_le: LabelEncoder,
+    window_size: int
+) -> List[Tuple[Tensor, Tensor, Tensor, Tensor]]:
+    def get_meta_indicies(item_ids: List[int]) -> List[List[int]]:
+        item_names = item_le.inverse_transform(item_ids)
+        meta_indices: List[List[int]] = []
+        for item_name in item_names:
+            item_meta: List[str] = []
+            for meta_name, meta_value in items[item_name].items():
+                # temporary, fix soon
+                if meta_name == 'prod_name':
+                    continue
+                item_meta.append(meta_name + ':' + str(meta_value))
+            meta_indices.append(list(meta_le.transform(item_meta)))
+        return meta_indices
+
+    data = []
+    print("to_sequential_data start")
+    for i, sequence in enumerate(tqdm.tqdm(sequences)):
+        for j in range(len(sequence) - window_size):
+            seq_index = torch.tensor(i, dtype=torch.long)
+            item_indicies = torch.tensor(sequence[j: j + window_size], dtype=torch.long)
+            target_index = torch.tensor(sequence[j + window_size], dtype=torch.long)
+            meta_indices = torch.tensor(
+                get_meta_indicies(sequence[j: j + window_size]), dtype=torch.long)
+            data.append((seq_index, item_indicies, meta_indices, target_index))
+    print("to_sequential_data end")
+    return data
 
 
 def create_toydata(num_topic: int, data_size: int) -> List[List[str]]:
@@ -77,37 +151,26 @@ def create_labeled_toydata(
     return documents, labels
 
 
-def to_sequential_data(
-    sequences: List[List[int]], length: int
-) -> List[Tuple[int, List[int], int]]:
-    data = []
-    print("to_sequential_data start")
-    for i, sequence in enumerate(sequences):
-        for j in range(len(sequence) - length):
-            seq_index = i
-            item_indicies = sequence[j: j + length]
-            target_index = sequence[j + length]
-            data.append((seq_index, item_indicies, target_index))
-    print("to_sequential_data end")
-    return data
-
-
 def create_hm_data(
     purchase_history_path: str = "data/hm/filtered_purchase_history.csv",
     item_path: str = "data/hm/items.csv",
-) -> Tuple[List[List[str]], Dict[str, str]]:
+    max_data_size: int = 1000
+) -> Tuple[List[List[str]], Dict[str, Dict[str, str]]]:
     sequences = pd.read_csv(purchase_history_path)
-    items = pd.read_csv(item_path, dtype={"article_id": str})
+    items_df = pd.read_csv(item_path, dtype={"article_id": str}, index_col='article_id')
 
-    raw_sequences = [sequence.split(" ") for sequence in sequences.sequence.values[:1000]]
+    raw_sequences = [
+        sequence.split(" ") for sequence in sequences.sequence.values[:max_data_size]]
+    items = items_df.to_dict('index')
 
-    item_names = items.name.values
-    item_ids = items.article_id.values
+    items_set = set()
+    for seq in raw_sequences:
+        for item in seq:
+            items_set.add(item)
 
-    item_name_dict = {
-        item_ids[i]: item_names[i] + '(' + item_ids[i] + ')' for i in range(len(item_ids))}
+    items = dict(filter(lambda item: item[0] in items_set, items.items()))
 
-    return raw_sequences, item_name_dict
+    return raw_sequences, items
 
 
 def create_20newsgroup_data(

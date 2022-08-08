@@ -18,16 +18,16 @@ def main() -> None:
 
     args = parse_args()
 
-    raw_sequences, item_name_dict = create_20newsgroup_data(max_data_size=1000)
+    raw_sequences, items = create_hm_data(max_data_size=100)
 
     doc2vec = AttentiveDoc2Vec(
-        raw_sequences=raw_sequences, d_model=args.d_model,
+        raw_sequences=raw_sequences, items=items, d_model=args.d_model,
         batch_size=args.batch_size, epochs=args.epochs, lr=args.lr, model='attentive',
-        model_path='weights/model_20news.pt', word2vec_path='weights/word2vec_hm.model',
+        model_path='weights/model_hm_test.pt', word2vec_path='weights/word2vec_hm.model',
         verbose=args.verbose, load_model=args.load_model)
     _ = doc2vec.train()
 
-    doc2vec.top_items(num_cluster=args.num_cluster, item_name_dict=item_name_dict, show_fig=True)
+    doc2vec.top_items(num_cluster=args.num_cluster, show_fig=True)
     _ = doc2vec.calc_coherence(num_cluster=args.num_cluster)
 
 

@@ -1,6 +1,6 @@
 import collections
 from math import sqrt
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import torch
 import torch.nn.functional as F
@@ -22,6 +22,7 @@ class AttentiveDoc2Vec:
     def __init__(
         self,
         raw_sequences: List[List[str]],
+        items: Dict[str, Dict[str, str]],
         model: str = 'attentive',
         d_model: int = 100,
         batch_size: int = 5,
@@ -70,10 +71,11 @@ class AttentiveDoc2Vec:
         self.use_learnable_embedding = use_learnable_embedding
         self.verbose = verbose
         self.dataset = SequenceDataset(
-            raw_sequences=raw_sequences, window_size=window_size)
+            raw_sequences=raw_sequences, items=items, window_size=window_size)
 
         self.model = AttentiveModel(
-            num_seq=self.dataset.num_seq, num_item=self.dataset.num_item, d_model=d_model,
+            num_seq=self.dataset.num_seq, num_item=self.dataset.num_item,
+            num_meta=self.dataset.num_meta, d_model=d_model,
             sequences=self.dataset.sequences, negative_sample_size=negative_sample_size)
 
         self.optimizer = Adam(self.model.parameters(), lr=lr)
@@ -85,7 +87,7 @@ class AttentiveDoc2Vec:
             check_model_path(self.model_path)
             self.learn_item_embedding(
                 raw_sequences=self.dataset.raw_sequences, d_model=self.d_model,
-                items=self.dataset.items)
+                items=list(self.dataset.items.keys()))
             self.learn_sequence_embedding(raw_sequences=self.dataset.raw_sequences)
 
     def learn_item_embedding(
@@ -129,10 +131,11 @@ class AttentiveDoc2Vec:
         for epoch in range(self.epochs):
             total_loss = 0.
             for i, data in enumerate(tqdm.tqdm(self.data_loader)):
-                seq_index, item_indicies, target_index = data
-
+                seq_index, item_indicies, meta_indicies, target_index = data
                 loss = self.model.forward(
-                    seq_index, item_indicies, target_index)
+                    seq_index=seq_index, item_indicies=item_indicies,
+                    meta_indicies=meta_indicies,
+                    target_index=target_index)
                 self.optimizer.zero_grad()
                 loss.backward()  # type: ignore
                 self.optimizer.step()
@@ -158,15 +161,6 @@ class AttentiveDoc2Vec:
 
         return losses
 
-    @torch.no_grad()  # type: ignore
-    def test(self) -> None:
-        self.model.eval()
-        for data in self.data_loader:
-            seq_index, item_indicies, target_index = data
-            loss = self.model.forward(seq_index, item_indicies, target_index)
-            print(loss)
-            break
-
     def cluster_sequences(self, num_cluster: int, show_fig: bool = True) -> List[int]:
         '''Cluster sequences using K-means
 
@@ -189,7 +183,6 @@ class AttentiveDoc2Vec:
 
     def top_items(
         self, num_cluster: int = 10, num_top_item: int = 10,
-        item_name_dict: Optional[Dict[str, str]] = None,
         show_fig: bool = False
     ) -> None:
         cluster_labels = self.cluster_sequences(num_cluster, show_fig=show_fig)
@@ -204,10 +197,7 @@ class AttentiveDoc2Vec:
         for cluster, (top_items, ratios) in enumerate(top_item_infos):
             print(f'Top items for cluster {cluster} (size {seq_cnt[cluster]}): \n')
             for index, item in enumerate(self.dataset.item_le.inverse_transform(top_items)):
-                if item_name_dict is not None:
-                    name = item_name_dict[item]
-                else:
-                    name = item
+                name = item
                 print(name + ' ' + str(ratios[index]))
             print()
 
@@ -273,30 +263,30 @@ class AttentiveModel(nn.Module):
         self,
         num_seq: int,
         num_item: int,
+        num_meta: int,
         d_model: int,
         sequences: List[List[int]],
-        concat: bool = False,
         negative_sample_size: int = 30
     ) -> None:
         super().__init__()
         self.d_model = d_model
-        self.concat = concat
 
-        self.W_seq = nn.Embedding(num_seq, d_model)
-        self.W_item = nn.Embedding(num_item, d_model)
+        self.embedding_seq = nn.Embedding(num_seq, d_model)
+        self.embedding_item = nn.Embedding(num_item, d_model)
+        self.embedding_meta = nn.Embedding(num_meta, d_model)
 
-        self.W_item_key = nn.Linear(d_model, d_model)
-        self.W_item_value = nn.Linear(d_model, d_model)
+        self.W_q = nn.Linear(d_model, d_model)
+        self.W_k = nn.Linear(d_model, d_model)
 
-        output_dim = d_model * 2 if concat else d_model
         self.output = NegativeSampling(
-            d_model=output_dim, num_item=num_item,
+            d_model=d_model, num_item=num_item,
             sequences=sequences, negative_sample_size=negative_sample_size)
 
     def forward(
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
+        meta_indicies: Tensor,
         target_index: Tensor
     ) -> Tensor:
         r'''
@@ -306,84 +296,36 @@ class AttentiveModel(nn.Module):
         item_indicies:
             type: `int` or `long`
             shape: (batch_size, window_size)
+        meta_indicies:
+            type: `int` or `long`
+            shape: (batch_size, window_size, num_meta_types)
         '''
         def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
             a = F.softmax(torch.matmul(Q, K.mT) / sqrt(K.size(2)), dim=2)
             return torch.matmul(a, V)
+        num_meta_types = len(meta_indicies[0])
 
-        h_seq = self.W_seq.forward(seq_index)
-        h_items = self.W_item.forward(item_indicies)
+        h_seq = self.embedding_seq.forward(seq_index)
+        h_items = self.embedding_item.forward(item_indicies)
+        # add meta embedding
+        h_items += self.embedding_meta.forward(meta_indicies).sum(dim=2)
+        # take mean
+        h_items /= num_meta_types
 
-        Q = torch.reshape(h_seq, (-1, 1, self.d_model))
-        K = self.W_item_key(h_items)
-        V = self.W_item_value(h_items)
+        Q = torch.reshape(self.W_q(h_seq), (-1, 1, self.d_model))
+        K = self.W_k(h_items)
+        V = h_items
 
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
+        v = (c + h_seq) / 2
 
-        if self.concat:
-            c = torch.concat([c, h_seq], dim=1)
-        else:
-            c += h_seq
-        loss = self.output.forward(c, target_index)
+        loss = self.output.forward(v, target_index)
         return loss
 
     @property
     def seq_embedding(self) -> Tensor:
-        return self.W_seq.weight.data
+        return self.embedding_seq.weight.data
 
     @property
     def item_embedding(self) -> Tensor:
-        return self.W_item.weight.data
-
-
-class OriginalDoc2Vec(nn.Module):
-    def __init__(
-        self,
-        num_seq: int,
-        num_item: int,
-        d_model: int,
-        sequences: List[List[int]]
-    ) -> None:
-        super().__init__()
-        self.d_model = d_model
-
-        self.W_seq = nn.Embedding(num_seq, d_model)
-        self.W_item = nn.Embedding(num_item, d_model)
-
-        self.projection = nn.Linear(d_model, num_item)
-
-    def forward(
-        self,
-        seq_index: Tensor,
-        item_indicies: Tensor,
-        target_index: Tensor
-    ) -> Tensor:
-        r'''
-        seq_index:
-            type: `int` or `long`
-            shape: (batch_size, )
-        item_indicies:
-            type: `int` or `long`
-            shape: (batch_size, window_size)
-        '''
-        h_seq = self.W_seq.forward(seq_index)
-        h_items = self.W_item.forward(item_indicies)
-
-        h_seq = torch.reshape(h_seq, (-1, 1, self.d_model))
-        c = torch.concat([h_seq] + [h_items], dim=1).mean(dim=1)
-
-        v = self.projection.forward(c)
-
-        out = F.softmax(v, dim=1)
-
-        loss = F.cross_entropy(out, target_index)
-
-        return loss
-
-    @property
-    def seq_embedding(self) -> Tensor:
-        return self.W_seq.weight
-
-    @property
-    def item_embedding(self) -> Tensor:
-        return self.W_item.weight
+        return self.embedding_item.weight.data

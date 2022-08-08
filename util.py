@@ -80,7 +80,7 @@ def top_cluster_items(
 def check_model_path(model_path: str) -> None:
     if os.path.exists(model_path):
         response = input(
-            f'There is a file at {model_path}, but did not specify `load_model. Is it ok to' +
+            f'There is a file at {model_path}, but did not specify `load_model. Is it ok to ' +
             'overwrite? [y/n] ')
         if response != 'y':
             exit(0)
