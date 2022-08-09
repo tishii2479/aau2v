@@ -109,7 +109,9 @@ class AttentiveDoc2Vec:
         word2vec_model.save(self.word2vec_path)
         print("word2vec end.")
 
-        item_embeddings = torch.Tensor([list(word2vec_model.wv[item]) for item in items])
+        item_embeddings = torch.Tensor(
+            [list(word2vec_model.wv[item]) for item in items]
+        )
         self.model.item_embedding.copy_(item_embeddings)
         self.model.item_embedding.requires_grad = self.use_learnable_embedding
 
@@ -209,7 +211,9 @@ class AttentiveDoc2Vec:
 
         for cluster, (top_items, ratios) in enumerate(top_item_infos):
             print(f"Top items for cluster {cluster} (size {seq_cnt[cluster]}): \n")
-            for index, item in enumerate(self.dataset.item_le.inverse_transform(top_items)):
+            for index, item in enumerate(
+                self.dataset.item_le.inverse_transform(top_items)
+            ):
                 name = item
                 print(name + " " + str(ratios[index]))
             print()
@@ -254,8 +258,26 @@ class AttentiveDoc2Vec:
         print(f"coherence: {coherence}")
         return coherence
 
-    def attention_weights(self, seq_index: int, meta_name: str) -> None:
-        print(self.dataset.meta_dict[meta_name])
+    def attention_weights_to_meta(self, seq_index: int, meta_name: str) -> None:
+        meta_values = list(self.dataset.meta_dict[meta_name])
+        meta_names = [meta_name + ":" + value for value in meta_values]
+        meta_indicies = self.dataset.meta_le.transform(meta_names)
+        weight = list(self.model.attention_weight_to_meta(seq_index, meta_indicies)[0])
+        meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
+        print(f"attention weights of seq: {seq_index} for meta: {meta_name}")
+        for weight, name in sorted(meta_weights)[::-1]:
+            print(weight, name)
+
+    def attention_weights_to_sequence(
+        self, seq_index: int, num_recent_items: int
+    ) -> None:
+        item_indicies = self.dataset.sequences[seq_index][-num_recent_items:]
+        item_names = self.dataset.item_le.inverse_transform(item_indicies)
+        weight = list(self.model.attention_weight_to_item(seq_index, item_indicies)[0])
+        item_weights = [(weight[i], item_names[i]) for i in range(num_recent_items)]
+        print(f"item weights of seq: {seq_index}")
+        for weight, name in sorted(item_weights)[::-1]:
+            print(weight, self.dataset.items[name])
 
     @property
     def seq_embeddings(self) -> Tensor:
@@ -264,6 +286,16 @@ class AttentiveDoc2Vec:
     @property
     def item_embeddings(self) -> Tensor:
         return self.model.item_embedding
+
+
+def attention_weight(Q: Tensor, K: Tensor) -> Tensor:
+    dim = len(Q.shape) - 1  # to handle batched and unbatched data
+    return F.softmax(torch.matmul(Q, K.mT) / sqrt(K.size(dim)), dim=dim)
+
+
+def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
+    a = attention_weight(Q, K)
+    return torch.matmul(a, V)
 
 
 class AttentiveModel(nn.Module):
@@ -311,11 +343,6 @@ class AttentiveModel(nn.Module):
             type: `int` or `long`
             shape: (batch_size, window_size, num_meta_types)
         """
-
-        def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
-            a = F.softmax(torch.matmul(Q, K.mT) / sqrt(K.size(2)), dim=2)
-            return torch.matmul(a, V)
-
         num_meta_types = meta_indicies.size(2)
 
         h_seq = self.embedding_seq.forward(seq_index)
@@ -335,14 +362,31 @@ class AttentiveModel(nn.Module):
         loss = self.output.forward(v, target_index)
         return loss
 
-    def attention_weight(
+    @torch.no_grad()  # type: ignore
+    def attention_weight_to_meta(
         self,
         seq_index: int,
         meta_indicies: List[int],
+    ) -> Tensor:
+        seq_index = torch.LongTensor([seq_index])
+        meta_indicies = torch.LongTensor(meta_indicies)
+        h_seq = self.embedding_seq.forward(seq_index)
+        h_meta = self.embedding_meta.forward(meta_indicies)
+        weight = attention_weight(h_seq, h_meta)
+        return weight
+
+    @torch.no_grad()  # type: ignore
+    def attention_weight_to_item(
+        self,
+        seq_index: int,
         item_indicies: List[int],
     ) -> Tensor:
-        seq_index = torch.LongTensor(seq_index)
-        pass
+        seq_index = torch.LongTensor([seq_index])
+        item_indicies = torch.LongTensor(item_indicies)
+        h_seq = self.embedding_seq.forward(seq_index)
+        h_item = self.embedding_item.forward(item_indicies)
+        weight = attention_weight(h_seq, h_item)
+        return weight
 
     @property
     def seq_embedding(self) -> Tensor:

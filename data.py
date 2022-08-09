@@ -71,7 +71,7 @@ def process_metadata(
     meta_dict: Dict[str, Set[str]] = {}
     for _, meta_data in items.items():
         for meta_name, meta_value in meta_data.items():
-            # temporary, fix soon
+            # FIXME: temporary, fix soon
             if meta_name == "prod_name":
                 continue
             if meta_name not in meta_dict:
@@ -102,7 +102,7 @@ def to_sequential_data(
         for item_name in item_names:
             item_meta: List[str] = []
             for meta_name, meta_value in items[item_name].items():
-                # temporary, fix soon
+                # FIXME: temporary, fix soon
                 if meta_name == "prod_name":
                     continue
                 item_meta.append(meta_name + ":" + str(meta_value))
