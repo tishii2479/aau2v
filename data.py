@@ -35,7 +35,8 @@ class SequenceDataset(Dataset):
         self.num_item = len(self.items)
         self.num_meta = len(self.meta_le.classes_)
         print(
-            f"num_seq: {self.num_seq}, num_item: {self.num_item}, num_meta: {self.num_meta}"
+            f"num_seq: {self.num_seq}, num_item: {self.num_item}, "
+            + f"num_meta: {self.num_meta}"
         )
         self.data = to_sequential_data(
             self.sequences,
@@ -64,7 +65,7 @@ def process_metadata(
             item data (item_id, (meta_name, meta_value))
 
     Returns:
-        Tuple[LabelEncoder, Dict[str, List[int]]]:
+        Tuple[LabelEncoder, Dict[str, Set[int]]]:
             (Label Encoder of meta data, Dictionary of list of meta datas)
     """
     meta_dict: Dict[str, Set[str]] = {}
@@ -116,9 +117,7 @@ def to_sequential_data(
             item_indicies = torch.tensor(
                 sequence[j : j + window_size], dtype=torch.long
             )
-            target_index = torch.tensor(
-                sequence[j + window_size], dtype=torch.long
-            )
+            target_index = torch.tensor(sequence[j + window_size], dtype=torch.long)
             meta_indices = torch.tensor(
                 get_meta_indicies(sequence[j : j + window_size]),
                 dtype=torch.long,
@@ -172,13 +171,10 @@ def create_hm_data(
     max_data_size: int = 1000,
 ) -> Tuple[List[List[str]], Dict[str, Dict[str, str]]]:
     sequences = pd.read_csv(purchase_history_path)
-    items_df = pd.read_csv(
-        item_path, dtype={"article_id": str}, index_col="article_id"
-    )
+    items_df = pd.read_csv(item_path, dtype={"article_id": str}, index_col="article_id")
 
     raw_sequences = [
-        sequence.split(" ")
-        for sequence in sequences.sequence.values[:max_data_size]
+        sequence.split(" ") for sequence in sequences.sequence.values[:max_data_size]
     ]
     items = items_df.to_dict("index")
 

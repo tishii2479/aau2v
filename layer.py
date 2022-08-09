@@ -86,9 +86,7 @@ class NegativeSampling(nn.Module):
 
         # positive
         out = torch.sigmoid(
-            self.embedding.forward(
-                h, torch.reshape(target_index, (batch_size, 1))
-            )
+            self.embedding.forward(h, torch.reshape(target_index, (batch_size, 1)))
         )
         label = torch.ones(batch_size, 1)
         out = torch.reshape(out, (batch_size, 1))
@@ -97,9 +95,7 @@ class NegativeSampling(nn.Module):
         # negative
         # (batch_size, negative_sample_size)
         negative_sample = torch.tensor(
-            self.sampler.get_negative_sample(
-                batch_size, self.negative_sample_size
-            ),
+            self.sampler.get_negative_sample(batch_size, self.negative_sample_size),
             dtype=torch.long,
         )
 

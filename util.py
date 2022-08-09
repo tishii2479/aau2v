@@ -70,13 +70,9 @@ def top_cluster_items(
     top_items = []
     for cluster in range(num_cluster):
         # Get item index of top items which has largest item_count
-        top_items_for_cluster = list(
-            tf_idf[cluster].argsort()[::-1][:num_top_item]
-        )
+        top_items_for_cluster = list(tf_idf[cluster].argsort()[::-1][:num_top_item])
         top_item_counts = np.sort(tf_idf[cluster])[::-1][:num_top_item]
-        top_items_for_cluster_counts = list(
-            top_item_counts / cluster_size[cluster]
-        )
+        top_items_for_cluster_counts = list(top_item_counts / cluster_size[cluster])
         top_items.append((top_items_for_cluster, top_items_for_cluster_counts))
     return top_items
 
@@ -84,8 +80,8 @@ def top_cluster_items(
 def check_model_path(model_path: str) -> None:
     if os.path.exists(model_path):
         response = input(
-            f"There is a file at {model_path}, but did not specify `load_model. Is it ok to "
-            + "overwrite? [y/n] "
+            f"There is a file at {model_path}, but did not specify `load_model. "
+            + "Is it ok to overwrite? [y/n] "
         )
         if response != "y":
             exit(0)
