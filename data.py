@@ -24,17 +24,26 @@ class SequenceDataset(Dataset):
         self.item_le = LabelEncoder().fit(list(self.items.keys()))
         self.meta_le, self.meta_dict = process_metadata(items)
 
-        print('transform sequence start')
+        print("transform sequence start")
         self.sequences = [
-            self.item_le.transform(sequence) for sequence in tqdm.tqdm(self.raw_sequences)]
-        print('transform sequence end')
+            self.item_le.transform(sequence)
+            for sequence in tqdm.tqdm(self.raw_sequences)
+        ]
+        print("transform sequence end")
 
         self.num_seq = len(self.sequences)
         self.num_item = len(self.items)
         self.num_meta = len(self.meta_le.classes_)
-        print(f'num_seq: {self.num_seq}, num_item: {self.num_item}, num_meta: {self.num_meta}')
+        print(
+            f"num_seq: {self.num_seq}, num_item: {self.num_item}, num_meta: {self.num_meta}"
+        )
         self.data = to_sequential_data(
-            self.sequences, self.items, self.item_le, self.meta_le, window_size=window_size)
+            self.sequences,
+            self.items,
+            self.item_le,
+            self.meta_le,
+            window_size=window_size,
+        )
 
     def __len__(self) -> int:
         return len(self.data)
@@ -48,7 +57,7 @@ class SequenceDataset(Dataset):
 def process_metadata(
     items: Dict[str, Dict[str, str]]
 ) -> Tuple[LabelEncoder, Dict[str, Set[str]]]:
-    '''Process item meta datas
+    """Process item meta datas
 
     Args:
         items (Dict[str, Dict[str, str]]):
@@ -57,12 +66,12 @@ def process_metadata(
     Returns:
         Tuple[LabelEncoder, Dict[str, List[int]]]:
             (Label Encoder of meta data, Dictionary of list of meta datas)
-    '''
+    """
     meta_dict: Dict[str, Set[str]] = {}
     for _, meta_data in items.items():
         for meta_name, meta_value in meta_data.items():
             # temporary, fix soon
-            if meta_name == 'prod_name':
+            if meta_name == "prod_name":
                 continue
             if meta_name not in meta_dict:
                 meta_dict[meta_name] = set()
@@ -72,7 +81,7 @@ def process_metadata(
     for meta_name, meta_values in meta_dict.items():
         for value in meta_values:
             # create str that is identical
-            all_meta_values.append(meta_name + ':' + str(value))
+            all_meta_values.append(meta_name + ":" + str(value))
 
     meta_le = LabelEncoder().fit(all_meta_values)
 
@@ -84,7 +93,7 @@ def to_sequential_data(
     items: Dict[str, Dict[str, str]],
     item_le: LabelEncoder,
     meta_le: LabelEncoder,
-    window_size: int
+    window_size: int,
 ) -> List[Tuple[Tensor, Tensor, Tensor, Tensor]]:
     def get_meta_indicies(item_ids: List[int]) -> List[List[int]]:
         item_names = item_le.inverse_transform(item_ids)
@@ -93,9 +102,9 @@ def to_sequential_data(
             item_meta: List[str] = []
             for meta_name, meta_value in items[item_name].items():
                 # temporary, fix soon
-                if meta_name == 'prod_name':
+                if meta_name == "prod_name":
                     continue
-                item_meta.append(meta_name + ':' + str(meta_value))
+                item_meta.append(meta_name + ":" + str(meta_value))
             meta_indices.append(list(meta_le.transform(item_meta)))
         return meta_indices
 
@@ -104,10 +113,16 @@ def to_sequential_data(
     for i, sequence in enumerate(tqdm.tqdm(sequences)):
         for j in range(len(sequence) - window_size):
             seq_index = torch.tensor(i, dtype=torch.long)
-            item_indicies = torch.tensor(sequence[j: j + window_size], dtype=torch.long)
-            target_index = torch.tensor(sequence[j + window_size], dtype=torch.long)
+            item_indicies = torch.tensor(
+                sequence[j : j + window_size], dtype=torch.long
+            )
+            target_index = torch.tensor(
+                sequence[j + window_size], dtype=torch.long
+            )
             meta_indices = torch.tensor(
-                get_meta_indicies(sequence[j: j + window_size]), dtype=torch.long)
+                get_meta_indicies(sequence[j : j + window_size]),
+                dtype=torch.long,
+            )
             data.append((seq_index, item_indicies, meta_indices, target_index))
     print("to_sequential_data end")
     return data
@@ -154,14 +169,18 @@ def create_labeled_toydata(
 def create_hm_data(
     purchase_history_path: str = "data/hm/filtered_purchase_history.csv",
     item_path: str = "data/hm/items.csv",
-    max_data_size: int = 1000
+    max_data_size: int = 1000,
 ) -> Tuple[List[List[str]], Dict[str, Dict[str, str]]]:
     sequences = pd.read_csv(purchase_history_path)
-    items_df = pd.read_csv(item_path, dtype={"article_id": str}, index_col='article_id')
+    items_df = pd.read_csv(
+        item_path, dtype={"article_id": str}, index_col="article_id"
+    )
 
     raw_sequences = [
-        sequence.split(" ") for sequence in sequences.sequence.values[:max_data_size]]
-    items = items_df.to_dict('index')
+        sequence.split(" ")
+        for sequence in sequences.sequence.values[:max_data_size]
+    ]
+    items = items_df.to_dict("index")
 
     items_set = set()
     for seq in raw_sequences:
@@ -177,12 +196,17 @@ def create_20newsgroup_data(
     max_data_size: int = 1000, min_seq_length: int = 50
 ) -> Tuple[List[List[str]], Optional[Dict[str, str]]]:
     newsgroups_train = fetch_20newsgroups(
-        data_home='data', subset='train', remove=('headers', 'footers', 'quotes'),
-        shuffle=False, random_state=0)
-    tokenizer = get_tokenizer('basic_english')
+        data_home="data",
+        subset="train",
+        remove=("headers", "footers", "quotes"),
+        shuffle=False,
+        random_state=0,
+    )
+    tokenizer = get_tokenizer("basic_english")
 
-    dictionary = gensim.corpora.Dictionary([
-        tokenizer(document) for document in newsgroups_train.data])
+    dictionary = gensim.corpora.Dictionary(
+        [tokenizer(document) for document in newsgroups_train.data]
+    )
     dictionary.filter_extremes(no_below=10, no_above=0.1)
 
     raw_sequences = []
