@@ -53,8 +53,11 @@ def main() -> None:
     )
     _ = doc2vec.train()
 
-    doc2vec.attention_weights_to_meta(0, "colour_group_name")
-    doc2vec.attention_weights_to_sequence(0, num_recent_items=10)
+    for user_index in range(5):
+        doc2vec.attention_weights_to_meta(user_index, "colour_group_name")
+        doc2vec.attention_weights_to_meta(user_index, "product_type_name")
+        doc2vec.attention_weights_to_meta(user_index, "section_name")
+        doc2vec.attention_weights_to_sequence(user_index)
     doc2vec.top_items(num_cluster=args.num_cluster, show_fig=True)
     _ = doc2vec.calc_coherence(num_cluster=args.num_cluster)
 
