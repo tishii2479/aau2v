@@ -1,9 +1,12 @@
+from typing import Optional
+
+
 class TrainerConfig:
     model_name: str
     epochs: int
     batch_size: int
     load_model: bool
-    model_path: str
+    model_path: Optional[str] = None
     verbose: bool
 
 

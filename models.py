@@ -8,31 +8,40 @@ from torch import Tensor, nn
 from layer import NegativeSampling
 
 
+def attention_weight(Q: Tensor, K: Tensor) -> Tensor:
+    dim = len(Q.shape) - 1  # to handle batched and unbatched data
+    return F.softmax(torch.matmul(Q, K.mT) / sqrt(K.size(dim)), dim=dim)
+
+
+def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
+    a = attention_weight(Q, K)
+    return torch.matmul(a, V)
+
+
 class AttentiveModel(nn.Module):
     def __init__(
         self,
         num_seq: int,
         num_item: int,
+        num_meta: int,
         d_model: int,
         sequences: List[List[int]],
-        concat: bool = False,
         negative_sample_size: int = 30,
         model_path: Optional[str] = None,
         pretrained_embedding: Optional[Tuple[Tensor, Tensor]] = None,
     ) -> None:
         super().__init__()
         self.d_model = d_model
-        self.concat = concat
 
-        self.W_seq = nn.Embedding(num_seq, d_model)
-        self.W_item = nn.Embedding(num_item, d_model)
+        self.embedding_seq = nn.Embedding(num_seq, d_model)
+        self.embedding_item = nn.Embedding(num_item, d_model)
+        self.embedding_meta = nn.Embedding(num_meta, d_model)
 
-        self.W_item_key = nn.Linear(d_model, d_model)
-        self.W_item_value = nn.Linear(d_model, d_model)
+        self.W_q = nn.Linear(d_model, d_model)
+        self.W_k = nn.Linear(d_model, d_model)
 
-        output_dim = d_model * 2 if concat else d_model
         self.output = NegativeSampling(
-            d_model=output_dim,
+            d_model=d_model,
             num_item=num_item,
             sequences=sequences,
             negative_sample_size=negative_sample_size,
@@ -46,7 +55,11 @@ class AttentiveModel(nn.Module):
             self.item_embedding.copy_(item_embedding)
 
     def forward(
-        self, seq_index: Tensor, item_indicies: Tensor, target_index: Tensor
+        self,
+        seq_index: Tensor,
+        item_indicies: Tensor,
+        meta_indicies: Tensor,
+        target_index: Tensor,
     ) -> Tensor:
         r"""
         seq_index:
@@ -55,38 +68,36 @@ class AttentiveModel(nn.Module):
         item_indicies:
             type: `int` or `long`
             shape: (batch_size, window_size)
-        target_index:
-            type: `int` or `log`
-            shape: (batch_size, 1 or sample_size)
+        meta_indicies:
+            type: `int` or `long`
+            shape: (batch_size, window_size, num_meta_types)
         """
+        num_meta_types = meta_indicies.size(2)
 
-        def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
-            a = F.softmax(torch.matmul(Q, K.mT) / sqrt(K.size(2)), dim=2)
-            return torch.matmul(a, V)
+        h_seq = self.embedding_seq.forward(seq_index)
+        h_items = self.embedding_item.forward(item_indicies)
+        # add meta embedding
+        h_items += self.embedding_meta.forward(meta_indicies).sum(dim=2)
+        # take mean
+        h_items /= num_meta_types
 
-        h_seq = self.W_seq.forward(seq_index)
-        h_items = self.W_item.forward(item_indicies)
-
-        Q = torch.reshape(h_seq, (-1, 1, self.d_model))
-        K = self.W_item_key(h_items)
-        V = self.W_item_value(h_items)
+        Q = torch.reshape(self.W_q(h_seq), (-1, 1, self.d_model))
+        K = self.W_k(h_items)
+        V = h_items
 
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
+        v = (c + h_seq) / 2
 
-        if self.concat:
-            c = torch.concat([c, h_seq], dim=1)
-        else:
-            c += h_seq
-        loss = self.output.forward(c, target_index)
+        loss = self.output.forward(v, target_index)
         return loss
 
     @property
     def seq_embedding(self) -> Tensor:
-        return self.W_seq.weight.data
+        return self.embedding_seq.weight.data
 
     @property
     def item_embedding(self) -> Tensor:
-        return self.W_item.weight.data
+        return self.embedding_item.weight.data
 
 
 class OriginalDoc2Vec(nn.Module):

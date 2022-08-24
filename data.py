@@ -27,13 +27,13 @@ class SequenceDataset(Dataset):
         self.seq_metadata = seq_metadata
         self.item_metadata = item_metadata
         self.raw_sequences = raw_sequences
-        self.item_le = LabelEncoder().fit(item_metadata.keys())
+        self.item_le = LabelEncoder().fit(list(item_metadata.keys()))
         self.meta_le, self.meta_dict = process_metadata(item_metadata)
 
         print("transform sequence start")
         self.sequences = [
             self.item_le.transform(sequence)
-            for sequence in tqdm.tqdm(self.raw_sequences)
+            for sequence in tqdm.tqdm(self.raw_sequences.values())
         ]
         print("transform sequence end")
 
@@ -190,7 +190,7 @@ def create_hm_data(
     items = items_df.to_dict("index")
 
     items_set = set()
-    for seq in raw_sequences:
+    for seq in raw_sequences.values():
         for item in seq:
             items_set.add(item)
 

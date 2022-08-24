@@ -90,6 +90,7 @@ class PyTorchTrainer(Trainer):
         trainer_config: TrainerConfig,
         model_config: ModelConfig,
     ) -> None:
+        self.dataset = dataset
         self.data_loader = DataLoader(dataset, batch_size=trainer_config.batch_size)
         self.trainer_config = trainer_config
 
@@ -98,6 +99,7 @@ class PyTorchTrainer(Trainer):
                 self.model = AttentiveModel(
                     num_seq=dataset.num_seq,
                     num_item=dataset.num_item,
+                    num_meta=dataset.num_meta,
                     d_model=model_config.d_model,
                     sequences=dataset.sequences,
                     negative_sample_size=model_config.negative_sample_size,
@@ -137,9 +139,11 @@ class PyTorchTrainer(Trainer):
         for epoch in range(self.trainer_config.epochs):
             total_loss = 0.0
             for i, data in enumerate(tqdm.tqdm(self.data_loader)):
-                seq_index, item_indicies, target_index = data
+                seq_index, item_indicies, meta_indicies, target_index = data
 
-                loss = self.model.forward(seq_index, item_indicies, target_index)
+                loss = self.model.forward(
+                    seq_index, item_indicies, meta_indicies, target_index
+                )
                 self.optimizer.zero_grad()
                 loss.backward()  # type: ignore
                 self.optimizer.step()
@@ -155,7 +159,8 @@ class PyTorchTrainer(Trainer):
             losses.append(total_loss)
         print("train end")
 
-        torch.save(self.model.state_dict(), self.trainer_config.model_path)
+        if self.trainer_config.model_path is not None:
+            torch.save(self.model.state_dict(), self.trainer_config.model_path)
 
         if len(losses) > 0:
             print(f"final loss: {losses[-1]}")
@@ -164,7 +169,12 @@ class PyTorchTrainer(Trainer):
 
     @property
     def seq_embedding(self) -> Dict[str, np.ndarray]:
-        raise NotImplementedError()
+        return {
+            seq_name: h_seq.detach().numpy()
+            for seq_name, h_seq in zip(
+                self.dataset.raw_sequences.keys(), self.model.seq_embedding
+            )
+        }
 
     @property
     def item_embedding(self) -> Dict[str, np.ndarray]:

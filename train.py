@@ -1,6 +1,7 @@
 import os
 import pickle
 from argparse import ArgumentParser, Namespace
+from typing import Tuple
 
 from analyst import Analyst
 from config import ModelConfig, TrainerConfig
@@ -37,11 +38,31 @@ def main() -> None:
         print("end loading dataset")
         return dataset
 
+    def setup_config(args: Namespace) -> Tuple[TrainerConfig, ModelConfig]:
+        trainer_config = TrainerConfig()
+        trainer_config.model_name = "attentive"
+        trainer_config.epochs = args.epochs
+        trainer_config.batch_size = args.batch_size
+        trainer_config.load_model = args.load_model
+        trainer_config.verbose = args.verbose
+        trainer_config.model_path = None
+
+        model_config = ModelConfig()
+        model_config.d_model = args.d_model
+        model_config.window_size = 8
+        model_config.negative_sample_size = 5
+        model_config.lr = args.lr
+        model_config.use_learnable_embedding = False
+
+        return trainer_config, model_config
+
     args = parse_args()
+    trainer_config, model_config = setup_config(args)
+
     analyst = Analyst(
         dataset=load_dataset(),
-        trainer_config=TrainerConfig(),
-        model_config=ModelConfig(),
+        trainer_config=trainer_config,
+        model_config=model_config,
     )
     _ = analyst.fit()
 

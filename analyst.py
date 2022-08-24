@@ -51,7 +51,7 @@ class Analyst:
             List[int]: cluster labels
         """
         kmeans = KMeans(n_clusters=num_cluster)
-        h_seq = self.seq_embeddings.values()
+        h_seq = np.array(list(self.seq_embeddings.values()))
         kmeans.fit(h_seq)
         cluster_labels: List[int] = kmeans.labels_
 
