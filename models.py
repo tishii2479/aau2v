@@ -1,5 +1,5 @@
 from math import sqrt
-from typing import List
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -16,7 +16,9 @@ class AttentiveModel(nn.Module):
         d_model: int,
         sequences: List[List[int]],
         concat: bool = False,
-        negative_sample_size: int = 30
+        negative_sample_size: int = 30,
+        model_path: Optional[str] = None,
+        pretrained_embedding: Optional[Tuple[Tensor, Tensor]] = None,
     ) -> None:
         super().__init__()
         self.d_model = d_model
@@ -30,16 +32,23 @@ class AttentiveModel(nn.Module):
 
         output_dim = d_model * 2 if concat else d_model
         self.output = NegativeSampling(
-            d_model=output_dim, num_item=num_item,
-            sequences=sequences, negative_sample_size=negative_sample_size)
+            d_model=output_dim,
+            num_item=num_item,
+            sequences=sequences,
+            negative_sample_size=negative_sample_size,
+        )
+
+        if model_path is not None:
+            self.model.load_state_dict(torch.load(model_path))  # type: ignore
+        elif pretrained_embedding is not None:
+            item_embedding, seq_embedding = pretrained_embedding
+            self.seq_embedding.copy_(seq_embedding)
+            self.item_embedding.copy_(item_embedding)
 
     def forward(
-        self,
-        seq_index: Tensor,
-        item_indicies: Tensor,
-        target_index: Tensor
+        self, seq_index: Tensor, item_indicies: Tensor, target_index: Tensor
     ) -> Tensor:
-        r'''
+        r"""
         seq_index:
             type: `int` or `long`
             shape: (batch_size, )
@@ -49,7 +58,8 @@ class AttentiveModel(nn.Module):
         target_index:
             type: `int` or `log`
             shape: (batch_size, 1 or sample_size)
-        '''
+        """
+
         def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
             a = F.softmax(torch.matmul(Q, K.mT) / sqrt(K.size(2)), dim=2)
             return torch.matmul(a, V)
@@ -81,11 +91,7 @@ class AttentiveModel(nn.Module):
 
 class OriginalDoc2Vec(nn.Module):
     def __init__(
-        self,
-        num_seq: int,
-        num_item: int,
-        d_model: int,
-        sequences: List[List[int]]
+        self, num_seq: int, num_item: int, d_model: int, sequences: List[List[int]]
     ) -> None:
         super().__init__()
         self.d_model = d_model
@@ -96,19 +102,16 @@ class OriginalDoc2Vec(nn.Module):
         self.projection = nn.Linear(d_model, num_item)
 
     def forward(
-        self,
-        seq_index: Tensor,
-        item_indicies: Tensor,
-        target_index: Tensor
+        self, seq_index: Tensor, item_indicies: Tensor, target_index: Tensor
     ) -> Tensor:
-        r'''
+        r"""
         seq_index:
             type: `int` or `long`
             shape: (batch_size, )
         item_indicies:
             type: `int` or `long`
             shape: (batch_size, window_size)
-        '''
+        """
         h_seq = self.W_seq.forward(seq_index)
         h_items = self.W_item.forward(item_indicies)
 

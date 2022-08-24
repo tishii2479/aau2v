@@ -7,11 +7,10 @@ import numpy as np
 from matplotlib import cm
 from sklearn.decomposition import PCA
 from sklearn.feature_extraction.text import TfidfTransformer
-from torch import Tensor
 
 
 def visualize_cluster(
-    features: List[Tensor],
+    features: List[np.ndarray],
     num_cluster: int,
     cluster_labels: List[int],
     answer_labels: Optional[List[int]] = None,

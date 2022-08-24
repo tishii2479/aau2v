@@ -43,7 +43,7 @@ def main() -> None:
         trainer_config=TrainerConfig(),
         model_config=ModelConfig(),
     )
-    _ = analyst.train()
+    _ = analyst.fit()
 
     analyst.top_items(num_cluster=args.num_cluster, show_fig=True)
     _ = analyst.calc_coherence(num_cluster=args.num_cluster)

@@ -1,7 +1,13 @@
 import abc
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
+import torch
+import tqdm
+from gensim.models import word2vec
+from torch import Tensor
+from torch.optim import Adam
+from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
 from data import Sequence, SequenceDataset
@@ -84,21 +90,77 @@ class PyTorchTrainer(Trainer):
         trainer_config: TrainerConfig,
         model_config: ModelConfig,
     ) -> None:
-        self.dataset = dataset
+        self.data_loader = DataLoader(dataset, batch_size=trainer_config.batch_size)
         self.trainer_config = trainer_config
 
         match trainer_config.model_name:
             case "attentive":
                 self.model = AttentiveModel(
-                    num_seq=self.dataset.num_seq,
-                    num_item=self.dataset.num_item,
+                    num_seq=dataset.num_seq,
+                    num_item=dataset.num_item,
                     d_model=model_config.d_model,
-                    sequences=self.dataset.sequences,
+                    sequences=dataset.sequences,
                     negative_sample_size=model_config.negative_sample_size,
                 )
 
+        self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
+
+    def learn_item_embedding(
+        self, dataset: SequenceDataset, d_model: int, items: List[str]
+    ) -> Tuple[Tensor, Tensor]:
+        print("word2vec start.")
+        word2vec_model = word2vec.Word2Vec(
+            sentences=dataset.raw_sequences, vector_size=d_model, min_count=1
+        )
+        print("word2vec end.")
+        item_embeddings = torch.Tensor(
+            [list(word2vec_model.wv[item]) for item in items]
+        )
+
+        print("learn_sequence_embedding start")
+
+        # TODO: refactor
+        seq_embedding_list = []
+        for sequence in tqdm.tqdm(dataset.raw_sequences):
+            a = item_embeddings[dataset.item_le.transform(sequence)]
+            seq_embedding_list.append(list(a.mean(dim=0)))
+
+        seq_embeddings = torch.Tensor(seq_embedding_list)
+        print("learn_sequence_embedding end")
+
+        return item_embeddings, seq_embeddings
+
     def fit(self) -> List[float]:
-        raise NotImplementedError()
+        self.model.train()
+        losses = []
+        print("train start")
+        for epoch in range(self.trainer_config.epochs):
+            total_loss = 0.0
+            for i, data in enumerate(tqdm.tqdm(self.data_loader)):
+                seq_index, item_indicies, target_index = data
+
+                loss = self.model.forward(seq_index, item_indicies, target_index)
+                self.optimizer.zero_grad()
+                loss.backward()  # type: ignore
+                self.optimizer.step()
+
+                if self.trainer_config.verbose:
+                    print(i, len(self.data_loader), loss.item())
+                total_loss += loss.item()
+
+            total_loss /= len(self.data_loader)
+            if epoch % 1 == 0:
+                print(epoch, total_loss)
+
+            losses.append(total_loss)
+        print("train end")
+
+        torch.save(self.model.state_dict(), self.trainer_config.model_path)
+
+        if len(losses) > 0:
+            print(f"final loss: {losses[-1]}")
+
+        return losses
 
     @property
     def seq_embedding(self) -> Dict[str, np.ndarray]:

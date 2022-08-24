@@ -1,23 +1,16 @@
 import collections
 from typing import Dict, List, Optional
 
-import torch
-import tqdm
-from gensim.models import word2vec
+import numpy as np
 from sklearn.cluster import KMeans
-from torch import Tensor
-from torch.optim import Adam
-from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
 from data import SequenceDataset
-from models import AttentiveModel
 from trainers import PyTorchTrainer
 from util import (
     calc_cluster_occurence_array,
     calc_coherence,
     calc_sequence_occurence_array,
-    check_model_path,
     top_cluster_items,
     visualize_cluster,
     visualize_loss,
@@ -35,100 +28,16 @@ class Analyst:
         self.trainer_config = trainer_config
         self.model_config = model_config
 
-        self.model = AttentiveModel(
-            num_seq=self.dataset.num_seq,
-            num_item=self.dataset.num_item,
-            d_model=model_config.d_model,
-            sequences=self.dataset.sequences,
-            negative_sample_size=model_config.negative_sample_size,
-        )
-
         self.trainer = PyTorchTrainer(
-            dataset=dataset, trainer_config=trainer_config, model_config=model_config
+            dataset=self.dataset,
+            trainer_config=trainer_config,
+            model_config=model_config,
         )
 
-        self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
-        self.data_loader = DataLoader(
-            self.dataset, batch_size=trainer_config.batch_size
-        )
-
-        if trainer_config.load_model:
-            self.model.load_state_dict(torch.load(self.model_path))  # type: ignore
-        else:
-            check_model_path(trainer_config.model_path)
-            self.learn_item_embedding(
-                raw_sequences=list(self.dataset.raw_sequences.values()),
-                d_model=model_config.d_model,
-                items=list(dataset.item_metadata.keys()),
-            )
-            self.learn_sequence_embedding(
-                raw_sequences=list(self.dataset.raw_sequences.values())
-            )
-
-    def learn_item_embedding(
-        self, raw_sequences: List[List[str]], d_model: int, items: List[str]
-    ) -> None:
-        print("word2vec start.")
-        word2vec_model = word2vec.Word2Vec(
-            sentences=raw_sequences, vector_size=d_model, min_count=1
-        )
-        print("word2vec end.")
-
-        item_embeddings = torch.Tensor(
-            [list(word2vec_model.wv[item]) for item in items]
-        )
-        self.model.item_embedding.copy_(item_embeddings)
-        self.model.item_embedding.requires_grad = (
-            self.model_config.use_learnable_embedding
-        )
-
-    def learn_sequence_embedding(self, raw_sequences: List[List[str]]) -> None:
-        print("learn_sequence_embedding start")
-
-        # TODO: refactor
-        seq_embedding_list = []
-        for sequence in tqdm.tqdm(raw_sequences):
-            a = self.item_embeddings[self.dataset.item_le.transform(sequence)]
-            seq_embedding_list.append(list(a.mean(dim=0)))
-
-        seq_embedding = torch.Tensor(seq_embedding_list)
-        self.model.seq_embedding.copy_(seq_embedding)
-
-        print("learn_sequence_embedding end")
-
-    def train(self, show_fig: bool = True) -> List[float]:
-        self.model.train()
-        losses = []
-        print("train start")
-        for epoch in range(self.trainer_config.epochs):
-            total_loss = 0.0
-            for i, data in enumerate(tqdm.tqdm(self.data_loader)):
-                seq_index, item_indicies, target_index = data
-
-                loss = self.model.forward(seq_index, item_indicies, target_index)
-                self.optimizer.zero_grad()
-                loss.backward()  # type: ignore
-                self.optimizer.step()
-
-                if self.trainer_config.verbose:
-                    print(i, len(self.data_loader), loss.item())
-                total_loss += loss.item()
-
-            total_loss /= len(self.data_loader)
-            if epoch % 1 == 0:
-                print(epoch, total_loss)
-
-            losses.append(total_loss)
-        print("train end")
-
-        torch.save(self.model.state_dict(), self.trainer_config.model_path)
-
-        if len(losses) > 0:
-            print(f"final loss: {losses[-1]}")
-
+    def fit(self, show_fig: bool = True) -> List[float]:
+        losses = self.trainer.fit()
         if show_fig and len(losses) > 0:
             visualize_loss(losses)
-
         return losses
 
     def cluster_sequences(self, num_cluster: int, show_fig: bool = True) -> List[int]:
@@ -142,12 +51,12 @@ class Analyst:
             List[int]: cluster labels
         """
         kmeans = KMeans(n_clusters=num_cluster)
-        h_seq = self.seq_embeddings.detach().numpy()
+        h_seq = self.seq_embeddings.values()
         kmeans.fit(h_seq)
         cluster_labels: List[int] = kmeans.labels_
 
         if show_fig:
-            visualize_cluster(h_seq, num_cluster, cluster_labels)
+            visualize_cluster(list(h_seq), num_cluster, cluster_labels)
 
         return cluster_labels
 
@@ -223,9 +132,9 @@ class Analyst:
         return coherence
 
     @property
-    def seq_embeddings(self) -> Tensor:
-        return self.model.seq_embedding
+    def seq_embeddings(self) -> Dict[str, np.ndarray]:
+        return self.trainer.seq_embedding
 
     @property
-    def item_embeddings(self) -> Tensor:
-        return self.model.item_embedding
+    def item_embeddings(self) -> Dict[str, np.ndarray]:
+        return self.trainer.item_embedding
