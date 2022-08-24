@@ -3,6 +3,7 @@ import pickle
 from argparse import ArgumentParser, Namespace
 
 from analyst import Analyst
+from config import ModelConfig, TrainerConfig
 from data import SequenceDataset, create_20newsgroup_data, create_hm_data  # noqa
 
 
@@ -27,9 +28,9 @@ def main() -> None:
                 dataset: SequenceDataset = pickle.load(f)
         else:
             print(f"dataset does not exist at: {dataset_path}, create dataset")
-            raw_sequences, items = create_hm_data(max_data_size=1000)
+            raw_sequences, item_metadata = create_hm_data(max_data_size=1000)
             dataset = SequenceDataset(
-                raw_sequences=raw_sequences, items=items, window_size=8
+                raw_sequences=raw_sequences, item_metadata=item_metadata
             )
             with open(dataset_path, "wb") as f:  # type: ignore
                 pickle.dump(dataset, f)
@@ -37,24 +38,15 @@ def main() -> None:
         return dataset
 
     args = parse_args()
-    doc2vec = Analyst(
+    analyst = Analyst(
         dataset=load_dataset(),
-        d_model=args.d_model,
-        batch_size=args.batch_size,
-        epochs=args.epochs,
-        lr=args.lr,
-        model="attentive",
-        model_path="weights/model_20news.pt",
-        word2vec_path="weights/word2vec_hm.model",
-        verbose=args.verbose,
-        load_model=args.load_model,
+        trainer_config=TrainerConfig(),
+        model_config=ModelConfig(),
     )
-    _ = doc2vec.train()
+    _ = analyst.train()
 
-    doc2vec.top_items(
-        num_cluster=args.num_cluster, item_name_dict=item_name_dict, show_fig=True
-    )
-    _ = doc2vec.calc_coherence(num_cluster=args.num_cluster)
+    analyst.top_items(num_cluster=args.num_cluster, show_fig=True)
+    _ = analyst.calc_coherence(num_cluster=args.num_cluster)
 
 
 if __name__ == "__main__":
