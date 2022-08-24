@@ -1,7 +1,9 @@
+import os
+import pickle
 from argparse import ArgumentParser, Namespace
 
 from analyst import Analyst
-from data import create_20newsgroup_data, create_hm_data  # noqa
+from data import SequenceDataset, create_20newsgroup_data, create_hm_data  # noqa
 
 
 def main() -> None:
@@ -16,12 +18,27 @@ def main() -> None:
         parser.add_argument("--load_model", action="store_true")
         return parser.parse_args()
 
+    def load_dataset(
+        dataset_path: str = "data/hm_dataset.pickle",
+    ) -> SequenceDataset:
+        if os.path.exists(dataset_path):
+            print(f"load dataset at: {dataset_path}")
+            with open(dataset_path, "rb") as f:
+                dataset: SequenceDataset = pickle.load(f)
+        else:
+            print(f"dataset does not exist at: {dataset_path}, create dataset")
+            raw_sequences, items = create_hm_data(max_data_size=1000)
+            dataset = SequenceDataset(
+                raw_sequences=raw_sequences, items=items, window_size=8
+            )
+            with open(dataset_path, "wb") as f:  # type: ignore
+                pickle.dump(dataset, f)
+        print("end loading dataset")
+        return dataset
+
     args = parse_args()
-
-    raw_sequences, item_name_dict = create_20newsgroup_data(max_data_size=1000)
-
     doc2vec = Analyst(
-        raw_sequences=raw_sequences,
+        dataset=load_dataset(),
         d_model=args.d_model,
         batch_size=args.batch_size,
         epochs=args.epochs,

@@ -27,8 +27,12 @@ class UnigramSampler:
         self, batch_size: int, negative_sample_size: int
     ) -> np.ndarray:
         # Ignores even if correct label is included
-        negative_sample = np.random.choice(self.vocab_size, size=(
-            batch_size, negative_sample_size), replace=True, p=self.word_p)
+        negative_sample = np.random.choice(
+            self.vocab_size,
+            size=(batch_size, negative_sample_size),
+            replace=True,
+            p=self.word_p,
+        )
         return negative_sample
 
 
@@ -39,7 +43,7 @@ class EmbeddingDot(nn.Module):
         self.embedding = nn.Embedding(num_item, d_model)
 
     def forward(self, h: Tensor, indicies: Tensor) -> Tensor:
-        '''Forward Embedding Dot
+        """Forward Embedding Dot
 
         Args:
             h (Tensor): input, size of (batch_size, 1, d_model)
@@ -48,7 +52,7 @@ class EmbeddingDot(nn.Module):
 
         Returns:
             Tensor: output
-        '''
+        """
         w = self.embedding.forward(indicies)
         w = torch.reshape(w, (-1, indicies.size(1), self.d_model))
         out = torch.matmul(h, w.mT)
@@ -62,7 +66,7 @@ class NegativeSampling(nn.Module):
         num_item: int,
         sequences: List[List[int]],
         power: float = 0.75,
-        negative_sample_size: int = 5
+        negative_sample_size: int = 5,
     ) -> None:
         super().__init__()
         self.d_model = d_model
@@ -71,26 +75,29 @@ class NegativeSampling(nn.Module):
         self.embedding = EmbeddingDot(d_model, num_item)
 
     def forward(self, h: Tensor, target_index: Tensor) -> Tensor:
-        r'''
+        r"""
         Args:
             h size of (batch_size, d_model)
             target_index index, size of (batch_size, 1)
-        '''
+        """
         batch_size = target_index.size(0)
 
         h = torch.reshape(h, (batch_size, 1, self.d_model))
 
         # positive
-        out = torch.sigmoid(self.embedding.forward(
-            h, torch.reshape(target_index, (batch_size, 1))))
+        out = torch.sigmoid(
+            self.embedding.forward(h, torch.reshape(target_index, (batch_size, 1)))
+        )
         label = torch.ones(batch_size, 1)
         out = torch.reshape(out, (batch_size, 1))
         positive_loss = F.binary_cross_entropy(out, label)
 
         # negative
         # (batch_size, negative_sample_size)
-        negative_sample = torch.tensor(self.sampler.get_negative_sample(
-            batch_size, self.negative_sample_size), dtype=torch.long)
+        negative_sample = torch.tensor(
+            self.sampler.get_negative_sample(batch_size, self.negative_sample_size),
+            dtype=torch.long,
+        )
 
         out = torch.sigmoid(self.embedding.forward(h, negative_sample))
         label = torch.zeros(batch_size, self.negative_sample_size)
