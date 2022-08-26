@@ -11,12 +11,12 @@ from torch import Tensor
 from torch.utils.data import Dataset
 from torchtext.data import get_tokenizer
 
-MetaData = Dict[str, Any]
-Item = Tuple[str, MetaData]
-Sequence = List[Item]
-
 
 class SequenceDataset(Dataset):
+    MetaData = Dict[str, Any]
+    Item = Tuple[str, MetaData]
+    Sequence = List[Item]
+
     def __init__(
         self,
         raw_sequences: Dict[str, List[str]],
@@ -89,6 +89,7 @@ def process_metadata(
     for meta_name, meta_values in meta_dict.items():
         for value in meta_values:
             # create str that is identical
+            # FIXME: temporary, fix soon
             all_meta_values.append(meta_name + ":" + str(value))
 
     meta_le = LabelEncoder().fit(all_meta_values)
@@ -112,6 +113,7 @@ def to_sequential_data(
                 # FIXME: temporary, fix soon
                 if meta_name == "prod_name":
                     continue
+                # FIXME: temporary, fix soon
                 item_meta.append(meta_name + ":" + str(meta_value))
             meta_indices.append(list(meta_le.transform(item_meta)))
         return meta_indices
