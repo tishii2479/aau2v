@@ -1,5 +1,5 @@
 from random import choice, randint
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import gensim
 import pandas as pd
@@ -11,36 +11,43 @@ from torch import Tensor
 from torch.utils.data import Dataset
 from torchtext.data import get_tokenizer
 
+MetaData = Dict[str, Any]
+Item = Tuple[str, MetaData]
+Sequence = List[Item]
+
 
 class SequenceDataset(Dataset):
     def __init__(
         self,
-        raw_sequences: List[List[str]],
-        items: Dict[str, Dict[str, str]],
+        raw_sequences: Dict[str, List[str]],
+        item_metadata: Dict[str, MetaData],
+        seq_metadata: Optional[Dict[str, MetaData]] = None,
         window_size: int = 8,
     ) -> None:
+        self.seq_metadata = seq_metadata
+        self.item_metadata = item_metadata
         self.raw_sequences = raw_sequences
-        self.items = items
-        self.item_le = LabelEncoder().fit(list(self.items.keys()))
-        self.meta_le, self.meta_dict = process_metadata(items)
+        self.item_le = LabelEncoder().fit(list(item_metadata.keys()))
+        self.meta_le, self.meta_dict = process_metadata(item_metadata)
 
         print("transform sequence start")
         self.sequences = [
             self.item_le.transform(sequence)
-            for sequence in tqdm.tqdm(self.raw_sequences)
+            for sequence in tqdm.tqdm(self.raw_sequences.values())
         ]
         print("transform sequence end")
 
-        self.num_seq = len(self.sequences)
-        self.num_item = len(self.items)
+        self.num_seq = len(self.raw_sequences)
+        self.num_item = len(self.item_metadata)
         self.num_meta = len(self.meta_le.classes_)
+
         print(
             f"num_seq: {self.num_seq}, num_item: {self.num_item}, "
             + f"num_meta: {self.num_meta}"
         )
         self.data = to_sequential_data(
             self.sequences,
-            self.items,
+            self.item_metadata,
             self.item_le,
             self.meta_le,
             window_size=window_size,
@@ -169,17 +176,21 @@ def create_hm_data(
     purchase_history_path: str = "data/hm/filtered_purchase_history.csv",
     item_path: str = "data/hm/items.csv",
     max_data_size: int = 1000,
-) -> Tuple[List[List[str]], Dict[str, Dict[str, str]]]:
-    sequences = pd.read_csv(purchase_history_path)
+) -> Tuple[Dict[str, List[str]], Dict[str, Dict[str, str]]]:
+    sequences_df = pd.read_csv(purchase_history_path)
     items_df = pd.read_csv(item_path, dtype={"article_id": str}, index_col="article_id")
 
-    raw_sequences = [
-        sequence.split(" ") for sequence in sequences.sequence.values[:max_data_size]
-    ]
+    raw_sequences = {
+        index: sequence.split(" ")
+        for index, sequence in zip(
+            sequences_df.index.values[:max_data_size],
+            sequences_df.sequence.values[:max_data_size],
+        )
+    }
     items = items_df.to_dict("index")
 
     items_set = set()
-    for seq in raw_sequences:
+    for seq in raw_sequences.values():
         for item in seq:
             items_set.add(item)
 

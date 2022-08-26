@@ -1,10 +1,11 @@
 import os
 import pickle
 from argparse import ArgumentParser, Namespace
+from typing import Tuple
 
-from data import create_20newsgroup_data  # noqa
-from data import SequenceDataset, create_hm_data
-from model import AttentiveDoc2Vec
+from analyst import Analyst
+from config import ModelConfig, TrainerConfig
+from data import SequenceDataset, create_20newsgroup_data, create_hm_data  # noqa
 
 
 def main() -> None:
@@ -28,38 +29,49 @@ def main() -> None:
                 dataset: SequenceDataset = pickle.load(f)
         else:
             print(f"dataset does not exist at: {dataset_path}, create dataset")
-            raw_sequences, items = create_hm_data(max_data_size=1000)
+            raw_sequences, item_metadata = create_hm_data(max_data_size=1000)
             dataset = SequenceDataset(
-                raw_sequences=raw_sequences, items=items, window_size=8
+                raw_sequences=raw_sequences, item_metadata=item_metadata
             )
             with open(dataset_path, "wb") as f:  # type: ignore
                 pickle.dump(dataset, f)
         print("end loading dataset")
         return dataset
 
-    args = parse_args()
-    dataset = load_dataset()
-    doc2vec = AttentiveDoc2Vec(
-        dataset=dataset,
-        d_model=args.d_model,
-        batch_size=args.batch_size,
-        epochs=args.epochs,
-        lr=args.lr,
-        model="attentive",
-        model_path="weights/model_hm_meta.pt",
-        word2vec_path="weights/word2vec_hm.model",
-        verbose=args.verbose,
-        load_model=args.load_model,
-    )
-    _ = doc2vec.train()
+    def setup_config(args: Namespace) -> Tuple[TrainerConfig, ModelConfig]:
+        trainer_config = TrainerConfig()
+        trainer_config.model_name = "attentive"
+        trainer_config.epochs = args.epochs
+        trainer_config.batch_size = args.batch_size
+        trainer_config.load_model = args.load_model
+        trainer_config.verbose = args.verbose
+        trainer_config.model_path = None
 
-    for user_index in range(5):
-        doc2vec.attention_weights_to_meta(user_index, "colour_group_name")
-        doc2vec.attention_weights_to_meta(user_index, "product_type_name")
-        doc2vec.attention_weights_to_meta(user_index, "section_name")
-        doc2vec.attention_weights_to_sequence(user_index)
-    doc2vec.top_items(num_cluster=args.num_cluster, show_fig=True)
-    _ = doc2vec.calc_coherence(num_cluster=args.num_cluster)
+        model_config = ModelConfig()
+        model_config.d_model = args.d_model
+        model_config.window_size = 8
+        model_config.negative_sample_size = 5
+        model_config.lr = args.lr
+        model_config.use_learnable_embedding = False
+
+        return trainer_config, model_config
+
+    args = parse_args()
+    trainer_config, model_config = setup_config(args)
+    dataset = load_dataset()
+
+    analyst = Analyst(
+        dataset=dataset,
+        trainer_config=trainer_config,
+        model_config=model_config,
+    )
+    _ = analyst.fit(show_fig=False)
+
+    analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
+    _ = analyst.calc_coherence(num_cluster=args.num_cluster)
+
+    analyst.attention_weights_to_meta(0, "colour_group_name")
+    analyst.attention_weights_to_sequence(0)
 
 
 if __name__ == "__main__":
