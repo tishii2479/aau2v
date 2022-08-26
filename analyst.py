@@ -131,6 +131,33 @@ class Analyst:
         print(f"coherence: {coherence}")
         return coherence
 
+    def attention_weights_to_meta(
+        self, seq_index: int, meta_name: str, num_top_values: int = 5
+    ) -> None:
+        meta_values = list(self.dataset.meta_dict[meta_name])
+        meta_names = [meta_name + ":" + value for value in meta_values]
+        meta_indicies = self.dataset.meta_le.transform(meta_names)
+        weight = list(
+            self.trainer.attention_weight_to_meta(seq_index, meta_indicies)[0]
+        )
+        meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
+        print(f"attention weights of seq: {seq_index} for meta: {meta_name}")
+        for weight, name in sorted(meta_weights)[::-1][:num_top_values]:
+            print(f"{weight.item():.4f}", name)
+
+    def attention_weights_to_sequence(
+        self, seq_index: int, num_recent_items: int = 100
+    ) -> None:
+        item_indicies = self.dataset.sequences[seq_index][-num_recent_items:]
+        item_names = self.dataset.item_le.inverse_transform(item_indicies)
+        weight = list(
+            self.trainer.attention_weight_to_item(seq_index, item_indicies)[0]
+        )
+        item_weights = [(weight[i], item_names[i]) for i in range(num_recent_items)]
+        print(f"item weights of seq: {seq_index}")
+        for weight, name in sorted(item_weights)[::-1]:
+            print(f"{weight.item():.4f}", self.dataset.item_metadata[name])
+
     @property
     def seq_embeddings(self) -> Dict[str, np.ndarray]:
         return self.trainer.seq_embedding

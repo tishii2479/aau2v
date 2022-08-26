@@ -58,16 +58,20 @@ def main() -> None:
 
     args = parse_args()
     trainer_config, model_config = setup_config(args)
+    dataset = load_dataset()
 
     analyst = Analyst(
-        dataset=load_dataset(),
+        dataset=dataset,
         trainer_config=trainer_config,
         model_config=model_config,
     )
-    _ = analyst.fit()
+    _ = analyst.fit(show_fig=False)
 
-    analyst.top_items(num_cluster=args.num_cluster, show_fig=True)
+    analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
     _ = analyst.calc_coherence(num_cluster=args.num_cluster)
+
+    analyst.attention_weights_to_meta(0, "colour_group_name")
+    analyst.attention_weights_to_sequence(0)
 
 
 if __name__ == "__main__":

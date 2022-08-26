@@ -11,13 +11,15 @@ from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
 from data import Sequence, SequenceDataset
-from models import AttentiveModel
+from model import AttentiveModel, Model
 
 
 class Trainer(metaclass=abc.ABCMeta):
     """
     Interface of trainers
     """
+
+    model: Model
 
     @abc.abstractmethod
     def __init__(
@@ -28,6 +30,7 @@ class Trainer(metaclass=abc.ABCMeta):
     ) -> None:
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def fit(self) -> List[float]:
         """
         Called to fit to data
@@ -39,6 +42,20 @@ class Trainer(metaclass=abc.ABCMeta):
             List[float]: losses
         """
         raise NotImplementedError()
+
+    def attention_weight_to_meta(
+        self,
+        seq_index: int,
+        meta_indicies: List[int],
+    ) -> Tensor:
+        return self.model.attention_weight_to_meta(
+            seq_index=seq_index, meta_indicies=meta_indicies
+        )
+
+    def attention_weight_to_item(
+        self, seq_index: int, item_indicies: List[int]
+    ) -> Tensor:
+        return self.model.attention_weight_to_item(seq_index, item_indicies)
 
     @abc.abstractproperty
     @property
