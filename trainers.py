@@ -1,5 +1,5 @@
 import abc
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import torch
@@ -10,7 +10,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
-from data import Sequence, SequenceDataset
+from data import SequenceDataset
 from model import AttentiveModel, Model
 
 
@@ -24,7 +24,7 @@ class Trainer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __init__(
         self,
-        raw_sequences: List[Sequence],
+        raw_sequences: List[Tuple[str, Dict[str, Any]]],
         trainer_config: TrainerConfig,
         model_config: ModelConfig,
     ) -> None:

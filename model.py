@@ -9,7 +9,7 @@ from torch import Tensor, nn
 from layer import NegativeSampling
 
 
-class Model(nn.Module, metaclass=abc.ABCMeta):
+class Model(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     @torch.no_grad()  # type: ignore
     def attention_weight_to_meta(
@@ -45,7 +45,7 @@ def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
     return torch.matmul(a, V)
 
 
-class AttentiveModel(Model):
+class AttentiveModel(nn.Module, Model):
     def __init__(
         self,
         num_seq: int,

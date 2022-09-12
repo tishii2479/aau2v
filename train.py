@@ -31,7 +31,9 @@ def main() -> None:
             print(f"dataset does not exist at: {dataset_path}, create dataset")
             raw_sequences, item_metadata = create_hm_data(max_data_size=1000)
             dataset = SequenceDataset(
-                raw_sequences=raw_sequences, item_metadata=item_metadata
+                raw_sequences=raw_sequences,
+                item_metadata=item_metadata,
+                exclude_metadata_columns=["prod_name"],
             )
             with open(dataset_path, "wb") as f:  # type: ignore
                 pickle.dump(dataset, f)

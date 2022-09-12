@@ -11,6 +11,7 @@ from util import (
     calc_cluster_occurence_array,
     calc_coherence,
     calc_sequence_occurence_array,
+    to_full_meta_value,
     top_cluster_items,
     visualize_cluster,
     visualize_loss,
@@ -135,7 +136,7 @@ class Analyst:
         self, seq_index: int, meta_name: str, num_top_values: int = 5
     ) -> None:
         meta_values = list(self.dataset.meta_dict[meta_name])
-        meta_names = [meta_name + ":" + value for value in meta_values]
+        meta_names = [to_full_meta_value(meta_name, value) for value in meta_values]
         meta_indicies = self.dataset.meta_le.transform(meta_names)
         weight = list(
             self.trainer.attention_weight_to_meta(seq_index, meta_indicies)[0]

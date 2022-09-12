@@ -1,12 +1,26 @@
 import os
 from math import log
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
 from sklearn.decomposition import PCA
 from sklearn.feature_extraction.text import TfidfTransformer
+
+
+def to_full_meta_value(meta_name: str, meta_value: Any) -> str:
+    """
+    Generate identical string that describes the meta value
+
+    Args:
+        meta_name (str): meta data name (column name)
+        meta_value (Any): meta data value
+
+    Returns:
+        str: identical string that describes the meta value
+    """
+    return meta_name + ":" + str(meta_value)
 
 
 def visualize_cluster(

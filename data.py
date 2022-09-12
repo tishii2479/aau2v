@@ -11,6 +11,8 @@ from torch import Tensor
 from torch.utils.data import Dataset
 from torchtext.data import get_tokenizer
 
+from util import to_full_meta_value
+
 
 class SequenceDataset(Dataset):
     MetaData = Dict[str, Any]
@@ -23,12 +25,15 @@ class SequenceDataset(Dataset):
         item_metadata: Dict[str, MetaData],
         seq_metadata: Optional[Dict[str, MetaData]] = None,
         window_size: int = 8,
+        exclude_metadata_columns: Optional[List[str]] = None,
     ) -> None:
         self.seq_metadata = seq_metadata
         self.item_metadata = item_metadata
         self.raw_sequences = raw_sequences
         self.item_le = LabelEncoder().fit(list(item_metadata.keys()))
-        self.meta_le, self.meta_dict = process_metadata(item_metadata)
+        self.meta_le, self.meta_dict = process_metadata(
+            item_metadata, exclude_metadata_columns=exclude_metadata_columns
+        )
 
         print("transform sequence start")
         self.sequences = [
@@ -51,6 +56,7 @@ class SequenceDataset(Dataset):
             self.item_le,
             self.meta_le,
             window_size=window_size,
+            exclude_metadata_columns=exclude_metadata_columns,
         )
 
     def __len__(self) -> int:
@@ -63,7 +69,8 @@ class SequenceDataset(Dataset):
 
 
 def process_metadata(
-    items: Dict[str, Dict[str, str]]
+    items: Dict[str, Dict[str, str]],
+    exclude_metadata_columns: Optional[List[str]] = None,
 ) -> Tuple[LabelEncoder, Dict[str, Set[str]]]:
     """Process item meta datas
 
@@ -78,8 +85,10 @@ def process_metadata(
     meta_dict: Dict[str, Set[str]] = {}
     for _, meta_data in items.items():
         for meta_name, meta_value in meta_data.items():
-            # FIXME: temporary, fix soon
-            if meta_name == "prod_name":
+            if (
+                exclude_metadata_columns is not None
+                and meta_name in exclude_metadata_columns
+            ):
                 continue
             if meta_name not in meta_dict:
                 meta_dict[meta_name] = set()
@@ -89,8 +98,7 @@ def process_metadata(
     for meta_name, meta_values in meta_dict.items():
         for value in meta_values:
             # create str that is identical
-            # FIXME: temporary, fix soon
-            all_meta_values.append(meta_name + ":" + str(value))
+            all_meta_values.append(to_full_meta_value(meta_name, value))
 
     meta_le = LabelEncoder().fit(all_meta_values)
 
@@ -103,6 +111,7 @@ def to_sequential_data(
     item_le: LabelEncoder,
     meta_le: LabelEncoder,
     window_size: int,
+    exclude_metadata_columns: Optional[List[str]] = None,
 ) -> List[Tuple[Tensor, Tensor, Tensor, Tensor]]:
     def get_meta_indicies(item_ids: List[int]) -> List[List[int]]:
         item_names = item_le.inverse_transform(item_ids)
@@ -110,11 +119,12 @@ def to_sequential_data(
         for item_name in item_names:
             item_meta: List[str] = []
             for meta_name, meta_value in items[item_name].items():
-                # FIXME: temporary, fix soon
-                if meta_name == "prod_name":
+                if (
+                    exclude_metadata_columns is not None
+                    and meta_name in exclude_metadata_columns
+                ):
                     continue
-                # FIXME: temporary, fix soon
-                item_meta.append(meta_name + ":" + str(meta_value))
+                item_meta.append(to_full_meta_value(meta_name, meta_value))
             meta_indices.append(list(meta_le.transform(item_meta)))
         return meta_indices
 
