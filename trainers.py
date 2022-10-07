@@ -11,15 +11,13 @@ from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
 from data import SequenceDataset
-from model import AttentiveModel, Model
+from model import AttentiveModel, PyTorchModel
 
 
 class Trainer(metaclass=abc.ABCMeta):
     """
     Interface of trainers
     """
-
-    model: Model
 
     @abc.abstractmethod
     def __init__(
@@ -48,14 +46,12 @@ class Trainer(metaclass=abc.ABCMeta):
         seq_index: int,
         meta_indicies: List[int],
     ) -> Tensor:
-        return self.model.attention_weight_to_meta(
-            seq_index=seq_index, meta_indicies=meta_indicies
-        )
+        raise NotImplementedError()
 
     def attention_weight_to_item(
         self, seq_index: int, item_indicies: List[int]
     ) -> Tensor:
-        return self.model.attention_weight_to_item(seq_index, item_indicies)
+        raise NotImplementedError()
 
     @abc.abstractproperty
     @property
@@ -101,6 +97,8 @@ class Trainer(metaclass=abc.ABCMeta):
 
 
 class PyTorchTrainer(Trainer):
+    model: PyTorchModel
+
     def __init__(
         self,
         dataset: SequenceDataset,
@@ -124,7 +122,7 @@ class PyTorchTrainer(Trainer):
 
         self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
 
-    def learn_item_embedding(
+    def _pretrain_embeddings(
         self, dataset: SequenceDataset, d_model: int, items: List[str]
     ) -> Tuple[Tensor, Tensor]:
         print("word2vec start.")

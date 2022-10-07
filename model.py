@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from layer import NegativeSampling
+from layer import NegativeSampling, PositionalEncoding
 
 
 class Model(metaclass=abc.ABCMeta):
@@ -20,6 +20,13 @@ class Model(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     @torch.no_grad()  # type: ignore
     def attention_weight_to_item(
+        self, seq_index: int, item_indicies: List[int]
+    ) -> Tensor:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    @torch.no_grad()  # type: ignore
+    def attention_weight_to_positional_encoding(
         self, seq_index: int, item_indicies: List[int]
     ) -> Tensor:
         raise NotImplementedError()
@@ -45,7 +52,11 @@ def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
     return torch.matmul(a, V)
 
 
-class AttentiveModel(nn.Module, Model):
+class PyTorchModel(nn.Module, Model):
+    pass
+
+
+class AttentiveModel(PyTorchModel):
     def __init__(
         self,
         num_seq: int,
@@ -54,6 +65,8 @@ class AttentiveModel(nn.Module, Model):
         d_model: int,
         sequences: List[List[int]],
         negative_sample_size: int = 30,
+        max_sequence_length: int = 1000,
+        dropout: float = 0.1,
     ) -> None:
         super().__init__()
         self.d_model = d_model
@@ -61,6 +74,10 @@ class AttentiveModel(nn.Module, Model):
         self.embedding_seq = nn.Embedding(num_seq, d_model)
         self.embedding_item = nn.Embedding(num_item, d_model)
         self.embedding_meta = nn.Embedding(num_meta, d_model)
+
+        self.positional_encoding = PositionalEncoding(
+            d_model, max_sequence_length, dropout
+        )
 
         self.W_q = nn.Linear(d_model, d_model)
         self.W_k = nn.Linear(d_model, d_model)
@@ -99,6 +116,8 @@ class AttentiveModel(nn.Module, Model):
         # take mean
         h_items /= num_meta_types
 
+        h_items = self.positional_encoding.forward(h_items)
+
         Q = torch.reshape(self.W_q(h_seq), (-1, 1, self.d_model))
         K = self.W_k(h_items)
         V = h_items
@@ -134,6 +153,12 @@ class AttentiveModel(nn.Module, Model):
         h_item = self.embedding_item.forward(item_indicies)
         weight = attention_weight(h_seq, h_item)
         return weight
+
+    @torch.no_grad()  # type: ignore
+    def attention_weight_to_positional_encoding(
+        self, seq_index: int, item_indicies: List[int]
+    ) -> Tensor:
+        raise NotImplementedError()
 
     @property
     def seq_embedding(self) -> Tensor:

@@ -55,7 +55,6 @@ def main() -> None:
         model_config.negative_sample_size = 5
         model_config.lr = args.lr
         model_config.use_learnable_embedding = False
-
         return trainer_config, model_config
 
     args = parse_args()
