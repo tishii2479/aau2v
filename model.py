@@ -114,14 +114,13 @@ class AttentiveModel(PyTorchModel):
         # add meta embedding
         h_items += self.embedding_meta.forward(meta_indicies).sum(dim=2)
         # take mean
-        h_items /= num_meta_types
+        h_items /= num_meta_types + 1
 
         h_items = self.positional_encoding.forward(h_items)
 
         Q = torch.reshape(self.W_q(h_seq), (-1, 1, self.d_model))
         K = self.W_k(h_items)
         V = h_items
-
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
         v = (c + h_seq) / 2
 

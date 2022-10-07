@@ -1,25 +1,12 @@
 import os
 import pickle
-from argparse import ArgumentParser, Namespace
-from typing import Tuple
 
 from analyst import Analyst
-from config import ModelConfig, TrainerConfig
+from config import parse_args, setup_config
 from data import SequenceDataset, create_20newsgroup_data, create_hm_data  # noqa
 
 
 def main() -> None:
-    def parse_args() -> Namespace:
-        parser = ArgumentParser()
-        parser.add_argument("--num_cluster", type=int, default=10)
-        parser.add_argument("--d_model", type=int, default=100)
-        parser.add_argument("--batch_size", type=int, default=64)
-        parser.add_argument("--epochs", type=int, default=5)
-        parser.add_argument("--lr", type=float, default=0.0005)
-        parser.add_argument("--verbose", action="store_true")
-        parser.add_argument("--load_model", action="store_true")
-        return parser.parse_args()
-
     def load_dataset(
         dataset_path: str = "data/hm_dataset.pickle",
     ) -> SequenceDataset:
@@ -39,24 +26,6 @@ def main() -> None:
                 pickle.dump(dataset, f)
         print("end loading dataset")
         return dataset
-
-    def setup_config(args: Namespace) -> Tuple[TrainerConfig, ModelConfig]:
-        trainer_config = TrainerConfig(
-            model_name="attentive",
-            epochs=args.epochs,
-            batch_size=args.batch_size,
-            load_model=args.load_model,
-            verbose=args.verbose,
-            model_path=None,
-        )
-        model_config = ModelConfig(
-            d_model=args.d_model,
-            window_size=8,
-            negative_sample_size=5,
-            lr=args.lr,
-            use_learnable_embedding=False,
-        )
-        return trainer_config, model_config
 
     args = parse_args()
     trainer_config, model_config = setup_config(args)

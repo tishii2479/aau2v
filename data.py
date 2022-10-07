@@ -5,8 +5,7 @@ import gensim
 import pandas as pd
 import torch
 import tqdm
-from sklearn.datasets import fetch_20newsgroups
-from sklearn.preprocessing import LabelEncoder
+from sklearn import datasets, preprocessing
 from torch import Tensor
 from torch.utils.data import Dataset
 from torchtext.data import get_tokenizer
@@ -27,10 +26,43 @@ class SequenceDataset(Dataset):
         window_size: int = 8,
         exclude_metadata_columns: Optional[List[str]] = None,
     ) -> None:
+        """
+        補助情報を含んだシーケンシャルのデータを保持するクラス
+
+        Args:
+            raw_sequences (Dict[str, List[str]]):
+                生のシーケンシャルデータ
+                系列ID : [要素1, 要素2, ..., 要素n]
+                例: "doc_001", [ "私", "は", "猫" ]
+            item_metadata (Dict[str, MetaData]):
+                要素の補助情報の辞書
+                要素 : {
+                    補助情報ID: 補助情報の値
+                }
+                例: "私" : {
+                    "品詞": "名詞",
+                    "長さ": 1
+                }
+            seq_metadata (Optional[Dict[str, MetaData]], optional):
+                系列の補助情報の辞書
+                系列: {
+                    補助情報ID: 補助情報の値
+                }
+                例: "doc_001" : {
+                    "ジャンル": 動物,
+                    "単語数": 3
+                }
+            window_size (int, optional):
+                学習するときに参照する過去の要素の個数.
+                Defaults to 8.
+            exclude_metadata_columns (Optional[List[str]], optional):
+                `item_metadata`の中で補助情報として扱わない列の名前のリスト（ex: 単語IDなど）
+                Defaults to None.
+        """
         self.seq_metadata = seq_metadata
         self.item_metadata = item_metadata
         self.raw_sequences = raw_sequences
-        self.item_le = LabelEncoder().fit(list(item_metadata.keys()))
+        self.item_le = preprocessing.LabelEncoder().fit(list(item_metadata.keys()))
         self.meta_le, self.meta_dict = process_metadata(
             item_metadata, exclude_metadata_columns=exclude_metadata_columns
         )
@@ -71,7 +103,7 @@ class SequenceDataset(Dataset):
 def process_metadata(
     items: Dict[str, Dict[str, str]],
     exclude_metadata_columns: Optional[List[str]] = None,
-) -> Tuple[LabelEncoder, Dict[str, Set[str]]]:
+) -> Tuple[preprocessing.LabelEncoder, Dict[str, Set[str]]]:
     """Process item meta datas
 
     Args:
@@ -100,7 +132,7 @@ def process_metadata(
             # create str that is identical
             all_meta_values.append(to_full_meta_value(meta_name, value))
 
-    meta_le = LabelEncoder().fit(all_meta_values)
+    meta_le = preprocessing.LabelEncoder().fit(all_meta_values)
 
     return meta_le, meta_dict
 
@@ -108,8 +140,8 @@ def process_metadata(
 def to_sequential_data(
     sequences: List[List[int]],
     items: Dict[str, Dict[str, str]],
-    item_le: LabelEncoder,
-    meta_le: LabelEncoder,
+    item_le: preprocessing.LabelEncoder,
+    meta_le: preprocessing.LabelEncoder,
     window_size: int,
     exclude_metadata_columns: Optional[List[str]] = None,
 ) -> List[Tuple[Tensor, Tensor, Tensor, Tensor]]:
@@ -213,8 +245,8 @@ def create_hm_data(
 
 def create_20newsgroup_data(
     max_data_size: int = 1000, min_seq_length: int = 50
-) -> Tuple[List[List[str]], Optional[Dict[str, str]]]:
-    newsgroups_train = fetch_20newsgroups(
+) -> Tuple[Dict[str, List[str]], Dict[str, Dict[str, str]]]:
+    newsgroups_train = datasets.fetch_20newsgroups(
         data_home="data",
         subset="train",
         remove=("headers", "footers", "quotes"),
@@ -228,17 +260,19 @@ def create_20newsgroup_data(
     )
     dictionary.filter_extremes(no_below=10, no_above=0.1)
 
-    raw_sequences = []
+    raw_sequences = {}
+    item_metadata: Dict[str, Dict[str, str]] = {}
 
-    for document in newsgroups_train.data:
+    for doc_id, document in enumerate(newsgroups_train.data):
         tokens = tokenizer(document)
         sequence = []
         for word in tokens:
             if word in dictionary.token2id:
                 sequence.append(word)
+                item_metadata[word] = {}
         if len(sequence) <= min_seq_length:
             continue
-        raw_sequences.append(sequence)
+        raw_sequences[str(doc_id)] = sequence
         if len(raw_sequences) == max_data_size:
             break
-    return raw_sequences, None
+    return raw_sequences, item_metadata
