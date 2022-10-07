@@ -41,20 +41,21 @@ def main() -> None:
         return dataset
 
     def setup_config(args: Namespace) -> Tuple[TrainerConfig, ModelConfig]:
-        trainer_config = TrainerConfig()
-        trainer_config.model_name = "attentive"
-        trainer_config.epochs = args.epochs
-        trainer_config.batch_size = args.batch_size
-        trainer_config.load_model = args.load_model
-        trainer_config.verbose = args.verbose
-        trainer_config.model_path = None
-
-        model_config = ModelConfig()
-        model_config.d_model = args.d_model
-        model_config.window_size = 8
-        model_config.negative_sample_size = 5
-        model_config.lr = args.lr
-        model_config.use_learnable_embedding = False
+        trainer_config = TrainerConfig(
+            model_name="attentive",
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            load_model=args.load_model,
+            verbose=args.verbose,
+            model_path=None,
+        )
+        model_config = ModelConfig(
+            d_model=args.d_model,
+            window_size=8,
+            negative_sample_size=5,
+            lr=args.lr,
+            use_learnable_embedding=False,
+        )
         return trainer_config, model_config
 
     args = parse_args()
