@@ -3,7 +3,7 @@ import pickle
 
 from analyst import Analyst
 from config import parse_args, setup_config
-from data import SequenceDataset, create_20newsgroup_data, create_hm_data  # noqa
+from data import SequenceDataset, create_hm_data
 
 
 def main() -> None:
@@ -22,7 +22,7 @@ def main() -> None:
                 item_metadata=item_metadata,
                 exclude_metadata_columns=["prod_name"],
             )
-            with open(dataset_path, "wb") as f:  # type: ignore
+            with open(dataset_path, "wb") as f:
                 pickle.dump(dataset, f)
         print("end loading dataset")
         return dataset
