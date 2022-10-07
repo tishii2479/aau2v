@@ -56,7 +56,7 @@ def setup_config(args: Namespace) -> Tuple[TrainerConfig, ModelConfig]:
 def default_config() -> Tuple[TrainerConfig, ModelConfig]:
     trainer_config = TrainerConfig(
         model_name="attentive",
-        epochs=3,
+        epochs=2,
         batch_size=10,
         load_model=False,
         verbose=False,
