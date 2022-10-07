@@ -34,3 +34,8 @@ jobs:
 
       - name: Run Unittest
         run: poetry run python3 -m unittest discover tests
+
+      - name: Run Lint
+        run: |
+          poetry run flake8 . --ignore=E203,W503 --max-line-length=88 --show-source --statistics
+          poetry run mypy . --follow-imports=silent --ignore-missing-imports --show-column-numbers --no-pretty --warn-return-any --no-implicit-optional --disallow-untyped-calls --disallow-untyped-defs --allow-redefinition
