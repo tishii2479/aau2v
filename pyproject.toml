@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "my-doc2vec"
+version = "0.1.0"
+description = ""
+authors = ["Tatsuya Ishii <tishii2479@gmail.com>"]
+readme = "README.md"
+packages = [{include = "my_doc2vec"}]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12"
+sklearn = "^0.0"
+scipy = "=1.9.1"
+matplotlib = "=3.6.0"
+torch = "=1.12.1"
+gensim = "=4.2.0"
+pandas = "=1.5.0"
+tqdm = "=4.64.1"
+torchtext = "^0.13.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
