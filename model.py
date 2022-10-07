@@ -67,6 +67,8 @@ class AttentiveModel(PyTorchModel):
         negative_sample_size: int = 30,
         max_sequence_length: int = 1000,
         dropout: float = 0.1,
+        add_user_embedding: bool = True,
+        add_positional_encoding: bool = False,
     ) -> None:
         super().__init__()
         self.d_model = d_model
@@ -74,6 +76,8 @@ class AttentiveModel(PyTorchModel):
         self.embedding_seq = nn.Embedding(num_seq, d_model)
         self.embedding_item = nn.Embedding(num_item, d_model)
         self.embedding_meta = nn.Embedding(num_meta, d_model)
+        self.add_user_embedding = add_user_embedding
+        self.add_positional_encoding = add_positional_encoding
 
         self.positional_encoding = PositionalEncoding(
             d_model, max_sequence_length, dropout
@@ -108,6 +112,7 @@ class AttentiveModel(PyTorchModel):
             shape: (batch_size, window_size, num_meta_types)
         """
         num_meta_types = meta_indicies.size(2)
+        window_size = item_indicies.size(1)
 
         h_seq = self.embedding_seq.forward(seq_index)
         h_items = self.embedding_item.forward(item_indicies)
@@ -116,13 +121,18 @@ class AttentiveModel(PyTorchModel):
         # take mean
         h_items /= num_meta_types + 1
 
-        h_items = self.positional_encoding.forward(h_items)
+        if self.add_positional_encoding:
+            h_items = self.positional_encoding.forward(h_items)
 
         Q = torch.reshape(self.W_q(h_seq), (-1, 1, self.d_model))
         K = self.W_k(h_items)
         V = h_items
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
-        v = (c + h_seq) / 2
+
+        if self.add_user_embedding:
+            v = (c * window_size + h_seq) / (window_size + 1)
+        else:
+            v = c
 
         loss = self.output.forward(v, target_index)
         return loss
