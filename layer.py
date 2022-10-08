@@ -1,10 +1,9 @@
 import collections
 import math
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
 
 
@@ -75,7 +74,9 @@ class NegativeSampling(nn.Module):
         self.sampler = UnigramSampler(sequences, power)
         self.embedding = EmbeddingDot(d_model, num_item)
 
-    def forward(self, h: Tensor, target_index: Tensor) -> Tensor:
+    def forward(
+        self, h: Tensor, target_index: Tensor
+    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         r"""
         Args:
             h size of (batch_size, d_model)
@@ -86,12 +87,11 @@ class NegativeSampling(nn.Module):
         h = torch.reshape(h, (batch_size, 1, self.d_model))
 
         # positive
-        out = torch.sigmoid(
+        pos_out = torch.sigmoid(
             self.embedding.forward(h, torch.reshape(target_index, (batch_size, 1)))
         )
-        label = torch.ones(batch_size, 1)
-        out = torch.reshape(out, (batch_size, 1))
-        positive_loss = F.binary_cross_entropy(out, label)
+        pos_out = torch.reshape(pos_out, (batch_size, 1))
+        pos_label = torch.ones(batch_size, 1)
 
         # negative
         # (batch_size, negative_sample_size)
@@ -100,13 +100,11 @@ class NegativeSampling(nn.Module):
             dtype=torch.long,
         )
 
-        out = torch.sigmoid(self.embedding.forward(h, negative_sample))
-        label = torch.zeros(batch_size, self.negative_sample_size)
-        out = torch.reshape(out, (batch_size, self.negative_sample_size))
-        negative_loss = F.binary_cross_entropy(out, label)
+        neg_out = torch.sigmoid(self.embedding.forward(h, negative_sample))
+        neg_out = torch.reshape(neg_out, (batch_size, self.negative_sample_size))
+        neg_label = torch.zeros(batch_size, self.negative_sample_size)
 
-        loss = (positive_loss + negative_loss) / 2
-        return loss
+        return pos_out, pos_label, neg_out, neg_label
 
 
 class PositionalEncoding(nn.Module):

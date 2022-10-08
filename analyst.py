@@ -159,6 +159,11 @@ class Analyst:
         for weight, name in sorted(item_weights)[::-1]:
             print(f"{weight.item():.4f}", self.dataset.item_metadata[name])
 
+    def prediction_accuracy(
+        self,
+    ) -> float:
+        return self.trainer.eval()
+
     @property
     def seq_embeddings(self) -> Dict[str, np.ndarray]:
         return self.trainer.seq_embedding

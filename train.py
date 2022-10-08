@@ -29,7 +29,10 @@ def main() -> None:
 
     args = parse_args()
     trainer_config, model_config = setup_config(args)
-    print("config:", trainer_config, model_config)
+    trainer_config.model_path = "weights/model_hm_meta.pt"
+    print("trainer_config:", trainer_config)
+    print("model_config:", model_config)
+
     dataset = load_dataset()
 
     analyst = Analyst(
@@ -37,13 +40,14 @@ def main() -> None:
         trainer_config=trainer_config,
         model_config=model_config,
     )
-    _ = analyst.fit(show_fig=False)
+    analyst.prediction_accuracy()
+    # _ = analyst.fit(show_fig=False)
 
-    analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
-    _ = analyst.calc_coherence(num_cluster=args.num_cluster)
+    # analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
+    # _ = analyst.calc_coherence(num_cluster=args.num_cluster)
 
-    analyst.attention_weights_to_meta(0, "colour_group_name")
-    analyst.attention_weights_to_sequence(0)
+    # analyst.attention_weights_to_meta(0, "colour_group_name")
+    # analyst.attention_weights_to_sequence(0)
 
 
 if __name__ == "__main__":

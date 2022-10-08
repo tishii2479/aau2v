@@ -1,6 +1,6 @@
 import abc
 from math import sqrt
-from typing import List
+from typing import List, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -10,6 +10,16 @@ from layer import NegativeSampling, PositionalEncoding
 
 
 class Model(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def calc_out(
+        self,
+        seq_index: Tensor,
+        item_indicies: Tensor,
+        meta_indicies: Tensor,
+        target_index: Tensor,
+    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        raise NotImplementedError()
+
     @abc.abstractmethod
     @torch.no_grad()  # type: ignore
     def attention_weight_to_meta(
@@ -137,6 +147,23 @@ class AttentiveModel(PyTorchModel):
             type: `int` or `long`
             shape: (batch_size, window_size, num_meta_types)
         """
+        pos_out, pos_label, neg_out, neg_label = self.calc_out(
+            seq_index, item_indicies, meta_indicies, target_index
+        )
+        pos_loss = F.binary_cross_entropy(pos_out, pos_label)
+        neg_loss = F.binary_cross_entropy(neg_out, neg_label)
+
+        loss = (pos_loss + neg_loss) / 2
+
+        return loss
+
+    def calc_out(
+        self,
+        seq_index: Tensor,
+        item_indicies: Tensor,
+        meta_indicies: Tensor,
+        target_index: Tensor,
+    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         num_meta_types = meta_indicies.size(2)
         window_size = item_indicies.size(1)
 
@@ -160,8 +187,7 @@ class AttentiveModel(PyTorchModel):
         else:
             v = c
 
-        loss = self.output.forward(v, target_index)
-        return loss
+        return self.output.forward(v, target_index)
 
     @torch.no_grad()  # type: ignore
     def attention_weight_to_meta(

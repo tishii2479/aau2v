@@ -41,6 +41,18 @@ class Trainer(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
+    def eval(self) -> float:
+        """
+        予測精度を評価する
+
+        Returns:
+            float: 予測精度
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    @torch.no_grad()  # type: ignore
     def attention_weight_to_meta(
         self,
         seq_index: int,
@@ -48,6 +60,8 @@ class Trainer(metaclass=abc.ABCMeta):
     ) -> Tensor:
         raise NotImplementedError()
 
+    @abc.abstractmethod
+    @torch.no_grad()  # type: ignore
     def attention_weight_to_item(
         self, seq_index: int, item_indicies: List[int]
     ) -> Tensor:
@@ -120,6 +134,14 @@ class PyTorchTrainer(Trainer):
                     negative_sample_size=model_config.negative_sample_size,
                 )
 
+        if (
+            self.trainer_config.load_model
+            and self.trainer_config.model_path is not None
+        ):
+            print(f"load_state_dict from: {self.trainer_config.model_path}")
+            loaded = torch.load(self.trainer_config.model_path)  # type: ignore
+            self.model.load_state_dict(loaded)
+
         self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
 
     def _pretrain_embeddings(
@@ -182,6 +204,40 @@ class PyTorchTrainer(Trainer):
 
         return losses
 
+    @torch.no_grad()
+    def eval(self) -> float:
+        self.model.eval()
+        pos_outputs: List[float] = []
+        neg_outputs: List[float] = []
+        for i, data in enumerate(tqdm.tqdm(self.data_loader)):
+            seq_index, item_indicies, meta_indicies, target_index = data
+
+            pos_out, pos_label, neg_out, neg_label = self.model.calc_out(
+                seq_index, item_indicies, meta_indicies, target_index
+            )
+            for e in pos_out.reshape(-1):
+                pos_outputs.append(e.item())
+            for e in neg_out.reshape(-1):
+                neg_outputs.append(e.item())
+
+        import matplotlib.pyplot as plt
+
+        plt.hist(pos_outputs)
+        plt.show()
+        plt.hist(neg_outputs)
+        plt.show()
+        return 0
+
+    def attention_weight_to_item(
+        self, seq_index: int, item_indicies: List[int]
+    ) -> Tensor:
+        return self.model.attention_weight_to_item(seq_index, item_indicies)
+
+    def attention_weight_to_meta(
+        self, seq_index: int, meta_indicies: List[int]
+    ) -> Tensor:
+        return self.model.attention_weight_to_meta(seq_index, meta_indicies)
+
     @property
     def seq_embedding(self) -> Dict[str, np.ndarray]:
         return {
@@ -205,6 +261,9 @@ class GensimTrainer(Trainer):
         raise NotImplementedError()
 
     def fit(self) -> List[float]:
+        raise NotImplementedError()
+
+    def eval(self) -> float:
         raise NotImplementedError()
 
     @property
