@@ -29,6 +29,7 @@ def main() -> None:
 
     args = parse_args()
     trainer_config, model_config = setup_config(args)
+    print("config:", trainer_config, model_config)
     dataset = load_dataset()
 
     analyst = Analyst(

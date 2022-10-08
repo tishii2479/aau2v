@@ -67,21 +67,47 @@ class AttentiveModel(PyTorchModel):
         negative_sample_size: int = 30,
         max_sequence_length: int = 1000,
         dropout: float = 0.1,
-        add_user_embedding: bool = True,
+        add_seq_embedding: bool = True,
         add_positional_encoding: bool = False,
     ) -> None:
+        """
+        AttentiveModel（提案モデル）のクラス
+
+        Args:
+            num_seq (int):
+                系列の総数
+            num_item (int):
+                要素の総数
+            num_meta (int):
+                要素の補助情報の総数
+            d_model (int):
+                埋め込み表現の次元数
+            sequences (List[List[int]]):
+                変換後の系列データ
+            negative_sample_size (int, optional):
+                ネガティブサンプリングのサンプリング数. Defaults to 30.
+            max_sequence_length (int, optional):
+                系列の最大長. Defaults to 1000.
+            dropout (float, optional):
+                位置エンコーディング時にドロップアウトする比率. Defaults to 0.1.
+            add_seq_embedding (bool, optional):
+                系列の埋め込み表現を予測ベクトルに足すかどうか. Defaults to True.
+            add_positional_encoding (bool, optional):
+                位置エンコーディングを行うかどうか. Defaults to False.
+        """
         super().__init__()
         self.d_model = d_model
 
         self.embedding_seq = nn.Embedding(num_seq, d_model)
         self.embedding_item = nn.Embedding(num_item, d_model)
         self.embedding_meta = nn.Embedding(num_meta, d_model)
-        self.add_user_embedding = add_user_embedding
+        self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
 
-        self.positional_encoding = PositionalEncoding(
-            d_model, max_sequence_length, dropout
-        )
+        if self.add_positional_encoding:
+            self.positional_encoding = PositionalEncoding(
+                d_model, max_sequence_length, dropout
+            )
 
         self.W_q = nn.Linear(d_model, d_model)
         self.W_k = nn.Linear(d_model, d_model)
@@ -129,7 +155,7 @@ class AttentiveModel(PyTorchModel):
         V = h_items
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
 
-        if self.add_user_embedding:
+        if self.add_seq_embedding:
             v = (c * window_size + h_seq) / (window_size + 1)
         else:
             v = c
