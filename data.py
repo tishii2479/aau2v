@@ -114,10 +114,6 @@ class SequenceDatasetManager:
         if self.test_dataset is not None:
             self.sequences += self.test_dataset.sequences
 
-    @property
-    def has_test_dataset(self) -> bool:
-        return self.test_dataset is not None
-
 
 class SequenceDataset(Dataset):
     def __init__(
@@ -147,6 +143,10 @@ class SequenceDataset(Dataset):
                     "品詞": "名詞",
                     "長さ": 1
                 }
+            item_le (preprocessing.LabelEncoder):
+                要素の名前とindexを対応づけるLabelEncoder
+            meta_le (preprocessing.LabelEncoder):
+                補助情報の値とindexを対応づけるLabelEncoder
             seq_metadata (Optional[Dict[str, MetaData]], optional):
                 系列の補助情報の辞書
                 系列: {
@@ -269,6 +269,7 @@ def to_sequential_data(
     return data
 
 
+# deprecated
 def create_toydata(num_topic: int, data_size: int) -> List[List[str]]:
     documents = []
     words = []
@@ -296,6 +297,7 @@ def create_toydata(num_topic: int, data_size: int) -> List[List[str]]:
     return documents
 
 
+# deprecated
 def create_labeled_toydata(
     num_topic: int, data_size: int
 ) -> Tuple[List[List[str]], List[int]]:
@@ -350,6 +352,7 @@ def create_hm_data(
     return raw_sequences, items, test_raw_sequences
 
 
+# deprecated
 def create_20newsgroup_data(
     max_data_size: int = 1000, min_seq_length: int = 50
 ) -> Tuple[Dict[str, List[str]], Dict[str, Dict[str, str]]]:

@@ -8,8 +8,8 @@ class TrainerConfig:
     model_name: str
     epochs: int
     batch_size: int
-    load_model: bool
     verbose: bool
+    load_model: bool
     model_path: Optional[str] = None
 
 
