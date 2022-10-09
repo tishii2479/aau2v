@@ -141,15 +141,24 @@ class AttentiveModel(PyTorchModel):
         target_index: Tensor,
     ) -> Tensor:
         r"""
-        seq_index:
-            type: `int` or `long`
-            shape: (batch_size, )
-        item_indicies:
-            type: `int` or `long`
-            shape: (batch_size, window_size)
-        meta_indicies:
-            type: `int` or `long`
-            shape: (batch_size, window_size, num_meta_types)
+        Args:
+            seq_index (Tensor):
+                学習対象である系列のindex
+                size: (batch_size, )
+            item_indicies (Tensor):
+                予測に用いる直前の要素のindicies
+                size: (batch_size, window_size, )
+            seq_meta_indicies (Tensor):
+                系列の補助情報のindicies
+                size: (batch_size, seq_meta_kinds, )
+            item_meta_indicies (Tensor):
+                要素の補助情報のindicies
+                size: (batch_size, window_size, item_meta_kinds, )
+            target_index (Tensor):
+                size: (batch_size, )
+
+        Returns:
+            loss
         """
         pos_out, pos_label, neg_out, neg_label = self.calc_out(
             seq_index=seq_index,
@@ -174,6 +183,32 @@ class AttentiveModel(PyTorchModel):
         item_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        """
+        正例と負例に対する0~1の（シグモイドを通した）出力をする
+
+        Args:
+            seq_index (Tensor):
+                学習対象である系列のindex
+                size: (batch_size, )
+            item_indicies (Tensor):
+                予測に用いる直前の要素のindicies
+                size: (batch_size, window_size, )
+            seq_meta_indicies (Tensor):
+                系列の補助情報のindicies
+                size: (batch_size, seq_meta_kinds, )
+            item_meta_indicies (Tensor):
+                要素の補助情報のindicies
+                size: (batch_size, window_size, item_meta_kinds, )
+            target_index (Tensor):
+                size: (batch_size, )
+
+        Returns:
+            Tuple[Tensor, Tensor, Tensor, Tensor]:
+                pos_out: (batch_size, ),
+                pos_label: (batch_size, ),
+                neg_out: (batch_size, negative_sample_size),
+                neg_label: (batch_size, negative_sample_size),
+        """
         num_seq_meta_types = seq_meta_indicies.size(1)
         num_item_meta_types = item_meta_indicies.size(2)
         window_size = item_indicies.size(1)

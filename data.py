@@ -25,19 +25,18 @@ class SequenceDatasetManager:
         item_metadata: Optional[Dict[str, MetaData]] = None,
         seq_metadata: Optional[Dict[str, MetaData]] = None,
         test_raw_sequences: Optional[Dict[str, List[str]]] = None,
-        exclude_item_metadata_columns: Optional[List[str]] = None,
         exclude_seq_metadata_columns: Optional[List[str]] = None,
+        exclude_item_metadata_columns: Optional[List[str]] = None,
         window_size: int = 8,
     ) -> None:
-        """
-        訓練データとテストデータを管理するクラス
+        """訓練データとテストデータを管理するクラス
 
         Args:
             train_raw_sequences (Dict[str, List[str]])
                 生の訓練用シーケンシャルデータ
                 系列ID : [要素1, 要素2, ..., 要素n]
                 例: "doc_001", [ "私", "は", "猫" ]
-            item_metadata (Dict[str, MetaData]):
+            item_metadata (Optional[Dict[str, MetaData]], optional):
                 要素の補助情報の辞書
                 要素 : {
                     補助情報ID: 補助情報の値
@@ -46,9 +45,6 @@ class SequenceDatasetManager:
                     "品詞": "名詞",
                     "長さ": 1
                 }
-            test_raw_sequences (Optional[Dict[str, List[str]]], optional):
-                生のテスト用シーケンシャルデータ
-                形式はtrain_raw_sequencesと一緒
                 Defaults to None.
             seq_metadata (Optional[Dict[str, MetaData]], optional):
                 系列の補助情報の辞書
@@ -60,12 +56,19 @@ class SequenceDatasetManager:
                     "単語数": 3
                 }
                 Defaults to None.
-            window_size (int, optional):
-                学習するときに参照する過去の要素の個数.
-                Defaults to 8.
-            exclude_metadata_columns (Optional[List[str]], optional):
-                `item_metadata`の中で補助情報として扱わない列の名前のリスト（例: 単語IDなど）
+            test_raw_sequences (Optional[Dict[str, List[str]]], optional):
+                生のテスト用シーケンシャルデータ
+                形式はtrain_raw_sequencesと一緒
                 Defaults to None.
+            exclude_seq_metadata_columns (Optional[List[str]], optional):
+                `seq_metadata`の中で補助情報として扱わない列の名前のリスト（例: 顧客IDなど）
+                Defaults to None.
+            exclude_item_metadata_columns (Optional[List[str]], optional):
+                `item_metadata`の中で補助情報として扱わない列の名前のリスト（例: 商品IDなど）
+                Defaults to None.
+            window_size (int, optional):
+                学習するときに参照する過去の要素の個数
+                Defaults to 8.
         """
         if test_raw_sequences is not None:
             self.raw_sequences = ChainMap(train_raw_sequences, test_raw_sequences)
@@ -105,7 +108,8 @@ class SequenceDatasetManager:
             seq_meta_le=self.seq_meta_le,
             item_meta_le=self.item_meta_le,
             window_size=window_size,
-            exclude_metadata_columns=exclude_item_metadata_columns,
+            exclude_seq_metadata_columns=exclude_seq_metadata_columns,
+            exclude_item_metadata_columns=exclude_item_metadata_columns,
         )
         if test_raw_sequences is not None:
             self.test_dataset: Optional[SequenceDataset] = SequenceDataset(
@@ -117,7 +121,8 @@ class SequenceDatasetManager:
                 seq_meta_le=self.seq_meta_le,
                 item_meta_le=self.item_meta_le,
                 window_size=window_size,
-                exclude_metadata_columns=exclude_item_metadata_columns,
+                exclude_seq_metadata_columns=exclude_seq_metadata_columns,
+                exclude_item_metadata_columns=exclude_item_metadata_columns,
             )
         else:
             self.test_dataset = None
@@ -138,7 +143,8 @@ class SequenceDataset(Dataset):
         seq_meta_le: preprocessing.LabelEncoder,
         item_meta_le: preprocessing.LabelEncoder,
         window_size: int = 8,
-        exclude_metadata_columns: Optional[List[str]] = None,
+        exclude_seq_metadata_columns: Optional[List[str]] = None,
+        exclude_item_metadata_columns: Optional[List[str]] = None,
     ) -> None:
         """
         補助情報を含んだシーケンシャルのデータを保持するクラス
@@ -157,19 +163,22 @@ class SequenceDataset(Dataset):
                     "品詞": "名詞",
                     "長さ": 1
                 }
-            item_le (preprocessing.LabelEncoder):
-                要素の名前とindexを対応づけるLabelEncoder
-            meta_le (preprocessing.LabelEncoder):
-                補助情報の値とindexを対応づけるLabelEncoder
-            seq_metadata (Optional[Dict[str, MetaData]], optional):
+            seq_metadata (Dict[str, MetaData]):
                 系列の補助情報の辞書
-                系列: {
+                系列名: {
                     補助情報ID: 補助情報の値
                 }
-                例: "doc_001" : {
-                    "ジャンル": 動物,
-                    "単語数": 3
+                例: "doc_1" : {
+                    "ジャンル": "スポーツ",
                 }
+            seq_le (preprocessing.LabelEncoder):
+                系列の名前とindexを対応づけるLabelEncoder
+            item_le (preprocessing.LabelEncoder):
+                要素の名前とindexを対応づけるLabelEncoder
+            seq_meta_le (preprocessing.LabelEncoder):
+                系列の補助情報の値とindexを対応づけるLabelEncoder
+            item_meta_le (preprocessing.LabelEncoder):
+                要素の補助情報の値とindexを対応づけるLabelEncoder
             window_size (int, optional):
                 学習するときに参照する過去の要素の個数.
                 Defaults to 8.
@@ -188,7 +197,8 @@ class SequenceDataset(Dataset):
             seq_meta_le=seq_meta_le,
             item_meta_le=item_meta_le,
             window_size=window_size,
-            exclude_metadata_columns=exclude_metadata_columns,
+            exclude_seq_metadata_columns=exclude_seq_metadata_columns,
+            exclude_item_metadata_columns=exclude_item_metadata_columns,
         )
 
     def __len__(self) -> int:
@@ -254,8 +264,17 @@ def to_sequential_data(
     item_meta_le: preprocessing.LabelEncoder,
     seq_meta_le: preprocessing.LabelEncoder,
     window_size: int,
-    exclude_metadata_columns: Optional[List[str]] = None,
+    exclude_seq_metadata_columns: Optional[List[str]] = None,
+    exclude_item_metadata_columns: Optional[List[str]] = None,
 ) -> Tuple[List[List[int]], List[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]]]:
+    """
+    シーケンシャルデータを学習データに変換する
+
+    Returns:
+        Tuple[List[List[int]], List[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]]]:
+            (sequences, data)
+    """
+
     def get_item_meta_indicies(item_ids: List[int]) -> List[List[int]]:
         item_names = item_le.inverse_transform(item_ids)
         item_meta_indices: List[List[int]] = []
@@ -266,8 +285,8 @@ def to_sequential_data(
             item_meta: List[str] = []
             for meta_name, meta_value in item_metadata[item_name].items():
                 if (
-                    exclude_metadata_columns is not None
-                    and meta_name in exclude_metadata_columns
+                    exclude_item_metadata_columns is not None
+                    and meta_name in exclude_item_metadata_columns
                 ):
                     continue
                 item_meta.append(to_full_meta_value(meta_name, str(meta_value)))
@@ -286,6 +305,7 @@ def to_sequential_data(
     sequences = []
     data = []
 
+    # TODO: parallelize
     print("to_sequential_data start")
     for seq_name, raw_sequence in tqdm.tqdm(raw_sequences.items()):
         sequence = item_le.transform(raw_sequence)
