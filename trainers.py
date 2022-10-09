@@ -134,7 +134,8 @@ class PyTorchTrainer(Trainer):
                 self.model = AttentiveModel(
                     num_seq=self.dataset_manager.num_seq,
                     num_item=self.dataset_manager.num_item,
-                    num_meta=self.dataset_manager.num_meta,
+                    num_seq_meta=dataset_manager.num_seq_meta,
+                    num_item_meta=self.dataset_manager.num_item_meta,
                     d_model=model_config.d_model,
                     sequences=self.dataset_manager.sequences,
                     negative_sample_size=model_config.negative_sample_size,
@@ -183,10 +184,20 @@ class PyTorchTrainer(Trainer):
         for epoch in range(self.trainer_config.epochs):
             total_loss = 0.0
             for i, data in enumerate(tqdm.tqdm(self.train_data_loader)):
-                seq_index, item_indicies, meta_indicies, target_index = data
+                (
+                    seq_index,
+                    item_indicies,
+                    seq_meta_indicies,
+                    item_meta_indicies,
+                    target_index,
+                ) = data
 
                 loss = self.model.forward(
-                    seq_index, item_indicies, meta_indicies, target_index
+                    seq_index=seq_index,
+                    item_indicies=item_indicies,
+                    seq_meta_indicies=seq_meta_indicies,
+                    item_meta_indicies=item_meta_indicies,
+                    target_index=target_index,
                 )
                 self.optimizer.zero_grad()
                 loss.backward()  # type: ignore
@@ -217,10 +228,20 @@ class PyTorchTrainer(Trainer):
         pos_outputs: List[float] = []
         neg_outputs: List[float] = []
         for i, data in enumerate(tqdm.tqdm(self.test_data_loader)):
-            seq_index, item_indicies, meta_indicies, target_index = data
+            (
+                seq_index,
+                item_indicies,
+                item_meta_indicies,
+                seq_meta_indicies,
+                target_index,
+            ) = data
 
             pos_out, pos_label, neg_out, neg_label = self.model.calc_out(
-                seq_index, item_indicies, meta_indicies, target_index
+                seq_index,
+                item_indicies,
+                item_meta_indicies,
+                seq_meta_indicies,
+                target_index,
             )
             for e in pos_out.reshape(-1):
                 pos_outputs.append(e.item())

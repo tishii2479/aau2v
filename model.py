@@ -15,7 +15,8 @@ class Model(metaclass=abc.ABCMeta):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        meta_indicies: Tensor,
+        seq_meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         raise NotImplementedError()
@@ -71,7 +72,8 @@ class AttentiveModel(PyTorchModel):
         self,
         num_seq: int,
         num_item: int,
-        num_meta: int,
+        num_seq_meta: int,
+        num_item_meta: int,
         d_model: int,
         sequences: List[List[int]],
         negative_sample_size: int = 30,
@@ -110,7 +112,8 @@ class AttentiveModel(PyTorchModel):
 
         self.embedding_seq = nn.Embedding(num_seq, d_model)
         self.embedding_item = nn.Embedding(num_item, d_model)
-        self.embedding_meta = nn.Embedding(num_meta, d_model)
+        self.embedding_seq_meta = nn.Embedding(num_seq_meta, d_model)
+        self.embedding_item_meta = nn.Embedding(num_item_meta, d_model)
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
 
@@ -133,7 +136,8 @@ class AttentiveModel(PyTorchModel):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
+        seq_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tensor:
         r"""
@@ -148,12 +152,17 @@ class AttentiveModel(PyTorchModel):
             shape: (batch_size, window_size, num_meta_types)
         """
         pos_out, pos_label, neg_out, neg_label = self.calc_out(
-            seq_index, item_indicies, meta_indicies, target_index
+            seq_index=seq_index,
+            item_indicies=item_indicies,
+            seq_meta_indicies=seq_meta_indicies,
+            item_meta_indicies=item_meta_indicies,
+            target_index=target_index,
         )
         pos_loss = F.binary_cross_entropy(pos_out, pos_label)
         neg_loss = F.binary_cross_entropy(neg_out, neg_label)
 
-        loss = (pos_loss + neg_loss) / 2
+        negative_sample_size = neg_label.size(1)
+        loss = (pos_loss + neg_loss / negative_sample_size) / 2
 
         return loss
 
@@ -161,18 +170,25 @@ class AttentiveModel(PyTorchModel):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        meta_indicies: Tensor,
+        seq_meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
-        num_meta_types = meta_indicies.size(2)
+        num_seq_meta_types = seq_meta_indicies.size(1)
+        num_item_meta_types = item_meta_indicies.size(2)
         window_size = item_indicies.size(1)
 
         h_seq = self.embedding_seq.forward(seq_index)
+        # add meta embedding
+        h_seq += self.embedding_seq_meta.forward(seq_meta_indicies).sum(dim=1)
+        # take mean
+        h_seq /= num_seq_meta_types + 1
+
         h_items = self.embedding_item.forward(item_indicies)
         # add meta embedding
-        h_items += self.embedding_meta.forward(meta_indicies).sum(dim=2)
+        h_items += self.embedding_item_meta.forward(item_meta_indicies).sum(dim=2)
         # take mean
-        h_items /= num_meta_types + 1
+        h_items /= num_item_meta_types + 1
 
         if self.add_positional_encoding:
             h_items = self.positional_encoding.forward(h_items)
@@ -198,7 +214,7 @@ class AttentiveModel(PyTorchModel):
         seq_index = torch.LongTensor([seq_index])
         meta_indicies = torch.LongTensor(meta_indicies)
         h_seq = self.embedding_seq.forward(seq_index)
-        h_meta = self.embedding_meta.forward(meta_indicies)
+        h_meta = self.embedding_item_meta.forward(meta_indicies)
         weight = attention_weight(h_seq, h_meta)
         return weight
 

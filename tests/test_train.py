@@ -11,13 +11,15 @@ class TestTrain(unittest.TestCase):
         (
             train_raw_sequences,
             item_metadata,
+            seq_metadata,
             test_raw_sequences,
         ) = create_20newsgroup_data(max_data_size=10, test_data_size=50)
         dataset_manager = SequenceDatasetManager(
-            train_raw_sequences,
-            item_metadata,
-            test_raw_sequences,
-            exclude_metadata_columns=["prod_name"],
+            train_raw_sequences=train_raw_sequences,
+            item_metadata=item_metadata,
+            seq_metadata=seq_metadata,
+            test_raw_sequences=test_raw_sequences,
+            exclude_item_metadata_columns=["prod_name"],
         )
         analyst = Analyst(
             dataset_manager=dataset_manager,
