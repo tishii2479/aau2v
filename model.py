@@ -153,7 +153,8 @@ class AttentiveModel(PyTorchModel):
         pos_loss = F.binary_cross_entropy(pos_out, pos_label)
         neg_loss = F.binary_cross_entropy(neg_out, neg_label)
 
-        loss = (pos_loss + neg_loss) / 2
+        negative_sample_size = neg_label.size(1)
+        loss = (pos_loss + neg_loss / negative_sample_size) / 2
 
         return loss
 

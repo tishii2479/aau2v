@@ -84,7 +84,7 @@ class Analyst:
         )
 
         for cluster, (top_items, ratios) in enumerate(top_item_infos):
-            print(f"Top items for cluster {cluster} (size {seq_cnt[cluster]}): \n")
+            print(f"Top items for cluster {cluster} (size {seq_cnt[cluster]}):")
             for index, item in enumerate(
                 self.dataset_manager.item_le.inverse_transform(top_items)
             ):
