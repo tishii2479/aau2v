@@ -179,15 +179,8 @@ class SequenceDataset(Dataset):
         """
         self.raw_sequences = raw_sequences
 
-        print("transform sequence start")
-        self.sequences = [
-            item_le.transform(sequence)
-            for sequence in tqdm.tqdm(self.raw_sequences.values())
-        ]
-        print("transform sequence end")
-
-        self.data = to_sequential_data(
-            sequences=self.sequences,
+        self.sequences, self.data = to_sequential_data(
+            raw_sequences=self.raw_sequences,
             item_metadata=item_metadata,
             seq_metadata=seq_metadata,
             seq_le=seq_le,
@@ -253,7 +246,7 @@ def process_metadata(
 
 
 def to_sequential_data(
-    sequences: List[List[int]],
+    raw_sequences: Dict[str, List[str]],
     item_metadata: Dict[str, Dict[str, Any]],
     seq_metadata: Dict[str, Dict[str, Any]],
     seq_le: preprocessing.LabelEncoder,
@@ -262,7 +255,7 @@ def to_sequential_data(
     seq_meta_le: preprocessing.LabelEncoder,
     window_size: int,
     exclude_metadata_columns: Optional[List[str]] = None,
-) -> List[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]]:
+) -> Tuple[List[List[int]], List[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]]]:
     def get_item_meta_indicies(item_ids: List[int]) -> List[List[int]]:
         item_names = item_le.inverse_transform(item_ids)
         item_meta_indices: List[List[int]] = []
@@ -281,9 +274,8 @@ def to_sequential_data(
             item_meta_indices.append(list(item_meta_le.transform(item_meta)))
         return item_meta_indices
 
-    def get_seq_meta_indicies(seq_index: int) -> List[int]:
+    def get_seq_meta_indicies(seq_name: str) -> List[int]:
         seq_meta = []
-        seq_name = seq_le.inverse_transform([seq_index])[0]
         if seq_name not in seq_metadata:
             return []
         for meta_name, meta_value in seq_metadata[seq_name].items():
@@ -291,12 +283,17 @@ def to_sequential_data(
         seq_meta_indicies: List[int] = seq_meta_le.transform(seq_meta)
         return seq_meta_indicies
 
+    sequences = []
     data = []
+
     print("to_sequential_data start")
-    for i, sequence in enumerate(tqdm.tqdm(sequences)):
-        seq_index = torch.tensor(i, dtype=torch.long)
+    for seq_name, raw_sequence in tqdm.tqdm(raw_sequences.items()):
+        sequence = item_le.transform(raw_sequence)
+        sequences.append(sequence)
+
+        seq_index = torch.tensor(seq_le.transform([seq_name])[0], dtype=torch.long)
         seq_meta_indicies = torch.tensor(
-            get_seq_meta_indicies(i),
+            get_seq_meta_indicies(seq_name),
             dtype=torch.long,
         )
         for j in range(len(sequence) - window_size):
@@ -318,7 +315,7 @@ def to_sequential_data(
                 )
             )
     print("to_sequential_data end")
-    return data
+    return sequences, data
 
 
 # deprecated
