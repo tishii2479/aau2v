@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 
 from config import ModelConfig, TrainerConfig
-from data import SequenceDataset
+from data import SequenceDatasetManager
 from trainers import PyTorchTrainer
 from util import (
     calc_cluster_occurence_array,
@@ -21,16 +21,16 @@ from util import (
 class Analyst:
     def __init__(
         self,
-        dataset: SequenceDataset,
+        dataset_manager: SequenceDatasetManager,
         trainer_config: TrainerConfig,
         model_config: ModelConfig,
     ):
-        self.dataset = dataset
+        self.dataset_manager = dataset_manager
         self.trainer_config = trainer_config
         self.model_config = model_config
 
         self.trainer = PyTorchTrainer(
-            dataset=self.dataset,
+            dataset_manager=self.dataset_manager,
             trainer_config=trainer_config,
             model_config=model_config,
         )
@@ -73,8 +73,8 @@ class Analyst:
         cluster_occurence_array, cluster_size = calc_cluster_occurence_array(
             num_cluster=num_cluster,
             cluster_labels=cluster_labels,
-            sequences=self.dataset.sequences,
-            num_item=self.dataset.num_item,
+            sequences=self.dataset_manager.train_dataset.sequences,
+            num_item=self.dataset_manager.num_item,
         )
         top_item_infos = top_cluster_items(
             num_cluster=num_cluster,
@@ -86,7 +86,7 @@ class Analyst:
         for cluster, (top_items, ratios) in enumerate(top_item_infos):
             print(f"Top items for cluster {cluster} (size {seq_cnt[cluster]}): \n")
             for index, item in enumerate(
-                self.dataset.item_le.inverse_transform(top_items)
+                self.dataset_manager.item_le.inverse_transform(top_items)
             ):
                 if item_name_dict is not None:
                     name = item_name_dict[item]
@@ -113,11 +113,12 @@ class Analyst:
         cluster_occurence_array, cluster_size = calc_cluster_occurence_array(
             num_cluster=num_cluster,
             cluster_labels=cluster_labels,
-            sequences=self.dataset.sequences,
-            num_item=self.dataset.num_item,
+            sequences=self.dataset_manager.train_dataset.sequences,
+            num_item=self.dataset_manager.num_item,
         )
         sequence_occurence_array = calc_sequence_occurence_array(
-            sequences=self.dataset.sequences, num_item=self.dataset.num_item
+            sequences=self.dataset_manager.train_dataset.sequences,
+            num_item=self.dataset_manager.num_item,
         )
         top_item_infos = top_cluster_items(
             num_cluster=num_cluster,
@@ -135,9 +136,9 @@ class Analyst:
     def attention_weights_to_meta(
         self, seq_index: int, meta_name: str, num_top_values: int = 5
     ) -> None:
-        meta_values = list(self.dataset.meta_dict[meta_name])
+        meta_values = list(self.dataset_manager.meta_dict[meta_name])
         meta_names = [to_full_meta_value(meta_name, value) for value in meta_values]
-        meta_indicies = self.dataset.meta_le.transform(meta_names)
+        meta_indicies = self.dataset_manager.meta_le.transform(meta_names)
         weight = list(
             self.trainer.attention_weight_to_meta(seq_index, meta_indicies)[0]
         )
@@ -149,15 +150,17 @@ class Analyst:
     def attention_weights_to_sequence(
         self, seq_index: int, num_recent_items: int = 100
     ) -> None:
-        item_indicies = self.dataset.sequences[seq_index][-num_recent_items:]
-        item_names = self.dataset.item_le.inverse_transform(item_indicies)
+        item_indicies = self.dataset_manager.train_dataset.sequences[seq_index][
+            -num_recent_items:
+        ]
+        item_names = self.dataset_manager.item_le.inverse_transform(item_indicies)
         weight = list(
             self.trainer.attention_weight_to_item(seq_index, item_indicies)[0]
         )
         item_weights = [(weight[i], item_names[i]) for i in range(num_recent_items)]
         print(f"item weights of seq: {seq_index}")
         for weight, name in sorted(item_weights)[::-1]:
-            print(f"{weight.item():.4f}", self.dataset.item_metadata[name])
+            print(f"{weight.item():.4f}", self.dataset_manager.item_metadata[name])
 
     def prediction_accuracy(
         self,
