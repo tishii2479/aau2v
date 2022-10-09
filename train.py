@@ -16,13 +16,17 @@ def main() -> None:
                 dataset_manager: SequenceDatasetManager = pickle.load(f)
         else:
             print(f"dataset does not exist at: {dataset_path}, create dataset")
-            train_raw_sequences, item_metadata, test_raw_sequences = create_hm_data(
-                max_data_size=1000, test_data_size=500
-            )
+            (
+                train_raw_sequences,
+                item_metadata,
+                seq_metadata,
+                test_raw_sequences,
+            ) = create_hm_data(max_data_size=1000, test_data_size=500)
             dataset_manager = SequenceDatasetManager(
                 train_raw_sequences=train_raw_sequences,
                 test_raw_sequences=test_raw_sequences,
                 item_metadata=item_metadata,
+                seq_metadata=seq_metadata,
                 exclude_item_metadata_columns=["prod_name"],
             )
             with open(dataset_path, "wb") as f:
