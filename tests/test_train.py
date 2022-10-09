@@ -2,20 +2,25 @@ import unittest
 
 from analyst import Analyst
 from config import default_config
-from data import SequenceDataset, create_20newsgroup_data
+from data import SequenceDatasetManager, create_20newsgroup_data
 
 
 class TestTrain(unittest.TestCase):
     def test_train(self) -> None:
-        raw_sequences, item_metadata = create_20newsgroup_data(
-            max_data_size=100, min_seq_length=50
-        )
         trainer_config, model_config = default_config()
-        dataset = SequenceDataset(
-            raw_sequences=raw_sequences, item_metadata=item_metadata
+        (
+            train_raw_sequences,
+            item_metadata,
+            test_raw_sequences,
+        ) = create_20newsgroup_data(max_data_size=10, test_data_size=50)
+        dataset_manager = SequenceDatasetManager(
+            train_raw_sequences,
+            item_metadata,
+            test_raw_sequences,
+            exclude_metadata_columns=["prod_name"],
         )
         analyst = Analyst(
-            dataset=dataset,
+            dataset_manager=dataset_manager,
             trainer_config=trainer_config,
             model_config=model_config,
         )

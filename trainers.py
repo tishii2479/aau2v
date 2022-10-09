@@ -10,7 +10,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
-from data import SequenceDataset
+from data import SequenceDataset, SequenceDatasetManager
 from model import AttentiveModel, PyTorchModel
 
 
@@ -115,22 +115,28 @@ class PyTorchTrainer(Trainer):
 
     def __init__(
         self,
-        dataset: SequenceDataset,
+        dataset_manager: SequenceDatasetManager,
         trainer_config: TrainerConfig,
         model_config: ModelConfig,
     ) -> None:
-        self.dataset = dataset
-        self.data_loader = DataLoader(dataset, batch_size=trainer_config.batch_size)
+        self.dataset_manager = dataset_manager
+        self.train_data_loader = DataLoader(
+            self.dataset_manager.train_dataset, batch_size=trainer_config.batch_size
+        )
+        if self.dataset_manager.test_dataset is not None:
+            self.test_data_loader = DataLoader(
+                self.dataset_manager.test_dataset, batch_size=trainer_config.batch_size
+            )
         self.trainer_config = trainer_config
 
         match trainer_config.model_name:
             case "attentive":
                 self.model = AttentiveModel(
-                    num_seq=dataset.num_seq,
-                    num_item=dataset.num_item,
-                    num_meta=dataset.num_meta,
+                    num_seq=self.dataset_manager.num_seq,
+                    num_item=self.dataset_manager.num_item,
+                    num_meta=self.dataset_manager.num_meta,
                     d_model=model_config.d_model,
-                    sequences=dataset.sequences,
+                    sequences=self.dataset_manager.sequences,
                     negative_sample_size=model_config.negative_sample_size,
                 )
 
@@ -147,6 +153,7 @@ class PyTorchTrainer(Trainer):
     def _pretrain_embeddings(
         self, dataset: SequenceDataset, d_model: int, items: List[str]
     ) -> Tuple[Tensor, Tensor]:
+        # TODO: オプションを付ける
         print("word2vec start.")
         word2vec_model = word2vec.Word2Vec(
             sentences=dataset.raw_sequences, vector_size=d_model, min_count=1
@@ -161,7 +168,7 @@ class PyTorchTrainer(Trainer):
         # TODO: refactor
         seq_embedding_list = []
         for sequence in tqdm.tqdm(dataset.raw_sequences):
-            a = item_embeddings[dataset.item_le.transform(sequence)]
+            a = item_embeddings[self.dataset_manager.item_le.transform(sequence)]
             seq_embedding_list.append(list(a.mean(dim=0)))
 
         seq_embeddings = torch.Tensor(seq_embedding_list)
@@ -175,7 +182,7 @@ class PyTorchTrainer(Trainer):
         print("train start")
         for epoch in range(self.trainer_config.epochs):
             total_loss = 0.0
-            for i, data in enumerate(tqdm.tqdm(self.data_loader)):
+            for i, data in enumerate(tqdm.tqdm(self.train_data_loader)):
                 seq_index, item_indicies, meta_indicies, target_index = data
 
                 loss = self.model.forward(
@@ -186,10 +193,10 @@ class PyTorchTrainer(Trainer):
                 self.optimizer.step()
 
                 if self.trainer_config.verbose:
-                    print(i, len(self.data_loader), loss.item())
+                    print(i, len(self.train_data_loader), loss.item())
                 total_loss += loss.item()
 
-            total_loss /= len(self.data_loader)
+            total_loss /= len(self.train_data_loader)
             if epoch % 1 == 0:
                 print(epoch, total_loss)
 
@@ -209,7 +216,7 @@ class PyTorchTrainer(Trainer):
         self.model.eval()
         pos_outputs: List[float] = []
         neg_outputs: List[float] = []
-        for i, data in enumerate(tqdm.tqdm(self.data_loader)):
+        for i, data in enumerate(tqdm.tqdm(self.test_data_loader)):
             seq_index, item_indicies, meta_indicies, target_index = data
 
             pos_out, pos_label, neg_out, neg_label = self.model.calc_out(
@@ -243,7 +250,7 @@ class PyTorchTrainer(Trainer):
         return {
             seq_name: h_seq.detach().numpy()
             for seq_name, h_seq in zip(
-                self.dataset.raw_sequences.keys(), self.model.seq_embedding
+                self.dataset_manager.raw_sequences.keys(), self.model.seq_embedding
             )
         }
 
