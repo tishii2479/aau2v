@@ -134,7 +134,7 @@ class PyTorchTrainer(Trainer):
                 self.model = AttentiveModel(
                     num_seq=self.dataset_manager.num_seq,
                     num_item=self.dataset_manager.num_item,
-                    num_meta=self.dataset_manager.num_meta,
+                    num_meta=self.dataset_manager.num_item_meta,
                     d_model=model_config.d_model,
                     sequences=self.dataset_manager.sequences,
                     negative_sample_size=model_config.negative_sample_size,

@@ -136,9 +136,9 @@ class Analyst:
     def attention_weights_to_meta(
         self, seq_index: int, meta_name: str, num_top_values: int = 5
     ) -> None:
-        meta_values = list(self.dataset_manager.meta_dict[meta_name])
+        meta_values = list(self.dataset_manager.item_meta_dict[meta_name])
         meta_names = [to_full_meta_value(meta_name, value) for value in meta_values]
-        meta_indicies = self.dataset_manager.meta_le.transform(meta_names)
+        meta_indicies = self.dataset_manager.item_meta_le.transform(meta_names)
         weight = list(
             self.trainer.attention_weight_to_meta(seq_index, meta_indicies)[0]
         )

@@ -1,6 +1,6 @@
 import os
 from math import log
-from typing import Any, List, Optional, Tuple
+from typing import Any, ChainMap, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -149,3 +149,13 @@ def calc_coherence(
         coherence_sum += coherence
     coherence_sum /= len(top_item_infos)
     return coherence_sum
+
+
+def get_all_items(
+    raw_sequences: Union[Dict[str, List[str]], ChainMap[str, List[str]]]
+) -> List[str]:
+    st = set()
+    for seq in raw_sequences.values():
+        for e in seq:
+            st.add(e)
+    return list(st)

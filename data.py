@@ -11,7 +11,7 @@ from torch import Tensor
 from torch.utils.data import Dataset
 from torchtext.data import get_tokenizer
 
-from util import to_full_meta_value
+from util import get_all_items, to_full_meta_value
 
 MetaData = Dict[str, Any]
 Item = Tuple[str, MetaData]
@@ -22,11 +22,12 @@ class SequenceDatasetManager:
     def __init__(
         self,
         train_raw_sequences: Dict[str, List[str]],
-        item_metadata: Dict[str, MetaData],
-        test_raw_sequences: Optional[Dict[str, List[str]]] = None,
-        seq_metadata: Optional[Dict[str, MetaData]] = None,
         window_size: int = 8,
-        exclude_metadata_columns: Optional[List[str]] = None,
+        item_metadata: Optional[Dict[str, MetaData]] = None,
+        seq_metadata: Optional[Dict[str, MetaData]] = None,
+        test_raw_sequences: Optional[Dict[str, List[str]]] = None,
+        exclude_item_metadata_columns: Optional[List[str]] = None,
+        exclude_seq_metadata_columns: Optional[List[str]] = None,
     ) -> None:
         """
         訓練データとテストデータを管理するクラス
@@ -66,49 +67,55 @@ class SequenceDatasetManager:
                 `item_metadata`の中で補助情報として扱わない列の名前のリスト（例: 単語IDなど）
                 Defaults to None.
         """
-        self.item_le = preprocessing.LabelEncoder().fit(list(item_metadata.keys()))
-        self.meta_le, self.meta_dict = process_metadata(
-            item_metadata, exclude_metadata_columns=exclude_metadata_columns
-        )
-        self.item_metadata = item_metadata
-
-        self.num_seq = len(train_raw_sequences)
-        if test_raw_sequences is not None:
-            self.num_seq += len(test_raw_sequences)
-        self.num_item = len(item_metadata)
-        self.num_meta = len(self.meta_le.classes_)
-
-        print(
-            f"num_seq: {self.num_seq}, num_item: {self.num_item}, "
-            + f"num_meta: {self.num_meta}"
-        )
-
-        self.train_dataset = SequenceDataset(
-            train_raw_sequences,
-            item_metadata,
-            self.item_le,
-            self.meta_le,
-            seq_metadata,
-            window_size,
-            exclude_metadata_columns,
-        )
-        if test_raw_sequences is not None:
-            self.test_dataset: Optional[SequenceDataset] = SequenceDataset(
-                test_raw_sequences,
-                item_metadata,
-                self.item_le,
-                self.meta_le,
-                seq_metadata,
-                window_size,
-                exclude_metadata_columns,
-            )
-        else:
-            self.test_dataset = None
-
         if test_raw_sequences is not None:
             self.raw_sequences = ChainMap(train_raw_sequences, test_raw_sequences)
         else:
             self.raw_sequences = ChainMap(train_raw_sequences)
+
+        self.item_metadata = item_metadata if item_metadata is not None else {}
+        self.seq_metadata = seq_metadata if seq_metadata is not None else {}
+
+        items = get_all_items(self.raw_sequences)
+        self.item_le = preprocessing.LabelEncoder().fit(items)
+        self.item_meta_le, self.item_meta_dict = process_metadata(
+            self.item_metadata, exclude_metadata_columns=exclude_item_metadata_columns
+        )
+        self.seq_meta_le, self.seq_meta_dict = process_metadata(
+            self.seq_metadata, exclude_metadata_columns=exclude_seq_metadata_columns
+        )
+
+        self.num_seq = len(self.raw_sequences)
+        self.num_item = len(items)
+        self.num_item_meta = len(self.item_meta_le.classes_)
+        self.num_seq_meta = len(self.seq_meta_le.classes_)
+
+        print(
+            f"num_seq: {self.num_seq}, num_item: {self.num_item}, "
+            + f"num_item_meta: {self.num_item_meta}, "
+            + f"num_seq_meta: {self.num_seq_meta}"
+        )
+
+        self.train_dataset = SequenceDataset(
+            train_raw_sequences,
+            self.item_metadata,
+            self.item_le,
+            self.item_meta_le,
+            seq_metadata,
+            window_size,
+            exclude_item_metadata_columns,
+        )
+        if test_raw_sequences is not None:
+            self.test_dataset: Optional[SequenceDataset] = SequenceDataset(
+                test_raw_sequences,
+                self.item_metadata,
+                self.item_le,
+                self.item_meta_le,
+                seq_metadata,
+                window_size,
+                exclude_item_metadata_columns,
+            )
+        else:
+            self.test_dataset = None
 
         self.sequences = self.train_dataset.sequences
         if self.test_dataset is not None:
