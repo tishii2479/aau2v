@@ -352,10 +352,13 @@ def create_hm_data(
     return raw_sequences, items, test_raw_sequences
 
 
-# deprecated
 def create_20newsgroup_data(
-    max_data_size: int = 1000, min_seq_length: int = 50
-) -> Tuple[Dict[str, List[str]], Dict[str, Dict[str, str]]]:
+    max_data_size: int = 1000,
+    min_seq_length: int = 50,
+    test_data_size: int = 500,
+) -> Tuple[
+    Dict[str, List[str]], Dict[str, Dict[str, str]], Optional[Dict[str, List[str]]]
+]:
     newsgroups_train = datasets.fetch_20newsgroups(
         data_home="data",
         subset="train",
@@ -370,7 +373,8 @@ def create_20newsgroup_data(
     )
     dictionary.filter_extremes(no_below=10, no_above=0.1)
 
-    raw_sequences = {}
+    train_raw_sequences: Dict[str, List[str]] = {}
+    test_raw_sequences: Dict[str, List[str]] = {}
     item_metadata: Dict[str, Dict[str, str]] = {}
 
     for doc_id, document in enumerate(newsgroups_train.data):
@@ -382,7 +386,14 @@ def create_20newsgroup_data(
                 item_metadata[word] = {}
         if len(sequence) <= min_seq_length:
             continue
-        raw_sequences[str(doc_id)] = sequence
-        if len(raw_sequences) == max_data_size:
+        if len(train_raw_sequences) < max_data_size:
+            train_raw_sequences[str(doc_id)] = sequence
+        elif (
+            len(train_raw_sequences) + len(test_raw_sequences)
+            < max_data_size + test_data_size
+        ):
+            test_raw_sequences[str(doc_id)] = sequence
+        else:
             break
-    return raw_sequences, item_metadata
+
+    return train_raw_sequences, item_metadata, test_raw_sequences
