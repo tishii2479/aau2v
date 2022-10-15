@@ -41,8 +41,10 @@ class Analyst:
             visualize_loss(losses)
         return losses
 
-    def cluster_sequences(self, num_cluster: int, show_fig: bool = True) -> List[int]:
-        """Cluster sequences using K-means
+    def cluster_embeddings(
+        self, num_cluster: int, show_fig: bool = True, target: str = "sequence"
+    ) -> List[int]:
+        """Cluster using K-means
 
         Args:
             num_cluster (int): number of clusters
@@ -52,8 +54,19 @@ class Analyst:
             List[int]: cluster labels
         """
         kmeans = KMeans(n_clusters=num_cluster)
-        h_seq = np.array(list(self.seq_embeddings.values()))
+        match target:
+            case "sequence":
+                embeddings = self.seq_embeddings.values()
+            case "item":
+                embeddings = self.item_embeddings.values()
+            case _:
+                print(f"Invalid target: {target}")
+                assert False
+
+        h_seq = np.array(list(embeddings))
+        print(f"Start k-means: {h_seq.shape}")
         kmeans.fit(h_seq)
+        print("End k-means")
         cluster_labels: List[int] = kmeans.labels_
 
         if show_fig:
@@ -68,7 +81,9 @@ class Analyst:
         item_name_dict: Optional[Dict[str, str]] = None,
         show_fig: bool = False,
     ) -> None:
-        cluster_labels = self.cluster_sequences(num_cluster, show_fig=show_fig)
+        cluster_labels = self.cluster_embeddings(
+            num_cluster, show_fig=show_fig, target="sequence"
+        )
         seq_cnt = collections.Counter(cluster_labels)
         cluster_occurence_array, cluster_size = calc_cluster_occurence_array(
             num_cluster=num_cluster,
@@ -109,7 +124,9 @@ class Analyst:
             float: coherence
         """
         # TODO: refactor
-        cluster_labels = self.cluster_sequences(num_cluster, show_fig=show_fig)
+        cluster_labels = self.cluster_embeddings(
+            num_cluster, show_fig=show_fig, target="sequence"
+        )
         cluster_occurence_array, cluster_size = calc_cluster_occurence_array(
             num_cluster=num_cluster,
             cluster_labels=cluster_labels,
@@ -190,10 +207,10 @@ class Analyst:
 
         similar_items.sort()
 
-        print(f"Similar items of {self.dataset_manager.item_metadata[item_name]}")
+        print(f"{item_name} {self.dataset_manager.item_metadata[item_name]}")
         for distance, item_name in similar_items[:num_items]:
             item = self.dataset_manager.item_metadata[item_name]
-            print(f"Item: {item['prod_name']}, Distance: {distance}")
+            print(f"Item: {item_name} {item['prod_name']}, Distance: {distance}")
 
         return similar_items[:num_items]
 

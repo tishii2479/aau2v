@@ -48,13 +48,15 @@ def main() -> None:
         model_config=model_config,
     )
     _ = analyst.fit(show_fig=False)
-    analyst.prediction_accuracy()
+    # analyst.prediction_accuracy()
 
-    analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
-    _ = analyst.calc_coherence(num_cluster=args.num_cluster)
+    analyst.cluster_embeddings(10)
 
-    analyst.attention_weights_to_meta(0, "colour_group_name")
-    analyst.attention_weights_to_sequence(0)
+    # analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
+    # _ = analyst.calc_coherence(num_cluster=args.num_cluster)
+
+    # analyst.attention_weights_to_meta(0, "colour_group_name")
+    # analyst.attention_weights_to_sequence(0)
 
     analyst.similar_items(0)
 
