@@ -1,5 +1,5 @@
 import collections
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -166,6 +166,36 @@ class Analyst:
         self,
     ) -> float:
         return self.trainer.eval()
+
+    def similar_items(
+        self, item_index: int, num_items: int = 10
+    ) -> List[Tuple[float, str]]:
+        item_name = self.dataset_manager.item_le.inverse_transform([item_index])[0]
+
+        item_embedding = self.item_embeddings
+        similar_items: List[Tuple[float, str]] = []
+
+        h = item_embedding[item_name]
+
+        item_names = self.dataset_manager.item_le.inverse_transform(
+            list(range(self.dataset_manager.num_item))
+        )
+
+        for i, item_name in enumerate(item_names):
+            if i == item_index:
+                continue
+            h_item = item_embedding[item_name]
+            distance = np.sum((h - h_item) ** 2)
+            similar_items.append((distance, item_name))
+
+        similar_items.sort()
+
+        print(f"Similar items of {self.dataset_manager.item_metadata[item_name]}")
+        for distance, item_name in similar_items[:num_items]:
+            item = self.dataset_manager.item_metadata[item_name]
+            print(f"Item: {item['prod_name']}, Distance: {distance}")
+
+        return similar_items[:num_items]
 
     @property
     def seq_embeddings(self) -> Dict[str, np.ndarray]:

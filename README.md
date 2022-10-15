@@ -12,3 +12,4 @@ python3 train.py --epochs=5
 - 位置エンコーディングを試す
 - User2Vecを動かす
 - コメントを日本語にする
+- load_modelのログの追加

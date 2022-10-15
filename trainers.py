@@ -97,9 +97,23 @@ class Trainer(metaclass=abc.ABCMeta):
 
     @abc.abstractproperty
     @property
-    def meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
+    def item_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
         """
-        Metadata embedding
+        Item Metadata embedding
+
+        Raises:
+            NotImplementedError: if not implemented
+
+        Returns:
+            Dict[str, Dict[str, np.ndarray]]: (meta_name, (meta_value, embedding))
+        """
+        raise NotImplementedError()
+
+    @abc.abstractproperty
+    @property
+    def seq_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
+        """
+        Sequence Metadata embedding
 
         Raises:
             NotImplementedError: if not implemented
@@ -271,16 +285,25 @@ class PyTorchTrainer(Trainer):
         return {
             seq_name: h_seq.detach().numpy()
             for seq_name, h_seq in zip(
-                self.dataset_manager.raw_sequences.keys(), self.model.seq_embedding
+                self.dataset_manager.seq_le.classes_, self.model.seq_embedding
             )
         }
 
     @property
     def item_embedding(self) -> Dict[str, np.ndarray]:
+        return {
+            item_name: h_item.detach().numpy()
+            for item_name, h_item in zip(
+                self.dataset_manager.item_le.classes_, self.model.item_embedding
+            )
+        }
+
+    @property
+    def seq_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
         raise NotImplementedError()
 
     @property
-    def meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
+    def item_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
         raise NotImplementedError()
 
 
@@ -303,5 +326,9 @@ class GensimTrainer(Trainer):
         raise NotImplementedError()
 
     @property
-    def meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
+    def seq_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
+        raise NotImplementedError()
+
+    @property
+    def item_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
         raise NotImplementedError()

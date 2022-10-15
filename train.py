@@ -56,6 +56,8 @@ def main() -> None:
     analyst.attention_weights_to_meta(0, "colour_group_name")
     analyst.attention_weights_to_sequence(0)
 
+    analyst.similar_items(0)
+
 
 if __name__ == "__main__":
     main()
