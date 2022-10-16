@@ -69,9 +69,9 @@ class Analyst:
         kmeans = KMeans(n_clusters=num_cluster)
         match target:
             case "sequence":
-                embeddings = self.seq_embeddings.values()
+                embeddings = self.trainer.seq_embedding.values()
             case "item":
-                embeddings = self.item_embeddings.values()
+                embeddings = self.trainer.item_embedding.values()
             case _:
                 print(f"Invalid target: {target}")
                 assert False
@@ -202,7 +202,7 @@ class Analyst:
     ) -> List[Tuple[float, str]]:
         item_name = self.dataset_manager.item_le.inverse_transform([item_index])[0]
 
-        item_embedding = self.item_embeddings
+        item_embedding = self.trainer.item_embedding
         similar_items: List[Tuple[float, str]] = []
 
         h = item_embedding[item_name]
@@ -226,11 +226,3 @@ class Analyst:
             print(f"Item: {item_name} {item['prod_name']}, Distance: {distance}")
 
         return similar_items[:num_items]
-
-    @property
-    def seq_embeddings(self) -> Dict[str, np.ndarray]:
-        return self.trainer.seq_embedding
-
-    @property
-    def item_embeddings(self) -> Dict[str, np.ndarray]:
-        return self.trainer.item_embedding
