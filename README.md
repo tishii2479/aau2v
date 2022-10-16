@@ -4,8 +4,13 @@
 
 ### Requirements
 
-- python3 = 3.10.4
-- poetry = 1.2.1
+```
+$ python3 --version
+3.10.4
+
+$ poetry --version
+1.2.1
+```
 
 ### Setup environment
 
@@ -24,9 +29,8 @@ $ python3 train.py --epochs=5
 
 - 重みの初期値を変える
 - 位置エンコーディングを試す
-- User2Vecを動かす
 - コメントを日本語にする
-- load_modelのログの追加
 - `Trainer.attention_weights_to_...`のリファクタリング
 - ログをわかりやすく
 - ちゃんと`nn.Embedding`とアイテムの順番が対応しているか確かめる
+- `dropout`の追加
