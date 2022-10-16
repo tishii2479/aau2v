@@ -68,7 +68,6 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractproperty
-    @property
     def seq_embedding(self) -> Dict[str, np.ndarray]:
         """
         Sequence embedding
@@ -82,7 +81,6 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractproperty
-    @property
     def item_embedding(self) -> Dict[str, np.ndarray]:
         """
         Item embedding
@@ -96,7 +94,6 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractproperty
-    @property
     def item_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
         """
         Item Metadata embedding
@@ -110,7 +107,6 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractproperty
-    @property
     def seq_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
         """
         Sequence Metadata embedding
@@ -319,7 +315,7 @@ class GensimTrainer(Trainer):
         raise NotImplementedError()
 
     def fit(self) -> List[float]:
-        pass
+        raise NotImplementedError()
 
     def eval(self) -> float:
         raise NotImplementedError()

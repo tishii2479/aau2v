@@ -201,6 +201,7 @@ class Analyst:
         self, item_index: int, num_items: int = 10
     ) -> List[Tuple[float, str]]:
         item_name = self.dataset_manager.item_le.inverse_transform([item_index])[0]
+        print(item_index, item_name)
 
         item_embedding = self.trainer.item_embedding
         similar_items: List[Tuple[float, str]] = []
@@ -211,18 +212,19 @@ class Analyst:
             list(range(self.dataset_manager.num_item))
         )
 
-        for i, item_name in enumerate(item_names):
+        for i, name in enumerate(item_names):
             if i == item_index:
                 continue
-            h_item = item_embedding[item_name]
+            h_item = item_embedding[name]
             distance = np.sum((h - h_item) ** 2)
-            similar_items.append((distance, item_name))
+            similar_items.append((distance, name))
 
         similar_items.sort()
 
-        print(f"{item_name} {self.dataset_manager.item_metadata[item_name]}")
-        for distance, item_name in similar_items[:num_items]:
-            item = self.dataset_manager.item_metadata[item_name]
-            print(f"Item: {item_name} {item['prod_name']}, Distance: {distance}")
+        print(f"similar_items of {item_name}")
+        print(f"{item_name} Info: {self.dataset_manager.item_metadata[name]}")
+        for distance, name in similar_items[:num_items]:
+            item = self.dataset_manager.item_metadata[name]
+            print(f"{name} Info: {item}, Distance: {distance}")
 
         return similar_items[:num_items]
