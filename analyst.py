@@ -6,7 +6,7 @@ from sklearn.cluster import KMeans
 
 from config import ModelConfig, TrainerConfig
 from data import SequenceDatasetManager
-from trainers import PyTorchTrainer
+from trainers import GensimTrainer, PyTorchTrainer, Trainer
 from util import (
     calc_cluster_occurence_array,
     calc_coherence,
@@ -19,6 +19,8 @@ from util import (
 
 
 class Analyst:
+    trainer: Trainer
+
     def __init__(
         self,
         dataset_manager: SequenceDatasetManager,
@@ -29,11 +31,22 @@ class Analyst:
         self.trainer_config = trainer_config
         self.model_config = model_config
 
-        self.trainer = PyTorchTrainer(
-            dataset_manager=self.dataset_manager,
-            trainer_config=trainer_config,
-            model_config=model_config,
-        )
+        match self.trainer_config.model_name:
+            case "attentive":
+                self.trainer = PyTorchTrainer(
+                    dataset_manager=self.dataset_manager,
+                    trainer_config=trainer_config,
+                    model_config=model_config,
+                )
+            case "doc2vec":
+                self.trainer = GensimTrainer(
+                    dataset_manager=self.dataset_manager,
+                    trainer_config=trainer_config,
+                    model_config=model_config,
+                )
+            case _:
+                print(f"invalid model_name: {trainer_config.model_name}")
+                assert False
 
     def fit(self, show_fig: bool = True) -> List[float]:
         losses = self.trainer.fit()

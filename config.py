@@ -27,6 +27,7 @@ class ModelConfig:
 
 def parse_args() -> Namespace:
     parser = ArgumentParser()
+    parser.add_argument("--model_name", type=str, default="attentive", help="使用するモデル")
     parser.add_argument("--num_cluster", type=int, default=10, help="クラスタリングの際に使うクラスタ数")
     parser.add_argument("--d_model", type=int, default=100, help="埋め込み表現の次元数")
     parser.add_argument("--window_size", type=int, default=8, help="学習する際に参照する過去の要素の個数")
@@ -64,7 +65,7 @@ def parse_args() -> Namespace:
 
 def setup_config(args: Namespace) -> Tuple[TrainerConfig, ModelConfig]:
     trainer_config = TrainerConfig(
-        model_name="attentive",
+        model_name=args.model_name,
         epochs=args.epochs,
         batch_size=args.batch_size,
         load_model=args.load_model,

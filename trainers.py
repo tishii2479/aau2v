@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
@@ -22,7 +22,7 @@ class Trainer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __init__(
         self,
-        raw_sequences: List[Tuple[str, Dict[str, Any]]],
+        dataset_manager: SequenceDatasetManager,
         trainer_config: TrainerConfig,
         model_config: ModelConfig,
     ) -> None:
@@ -154,6 +154,8 @@ class PyTorchTrainer(Trainer):
                     sequences=self.dataset_manager.sequences,
                     negative_sample_size=model_config.negative_sample_size,
                 )
+            case _:
+                print(f"invalid model_name: {trainer_config.model_name}")
 
         if (
             self.trainer_config.load_model
@@ -308,11 +310,16 @@ class PyTorchTrainer(Trainer):
 
 
 class GensimTrainer(Trainer):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        dataset_manager: SequenceDatasetManager,
+        trainer_config: TrainerConfig,
+        model_config: ModelConfig,
+    ) -> None:
         raise NotImplementedError()
 
     def fit(self) -> List[float]:
-        raise NotImplementedError()
+        pass
 
     def eval(self) -> float:
         raise NotImplementedError()
@@ -331,4 +338,14 @@ class GensimTrainer(Trainer):
 
     @property
     def item_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
+        raise NotImplementedError()
+
+    def attention_weight_to_item(
+        self, seq_index: int, item_indicies: List[int]
+    ) -> Tensor:
+        raise NotImplementedError()
+
+    def attention_weight_to_meta(
+        self, seq_index: int, meta_indicies: List[int]
+    ) -> Tensor:
         raise NotImplementedError()
