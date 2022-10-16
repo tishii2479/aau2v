@@ -6,7 +6,7 @@ from sklearn.cluster import KMeans
 
 from config import ModelConfig, TrainerConfig
 from data import SequenceDatasetManager
-from trainers import GensimTrainer, PyTorchTrainer, Trainer
+from trainers import PyTorchTrainer, Trainer
 from util import (
     calc_cluster_occurence_array,
     calc_coherence,
@@ -32,14 +32,8 @@ class Analyst:
         self.model_config = model_config
 
         match self.trainer_config.model_name:
-            case "attentive":
+            case "attentive" | "doc2vec":
                 self.trainer = PyTorchTrainer(
-                    dataset_manager=self.dataset_manager,
-                    trainer_config=trainer_config,
-                    model_config=model_config,
-                )
-            case "doc2vec":
-                self.trainer = GensimTrainer(
                     dataset_manager=self.dataset_manager,
                     trainer_config=trainer_config,
                     model_config=model_config,

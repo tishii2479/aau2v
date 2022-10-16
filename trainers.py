@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
 from data import SequenceDataset, SequenceDatasetManager
-from model import AttentiveModel, PyTorchModel
+from model import AttentiveModel, Doc2Vec, PyTorchModel
 from util import check_model_path
 
 
@@ -154,6 +154,14 @@ class PyTorchTrainer(Trainer):
                     negative_sample_size=model_config.negative_sample_size,
                     add_seq_embedding=model_config.add_seq_embedding,
                     add_positional_encoding=model_config.add_positional_encoding,
+                )
+            case "doc2vec":
+                self.model = Doc2Vec(
+                    num_seq=self.dataset_manager.num_seq,
+                    num_item=self.dataset_manager.num_item,
+                    d_model=model_config.d_model,
+                    sequences=self.dataset_manager.sequences,
+                    negative_sample_size=model_config.negative_sample_size,
                 )
             case _:
                 print(f"invalid model_name: {trainer_config.model_name}")

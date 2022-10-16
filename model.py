@@ -11,6 +11,39 @@ from layer import NegativeSampling, PositionalEncoding
 
 class Model(metaclass=abc.ABCMeta):
     @abc.abstractmethod
+    def forward(
+        self,
+        seq_index: Tensor,
+        item_indicies: Tensor,
+        seq_meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
+        target_index: Tensor,
+    ) -> Tensor:
+        """
+        モデルに入力を与えた時の損失
+
+        Args:
+            seq_index (Tensor):
+                学習対象である系列のindex
+                size: (batch_size, )
+            item_indicies (Tensor):
+                予測に用いる直前の要素のindicies
+                size: (batch_size, window_size, )
+            seq_meta_indicies (Tensor):
+                系列の補助情報のindicies
+                size: (batch_size, seq_meta_kinds, )
+            item_meta_indicies (Tensor):
+                要素の補助情報のindicies
+                size: (batch_size, window_size, item_meta_kinds, )
+            target_index (Tensor):
+                size: (batch_size, )
+
+        Returns:
+            loss: Tensor
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def calc_out(
         self,
         seq_index: Tensor,
@@ -19,6 +52,22 @@ class Model(metaclass=abc.ABCMeta):
         item_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        """
+        モデルに入力を与えた時の、損失を求める直前の出力を返す
+        正例と負例に対する0~1の（シグモイドを通した）出力をする
+        `forward`の中で使われることを想定している
+
+        Args:
+            Same as `Model.forward()`
+
+        Returns:
+            (pos_out, pos_label, neg_out, neg_label)
+                : Tuple[Tensor, Tensor, Tensor, Tensor]
+                pos_out: (batch_size, ),
+                pos_label: (batch_size, ),
+                neg_out: (batch_size, negative_sample_size),
+                neg_label: (batch_size, negative_sample_size),
+        """
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -68,6 +117,8 @@ class PyTorchModel(nn.Module, Model):
 
 
 class AttentiveModel(PyTorchModel):
+    """AttentiveModel（提案モデル）のクラス"""
+
     def __init__(
         self,
         num_seq: int,
@@ -83,7 +134,7 @@ class AttentiveModel(PyTorchModel):
         add_positional_encoding: bool = False,
     ) -> None:
         """
-        AttentiveModel（提案モデル）のクラス
+        AttentiveModel（提案モデル）のクラスを生成する
 
         Args:
             num_seq (int):
@@ -136,30 +187,10 @@ class AttentiveModel(PyTorchModel):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        item_meta_indicies: Tensor,
         seq_meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tensor:
-        r"""
-        Args:
-            seq_index (Tensor):
-                学習対象である系列のindex
-                size: (batch_size, )
-            item_indicies (Tensor):
-                予測に用いる直前の要素のindicies
-                size: (batch_size, window_size, )
-            seq_meta_indicies (Tensor):
-                系列の補助情報のindicies
-                size: (batch_size, seq_meta_kinds, )
-            item_meta_indicies (Tensor):
-                要素の補助情報のindicies
-                size: (batch_size, window_size, item_meta_kinds, )
-            target_index (Tensor):
-                size: (batch_size, )
-
-        Returns:
-            loss
-        """
         pos_out, pos_label, neg_out, neg_label = self.calc_out(
             seq_index=seq_index,
             item_indicies=item_indicies,
@@ -183,32 +214,6 @@ class AttentiveModel(PyTorchModel):
         item_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
-        """
-        正例と負例に対する0~1の（シグモイドを通した）出力をする
-
-        Args:
-            seq_index (Tensor):
-                学習対象である系列のindex
-                size: (batch_size, )
-            item_indicies (Tensor):
-                予測に用いる直前の要素のindicies
-                size: (batch_size, window_size, )
-            seq_meta_indicies (Tensor):
-                系列の補助情報のindicies
-                size: (batch_size, seq_meta_kinds, )
-            item_meta_indicies (Tensor):
-                要素の補助情報のindicies
-                size: (batch_size, window_size, item_meta_kinds, )
-            target_index (Tensor):
-                size: (batch_size, )
-
-        Returns:
-            Tuple[Tensor, Tensor, Tensor, Tensor]:
-                pos_out: (batch_size, ),
-                pos_label: (batch_size, ),
-                neg_out: (batch_size, negative_sample_size),
-                neg_label: (batch_size, negative_sample_size),
-        """
         num_seq_meta_types = seq_meta_indicies.size(1)
         num_item_meta_types = item_meta_indicies.size(2)
         window_size = item_indicies.size(1)
@@ -279,3 +284,118 @@ class AttentiveModel(PyTorchModel):
     @property
     def item_embedding(self) -> Tensor:
         return self.embedding_item.weight.data
+
+
+class Doc2Vec(PyTorchModel):
+    """Original Doc2Vec"""
+
+    def __init__(
+        self,
+        num_seq: int,
+        num_item: int,
+        d_model: int,
+        sequences: List[List[int]],
+        negative_sample_size: int = 30,
+    ) -> None:
+        """
+        Original Doc2Vecを生成する
+
+        Args:
+            num_seq (int):
+                系列の総数
+            num_item (int):
+                要素の総数
+            d_model (int):
+                埋め込み表現の次元数
+            sequences (List[List[int]]):
+                変換後の系列データ
+            negative_sample_size (int, optional):
+                ネガティブサンプリングのサンプリング数. Defaults to 30.
+        """
+        super().__init__()
+
+        self.embedding_seq = nn.Embedding(num_seq, d_model)
+        self.embedding_item = nn.Embedding(num_item, d_model)
+
+        self.output = NegativeSampling(
+            d_model=d_model,
+            num_item=num_item,
+            sequences=sequences,
+            negative_sample_size=negative_sample_size,
+        )
+
+    def forward(
+        self,
+        seq_index: Tensor,
+        item_indicies: Tensor,
+        seq_meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
+        target_index: Tensor,
+    ) -> Tensor:
+        pos_out, pos_label, neg_out, neg_label = self.calc_out(
+            seq_index=seq_index,
+            item_indicies=item_indicies,
+            seq_meta_indicies=seq_meta_indicies,
+            item_meta_indicies=item_meta_indicies,
+            target_index=target_index,
+        )
+        loss_pos = F.binary_cross_entropy(pos_out, pos_label)
+        loss_neg = F.binary_cross_entropy(neg_out, neg_label)
+
+        negative_sample_size = neg_label.size(1)
+        loss = (loss_pos + loss_neg / negative_sample_size) / 2
+
+        return loss
+
+    def calc_out(
+        self,
+        seq_index: Tensor,
+        item_indicies: Tensor,
+        seq_meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
+        target_index: Tensor,
+    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        window_size = item_indicies.size(1)
+
+        h_seq = self.embedding_seq.forward(seq_index)
+        h_items = self.embedding_item.forward(item_indicies)
+
+        v = (h_seq + h_items.sum(dim=1)) / (window_size)
+
+        return self.output.forward(v, target_index)
+
+    @property
+    def seq_embedding(self) -> Tensor:
+        return self.embedding_seq.weight.data
+
+    @property
+    def item_embedding(self) -> Tensor:
+        return self.embedding_item.weight.data
+
+    @torch.no_grad()  # type: ignore
+    def attention_weight_to_meta(
+        self,
+        seq_index: int,
+        meta_indicies: List[int],
+    ) -> Tensor:
+        raise NotImplementedError(
+            "attention_weight_to_meta is not supported for Doc2Vec"
+        )
+
+    @torch.no_grad()  # type: ignore
+    def attention_weight_to_item(
+        self,
+        seq_index: int,
+        item_indicies: List[int],
+    ) -> Tensor:
+        raise NotImplementedError(
+            "attention_weight_to_item is not supported for Doc2Vec"
+        )
+
+    @torch.no_grad()  # type: ignore
+    def attention_weight_to_positional_encoding(
+        self, seq_index: int, item_indicies: List[int]
+    ) -> Tensor:
+        raise NotImplementedError(
+            "attention_weight_to_positional_encoding is not supported for Doc2Vec"
+        )

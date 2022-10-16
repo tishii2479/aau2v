@@ -36,7 +36,6 @@ def main() -> None:
 
     args = parse_args()
     trainer_config, model_config = setup_config(args)
-    trainer_config.model_path = "weights/model_hm_meta.pt"
     print("trainer_config:", trainer_config)
     print("model_config:", model_config)
 
@@ -47,7 +46,7 @@ def main() -> None:
         trainer_config=trainer_config,
         model_config=model_config,
     )
-    _ = analyst.fit(show_fig=False)
+    _ = analyst.fit(show_fig=True)
 
     analyst.prediction_accuracy()
 
@@ -57,7 +56,7 @@ def main() -> None:
     # analyst.attention_weights_to_meta(0, "colour_group_name")
     # analyst.attention_weights_to_sequence(0)
 
-    # analyst.cluster_embeddings(args.num_cluster)
+    analyst.cluster_embeddings(args.num_cluster)
     # analyst.similar_items(0)
 
 

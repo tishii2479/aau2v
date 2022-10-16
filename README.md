@@ -28,3 +28,5 @@ $ python3 train.py --epochs=5
 - コメントを日本語にする
 - load_modelのログの追加
 - `Trainer.attention_weights_to_...`のリファクタリング
+- ログをわかりやすく
+- ちゃんと`nn.Embedding`とアイテムの順番が対応しているか確かめる
