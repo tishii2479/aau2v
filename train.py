@@ -49,7 +49,7 @@ def main() -> None:
     )
     _ = analyst.fit(show_fig=False)
 
-    # analyst.prediction_accuracy()
+    analyst.prediction_accuracy()
 
     # analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
     # _ = analyst.calc_coherence(num_cluster=args.num_cluster)

@@ -8,7 +8,6 @@ packages = [{include = "my_doc2vec"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
-sklearn = "^0.0"
 scipy = "=1.9.1"
 matplotlib = "=3.6.0"
 torch = "=1.12.1"
@@ -20,6 +19,7 @@ flake8 = "^5.0.4"
 mypy = "^0.982"
 black = "^22.10.0"
 invoke = "^1.7.3"
+scikit-learn = "1.1.1"
 
 
 [build-system]
