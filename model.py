@@ -10,7 +10,6 @@ from layer import NegativeSampling, PositionalEncoding
 
 
 class Model(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
     def forward(
         self,
         seq_index: Tensor,
@@ -41,7 +40,20 @@ class Model(metaclass=abc.ABCMeta):
         Returns:
             loss: Tensor
         """
-        raise NotImplementedError()
+        pos_out, pos_label, neg_out, neg_label = self.calc_out(
+            seq_index=seq_index,
+            item_indicies=item_indicies,
+            seq_meta_indicies=seq_meta_indicies,
+            item_meta_indicies=item_meta_indicies,
+            target_index=target_index,
+        )
+        loss_pos = F.binary_cross_entropy(pos_out, pos_label)
+        loss_neg = F.binary_cross_entropy(neg_out, neg_label)
+
+        negative_sample_size = neg_label.size(1)
+        loss = (loss_pos + loss_neg / negative_sample_size) / 2
+
+        return loss
 
     @abc.abstractmethod
     def calc_out(
@@ -183,29 +195,6 @@ class AttentiveModel(PyTorchModel):
             negative_sample_size=negative_sample_size,
         )
 
-    def forward(
-        self,
-        seq_index: Tensor,
-        item_indicies: Tensor,
-        seq_meta_indicies: Tensor,
-        item_meta_indicies: Tensor,
-        target_index: Tensor,
-    ) -> Tensor:
-        pos_out, pos_label, neg_out, neg_label = self.calc_out(
-            seq_index=seq_index,
-            item_indicies=item_indicies,
-            seq_meta_indicies=seq_meta_indicies,
-            item_meta_indicies=item_meta_indicies,
-            target_index=target_index,
-        )
-        loss_pos = F.binary_cross_entropy(pos_out, pos_label)
-        loss_neg = F.binary_cross_entropy(neg_out, neg_label)
-
-        negative_sample_size = neg_label.size(1)
-        loss = (loss_pos + loss_neg / negative_sample_size) / 2
-
-        return loss
-
     def calc_out(
         self,
         seq_index: Tensor,
@@ -323,29 +312,6 @@ class Doc2Vec(PyTorchModel):
             sequences=sequences,
             negative_sample_size=negative_sample_size,
         )
-
-    def forward(
-        self,
-        seq_index: Tensor,
-        item_indicies: Tensor,
-        seq_meta_indicies: Tensor,
-        item_meta_indicies: Tensor,
-        target_index: Tensor,
-    ) -> Tensor:
-        pos_out, pos_label, neg_out, neg_label = self.calc_out(
-            seq_index=seq_index,
-            item_indicies=item_indicies,
-            seq_meta_indicies=seq_meta_indicies,
-            item_meta_indicies=item_meta_indicies,
-            target_index=target_index,
-        )
-        loss_pos = F.binary_cross_entropy(pos_out, pos_label)
-        loss_neg = F.binary_cross_entropy(neg_out, neg_label)
-
-        negative_sample_size = neg_label.size(1)
-        loss = (loss_pos + loss_neg / negative_sample_size) / 2
-
-        return loss
 
     def calc_out(
         self,
