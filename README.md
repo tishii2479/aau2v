@@ -13,3 +13,4 @@ python3 train.py --epochs=5
 - User2Vecを動かす
 - コメントを日本語にする
 - load_modelのログの追加
+- `Trainer.attention_weights_to_...`のリファクタリング
