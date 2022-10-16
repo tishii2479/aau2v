@@ -34,3 +34,4 @@ $ python3 train.py --epochs=5
 - ログをわかりやすく
 - ちゃんと`nn.Embedding`とアイテムの順番が対応しているか確かめる
 - `dropout`の追加
+- 顧客の属性情報の埋め込みの追加

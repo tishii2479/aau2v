@@ -26,17 +26,12 @@ jobs:
           curl -sSL curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH
       - name: Poetry Version
-        run: |
-          poetry --version
+        run: poetry --version
       - name: Poetry Install Dependencies
-        run: |
-          poetry install --no-interaction --no-root
+        run: poetry install --no-interaction --no-root
 
       - name: Run Unittest
-        run: poetry run python3 -m unittest discover tests
+        run: poetry run inv test
 
       - name: Run Lint
-        run: |
-          poetry run flake8 . --ignore=E203,W503 --max-line-length=88 --show-source --statistics
-          poetry run mypy . --follow-imports=silent --ignore-missing-imports --show-column-numbers --no-pretty --warn-return-any --no-implicit-optional --disallow-untyped-calls --disallow-untyped-defs --allow-redefinition
-          poetry run black . --check --diff --color
+        run: poetry run inv lint

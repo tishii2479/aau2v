@@ -124,7 +124,7 @@ def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
     return torch.matmul(a, V)
 
 
-class PyTorchModel(nn.Module, Model):
+class PyTorchModel(Model, nn.Module):
     pass
 
 
