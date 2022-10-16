@@ -49,7 +49,7 @@ def main() -> None:
     )
     _ = analyst.fit(show_fig=False)
 
-    # analyst.prediction_accuracy()
+    analyst.prediction_accuracy()
 
     # analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
     # _ = analyst.calc_coherence(num_cluster=args.num_cluster)
@@ -58,8 +58,7 @@ def main() -> None:
     # analyst.attention_weights_to_sequence(0)
 
     # analyst.cluster_embeddings(args.num_cluster)
-    for i in range(5):
-        analyst.similar_items(i)
+    # analyst.similar_items(0)
 
 
 if __name__ == "__main__":

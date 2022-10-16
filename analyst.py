@@ -49,9 +49,12 @@ class Analyst:
                 assert False
 
     def fit(self, show_fig: bool = True) -> List[float]:
-        losses = self.trainer.fit()
+        losses, val_losses = self.trainer.fit()
         if show_fig and len(losses) > 0:
-            visualize_loss(losses)
+            loss_dict = {"loss": losses}
+            if val_losses is not None:
+                loss_dict["val_loss"] = val_losses
+            visualize_loss(loss_dict)
         return losses
 
     def cluster_embeddings(
@@ -195,7 +198,7 @@ class Analyst:
     def prediction_accuracy(
         self,
     ) -> float:
-        return self.trainer.eval()
+        return self.trainer.eval(show_fig=True)
 
     def similar_items(
         self, item_index: int, num_items: int = 10

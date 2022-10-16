@@ -54,8 +54,14 @@ def visualize_cluster(
     plt.show()
 
 
-def visualize_loss(losses: List[float]) -> None:
-    plt.plot(losses)
+def visualize_loss(loss_dict: Dict[str, List[float]]) -> None:
+    fig, ax = plt.subplots()
+    ax.set_xlabel("Epochs")
+    ax.set_ylabel("Loss")
+    for loss_name, losses in loss_dict.items():
+        ax.plot(losses, label=loss_name)
+    ax.legend()
+    fig.tight_layout()
     plt.show()
 
 
@@ -93,7 +99,7 @@ def top_cluster_items(
 def check_model_path(model_path: str) -> None:
     if os.path.exists(model_path):
         response = input(
-            f"There is a file at {model_path}, but did not specify `load_model. "
+            f"There is a file at {model_path}, but did not specify `load_model`. "
             + "Is it ok to overwrite? [y/n] "
         )
         if response != "y":

@@ -79,7 +79,7 @@ class AttentiveModel(PyTorchModel):
         negative_sample_size: int = 30,
         max_sequence_length: int = 1000,
         dropout: float = 0.1,
-        add_seq_embedding: bool = True,
+        add_seq_embedding: bool = False,
         add_positional_encoding: bool = False,
     ) -> None:
         """
@@ -167,11 +167,11 @@ class AttentiveModel(PyTorchModel):
             item_meta_indicies=item_meta_indicies,
             target_index=target_index,
         )
-        pos_loss = F.binary_cross_entropy(pos_out, pos_label)
-        neg_loss = F.binary_cross_entropy(neg_out, neg_label)
+        loss_pos = F.binary_cross_entropy(pos_out, pos_label)
+        loss_neg = F.binary_cross_entropy(neg_out, neg_label)
 
         negative_sample_size = neg_label.size(1)
-        loss = (pos_loss + neg_loss / negative_sample_size) / 2
+        loss = (loss_pos + loss_neg / negative_sample_size) / 2
 
         return loss
 

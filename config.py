@@ -29,7 +29,7 @@ def parse_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--model_name", type=str, default="attentive", help="使用するモデル")
     parser.add_argument("--num_cluster", type=int, default=10, help="クラスタリングの際に使うクラスタ数")
-    parser.add_argument("--d_model", type=int, default=100, help="埋め込み表現の次元数")
+    parser.add_argument("--d_model", type=int, default=50, help="埋め込み表現の次元数")
     parser.add_argument("--window_size", type=int, default=8, help="学習する際に参照する過去の要素の個数")
     parser.add_argument(
         "--negative_sample_size", type=int, default=5, help="ネガティブサンプリングのサンプル数"
@@ -41,7 +41,7 @@ def parse_args() -> Namespace:
         "--dropout", type=float, default=0.1, help="位置エンコーディング時にドロップアウトする割合"
     )
     parser.add_argument(
-        "--add_seq_embedding", action="store_false", help="予測ベクトルに系列の埋め込み表現を足すかどうか"
+        "--add_seq_embedding", action="store_true", help="予測ベクトルに系列の埋め込み表現を足すかどうか"
     )
     parser.add_argument(
         "--add_positional_encoding",
@@ -100,5 +100,7 @@ def default_config() -> Tuple[TrainerConfig, ModelConfig]:
         negative_sample_size=5,
         lr=0.0005,
         use_learnable_embedding=False,
+        add_seq_embedding=False,
+        add_positional_encoding=False,
     )
     return trainer_config, model_config

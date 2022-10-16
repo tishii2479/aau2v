@@ -1,8 +1,10 @@
 import abc
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.nn.functional as F
 import tqdm
 from gensim.models import word2vec
 from torch import Tensor
@@ -12,6 +14,7 @@ from torch.utils.data import DataLoader
 from config import ModelConfig, TrainerConfig
 from data import SequenceDataset, SequenceDatasetManager
 from model import AttentiveModel, PyTorchModel
+from util import check_model_path
 
 
 class Trainer(metaclass=abc.ABCMeta):
@@ -29,7 +32,7 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def fit(self) -> List[float]:
+    def fit(self) -> Tuple[List[float], Optional[List[float]]]:
         """
         Called to fit to data
 
@@ -37,12 +40,12 @@ class Trainer(metaclass=abc.ABCMeta):
             NotImplementedError: if not implemented
 
         Returns:
-            List[float]: losses
+            Tuple[List[float], Optional[List[float]]]: losses
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def eval(self) -> float:
+    def eval(self, show_fig: bool = False) -> float:
         """
         予測精度を評価する
 
@@ -149,6 +152,8 @@ class PyTorchTrainer(Trainer):
                     d_model=model_config.d_model,
                     sequences=self.dataset_manager.sequences,
                     negative_sample_size=model_config.negative_sample_size,
+                    add_seq_embedding=model_config.add_seq_embedding,
+                    add_positional_encoding=model_config.add_positional_encoding,
                 )
             case _:
                 print(f"invalid model_name: {trainer_config.model_name}")
@@ -160,6 +165,8 @@ class PyTorchTrainer(Trainer):
             print(f"load_state_dict from: {self.trainer_config.model_path}")
             loaded = torch.load(self.trainer_config.model_path)  # type: ignore
             self.model.load_state_dict(loaded)
+        elif self.trainer_config.model_path is not None:
+            check_model_path(self.trainer_config.model_path)
 
         self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
 
@@ -189,9 +196,10 @@ class PyTorchTrainer(Trainer):
 
         return item_embeddings, seq_embeddings
 
-    def fit(self) -> List[float]:
+    def fit(self) -> Tuple[List[float], List[float]]:
         self.model.train()
         losses = []
+        val_losses = []
         print("train start")
         for epoch in range(self.trainer_config.epochs):
             total_loss = 0.0
@@ -220,25 +228,29 @@ class PyTorchTrainer(Trainer):
                 total_loss += loss.item()
 
             total_loss /= len(self.train_data_loader)
-            if epoch % 1 == 0:
-                print(epoch, total_loss)
+            validate_loss = self.eval(show_fig=False)
+            print(f"Epoch: {epoch}, loss: {total_loss}, val_loss: {validate_loss}")
 
             losses.append(total_loss)
+            val_losses.append(validate_loss)
+
         print("train end")
 
         if self.trainer_config.model_path is not None:
             torch.save(self.model.state_dict(), self.trainer_config.model_path)
+            print(f"saved model to {self.trainer_config.model_path}")
 
         if len(losses) > 0:
             print(f"final loss: {losses[-1]}")
 
-        return losses
+        return losses, val_losses
 
     @torch.no_grad()
-    def eval(self) -> float:
+    def eval(self, show_fig: bool = False) -> float:
         self.model.eval()
         pos_outputs: List[float] = []
         neg_outputs: List[float] = []
+        total_loss = 0.0
         for i, data in enumerate(tqdm.tqdm(self.test_data_loader)):
             (
                 seq_index,
@@ -255,18 +267,27 @@ class PyTorchTrainer(Trainer):
                 seq_meta_indicies,
                 target_index,
             )
-            for e in pos_out.reshape(-1):
-                pos_outputs.append(e.item())
-            for e in neg_out.reshape(-1):
-                neg_outputs.append(e.item())
 
-        import matplotlib.pyplot as plt
+            if show_fig:
+                for e in pos_out.reshape(-1):
+                    pos_outputs.append(e.item())
+                for e in neg_out.reshape(-1):
+                    neg_outputs.append(e.item())
 
-        plt.hist(pos_outputs)
-        plt.show()
-        plt.hist(neg_outputs)
-        plt.show()
-        return 0
+            loss_pos = F.binary_cross_entropy(pos_out, pos_label)
+            loss_neg = F.binary_cross_entropy(neg_out, neg_label)
+            negative_sample_size = neg_label.size(1)
+            loss = (loss_pos + loss_neg / negative_sample_size) / 2
+            total_loss += loss.item()
+
+        total_loss /= len(self.test_data_loader)
+
+        if show_fig:
+            plt.hist(pos_outputs)
+            plt.show()
+            plt.hist(neg_outputs)
+            plt.show()
+        return total_loss
 
     def attention_weight_to_item(
         self, seq_index: int, item_indicies: List[int]
@@ -314,10 +335,10 @@ class GensimTrainer(Trainer):
     ) -> None:
         raise NotImplementedError()
 
-    def fit(self) -> List[float]:
+    def fit(self) -> Tuple[List[float], Optional[List[float]]]:
         raise NotImplementedError()
 
-    def eval(self) -> float:
+    def eval(self, show_fig: bool = False) -> float:
         raise NotImplementedError()
 
     @property
