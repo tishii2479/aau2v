@@ -1,9 +1,23 @@
-# Implementing Doc2Vec
+# 卒業研究
 
-https://cs.stanford.edu/~quocle/paragraph_vector.pdf
+## Setup
+
+### Requirements
+
+- python3 = 3.10.4
+- poetry = 1.2.1
+
+### Setup environment
 
 ```shell
-python3 train.py --epochs=5
+$ poetry shell
+$ poetry install
+```
+
+### Train model
+
+```shell
+$ python3 train.py --epochs=5
 ```
 
 ## TODO:
