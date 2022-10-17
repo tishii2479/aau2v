@@ -56,7 +56,8 @@ def main() -> None:
     # analyst.attention_weights_to_meta(0, "colour_group_name")
     # analyst.attention_weights_to_sequence(0)
 
-    analyst.cluster_embeddings(args.num_cluster)
+    # analyst.cluster_embeddings(args.num_cluster)
+
     # analyst.similar_items(0)
 
 

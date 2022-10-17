@@ -198,7 +198,6 @@ class Analyst:
         self, item_index: int, num_items: int = 10
     ) -> List[Tuple[float, str]]:
         item_name = self.dataset_manager.item_le.inverse_transform([item_index])[0]
-        print(item_index, item_name)
 
         item_embedding = self.trainer.item_embedding
         similar_items: List[Tuple[float, str]] = []
