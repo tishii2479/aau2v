@@ -239,6 +239,11 @@ class PyTorchTrainer(Trainer):
             validate_loss = self.eval(show_fig=False)
             print(f"Epoch: {epoch}, loss: {total_loss}, val_loss: {validate_loss}")
 
+            if self.trainer_config.model_path is not None:
+                temp_model_path = "weights/tmp.pt"
+                torch.save(self.model.state_dict(), temp_model_path)
+                print(f"saved temporary model to {temp_model_path}")
+
             losses.append(total_loss)
             val_losses.append(validate_loss)
 
