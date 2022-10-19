@@ -204,9 +204,7 @@ class Analyst:
 
         h = item_embedding[item_name]
 
-        item_names = self.dataset_manager.item_le.inverse_transform(
-            list(range(self.dataset_manager.num_item))
-        )
+        item_names = self.dataset_manager.item_le.classes_
 
         for i, name in enumerate(item_names):
             if i == item_index:
@@ -224,3 +222,39 @@ class Analyst:
             print(f"{name} Info: {item}, Distance: {distance}")
 
         return similar_items[:num_items]
+
+    def similar_sequences(
+        self, seq_index: int, num_seqs: int = 5
+    ) -> List[Tuple[float, str]]:
+        seq_name = self.dataset_manager.seq_le.inverse_transform([seq_index])[0]
+        seq_embedding = self.trainer.seq_embedding
+
+        similar_customers: List[Tuple[float, str]] = []
+
+        h = seq_embedding[seq_name]
+
+        seq_names = self.dataset_manager.seq_le.classes_
+
+        for i, name in enumerate(seq_names):
+            if i == seq_index:
+                continue
+            h_seq = seq_embedding[name]
+            distance = np.sum((h - h_seq) ** 2)
+            similar_customers.append((distance, name))
+
+        similar_customers.sort()
+
+        print(f"similar_items of {seq_name}")
+        purchased_items = self.dataset_manager.raw_sequences[name]
+        print("\n".join(purchased_items[-5:]))
+        for distance, name in similar_customers[:num_seqs]:
+            purchased_items = self.dataset_manager.raw_sequences[name]
+            print(f"{name} Distance: {distance}")
+            print("\n".join(purchased_items[-5:]))
+
+        for distance, name in similar_customers[-num_seqs:]:
+            purchased_items = self.dataset_manager.raw_sequences[name]
+            print(f"{name} Distance: {distance}")
+            print("\n".join(purchased_items[-5:]))
+
+        return similar_customers[:num_seqs]

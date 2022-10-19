@@ -1,5 +1,4 @@
 from collections import ChainMap
-from random import choice, randint
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import gensim
@@ -338,49 +337,10 @@ def to_sequential_data(
     return sequences, data
 
 
-# deprecated
-def create_toydata(num_topic: int, data_size: int) -> List[List[str]]:
-    documents = []
-    words = []
-    key_words: List[List[str]] = [[] for _ in range(num_topic)]
-
-    for _ in range(1, 201):
-        s = ""
-        for _ in range(10):
-            s += chr(ord("a") + randint(0, 26))
-        words.append(s)
-
-    for i in range(num_topic):
-        for j in range(1, 11):
-            s = chr(ord("a") + i) * j
-            key_words[i].append(s)
-
-    for i in range(num_topic):
-        for _ in range(data_size):
-            doc = []
-            for _ in range(randint(150, 200)):
-                doc.append(choice(words))
-                doc.append(choice(key_words[i]))
-            documents.append(doc)
-
-    return documents
-
-
-# deprecated
-def create_labeled_toydata(
-    num_topic: int, data_size: int
-) -> Tuple[List[List[str]], List[int]]:
-    documents = create_toydata(num_topic, data_size)
-    labels = []
-    for i in range(num_topic):
-        for _ in range(data_size):
-            labels.append(i)
-    return documents, labels
-
-
 def create_hm_data(
     purchase_history_path: str = "data/hm/filtered_purchase_history.csv",
     item_path: str = "data/hm/items.csv",
+    customer_path: str = "data/hm/customers.csv",
     max_data_size: int = 1000,
     test_data_size: int = 500,
 ) -> Tuple[
@@ -389,8 +349,13 @@ def create_hm_data(
     Optional[Dict[str, Dict[str, Any]]],
     Optional[Dict[str, List[str]]],
 ]:
-    sequences_df = pd.read_csv(purchase_history_path)
+    sequences_df = pd.read_csv(
+        purchase_history_path, dtype={"customer_id": str}, index_col="customer_id"
+    )
     items_df = pd.read_csv(item_path, dtype={"article_id": str}, index_col="article_id")
+    customers_df = pd.read_csv(
+        customer_path, dtype={"customer_id": str}, index_col="customer_id"
+    )
 
     raw_sequences = {
         index: sequence.split(" ")
@@ -409,21 +374,16 @@ def create_hm_data(
         )
     }
     item_metadata = items_df.to_dict("index")
+    customer_metadata = customers_df.to_dict("index")
 
-    items_set = set()
-    for seq in raw_sequences.values():
-        for item in seq:
-            items_set.add(item)
-    for seq in test_raw_sequences.values():
-        for item in seq:
-            items_set.add(item)
+    items_set = get_all_items(ChainMap(raw_sequences, test_raw_sequences))
 
     # item_set（raw_sequence, test_raw_sequence）に含まれている商品のみ抽出する
     item_metadata = dict(
         filter(lambda item: item[0] in items_set, item_metadata.items())
     )
 
-    return raw_sequences, item_metadata, None, test_raw_sequences
+    return raw_sequences, item_metadata, customer_metadata, test_raw_sequences
 
 
 def create_20newsgroup_data(

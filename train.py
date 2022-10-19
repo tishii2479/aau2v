@@ -8,7 +8,7 @@ from data import SequenceDatasetManager, create_hm_data
 
 def main() -> None:
     def load_dataset(
-        dataset_path: str = "data/hm_dataset.pickle",
+        dataset_path: str,
     ) -> SequenceDatasetManager:
         if os.path.exists(dataset_path):
             print(f"load dataset at: {dataset_path}")
@@ -36,10 +36,11 @@ def main() -> None:
 
     args = parse_args()
     trainer_config, model_config = setup_config(args)
+    trainer_config.model_path = "weights/model_hm.pt"
     print("trainer_config:", trainer_config)
     print("model_config:", model_config)
 
-    dataset_manager = load_dataset("data/hm_dataset_with_test.pickle")
+    dataset_manager = load_dataset("data/hm_dataset_manager.pickle")
 
     analyst = Analyst(
         dataset_manager=dataset_manager,
@@ -48,9 +49,9 @@ def main() -> None:
     )
     _ = analyst.fit(show_fig=True)
 
-    analyst.prediction_accuracy()
+    # analyst.prediction_accuracy()
 
-    # analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
+    analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
     # _ = analyst.calc_coherence(num_cluster=args.num_cluster)
 
     # analyst.attention_weights_to_meta(0, "colour_group_name")
@@ -59,6 +60,7 @@ def main() -> None:
     # analyst.cluster_embeddings(args.num_cluster)
 
     # analyst.similar_items(0)
+    analyst.similar_sequences(0)
 
 
 if __name__ == "__main__":
