@@ -28,10 +28,9 @@ $ python3 train.py --epochs=5
 ## TODO:
 
 - 重みの初期値を変える
-- 位置エンコーディングを試す
 - コメントを日本語にする
 - `Trainer.attention_weights_to_...`のリファクタリング
 - ログをわかりやすく
 - ちゃんと`nn.Embedding`とアイテムの順番が対応しているか確かめる
 - `dropout`の追加
-- 顧客の属性情報の埋め込みの追加
+- `to_sequential_data`の並列化
