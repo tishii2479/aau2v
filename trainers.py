@@ -56,10 +56,10 @@ class Trainer(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_meta(
+    def attention_weight_to_item_meta(
         self,
         seq_index: int,
-        meta_indicies: List[int],
+        item_meta_indicies: List[int],
     ) -> Tensor:
         raise NotImplementedError()
 
@@ -67,6 +67,13 @@ class Trainer(metaclass=abc.ABCMeta):
     @torch.no_grad()  # type: ignore
     def attention_weight_to_item(
         self, seq_index: int, item_indicies: List[int]
+    ) -> Tensor:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    @torch.no_grad()  # type: ignore
+    def attention_weight_from_seq_meta_to_item_meta(
+        self, seq_meta_index: int, item_meta_indicies: List[int]
     ) -> Tensor:
         raise NotImplementedError()
 
@@ -310,10 +317,17 @@ class PyTorchTrainer(Trainer):
     ) -> Tensor:
         return self.model.attention_weight_to_item(seq_index, item_indicies)
 
-    def attention_weight_to_meta(
-        self, seq_index: int, meta_indicies: List[int]
+    def attention_weight_to_item_meta(
+        self, seq_index: int, item_meta_indicies: List[int]
     ) -> Tensor:
-        return self.model.attention_weight_to_meta(seq_index, meta_indicies)
+        return self.model.attention_weight_to_item_meta(seq_index, item_meta_indicies)
+
+    def attention_weight_from_seq_meta_to_item_meta(
+        self, seq_meta_index: int, item_meta_indicies: List[int]
+    ) -> Tensor:
+        return self.model.attention_weight_from_seq_meta_to_item_meta(
+            seq_meta_index, item_meta_indicies
+        )
 
     @property
     def seq_embedding(self) -> Dict[str, np.ndarray]:

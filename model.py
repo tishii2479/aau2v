@@ -84,7 +84,7 @@ class Model(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_meta(
+    def attention_weight_to_item_meta(
         self, seq_index: int, meta_indicies: List[int]
     ) -> Tensor:
         raise NotImplementedError()
@@ -98,8 +98,8 @@ class Model(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_positional_encoding(
-        self, seq_index: int, item_indicies: List[int]
+    def attention_weight_from_seq_meta_to_item_meta(
+        self, seq_meta_index: int, item_meta_indicies: List[int]
     ) -> Tensor:
         raise NotImplementedError()
 
@@ -235,16 +235,16 @@ class AttentiveModel(PyTorchModel):
         return self.output.forward(v, target_index)
 
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_meta(
+    def attention_weight_to_item_meta(
         self,
         seq_index: int,
-        meta_indicies: List[int],
+        item_meta_indicies: List[int],
     ) -> Tensor:
         seq_index = torch.LongTensor([seq_index])
-        meta_indicies = torch.LongTensor(meta_indicies)
+        item_meta_indicies = torch.LongTensor(item_meta_indicies)
         h_seq = self.embedding_seq.forward(seq_index)
-        h_meta = self.embedding_item_meta.forward(meta_indicies)
-        weight = attention_weight(h_seq, h_meta)
+        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+        weight = attention_weight(h_seq, h_item_meta)
         return weight
 
     @torch.no_grad()  # type: ignore
@@ -261,10 +261,15 @@ class AttentiveModel(PyTorchModel):
         return weight
 
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_positional_encoding(
-        self, seq_index: int, item_indicies: List[int]
+    def attention_weight_from_seq_meta_to_item_meta(
+        self, seq_meta_index: int, item_meta_indicies: List[int]
     ) -> Tensor:
-        raise NotImplementedError()
+        seq_meta_index = torch.LongTensor(seq_meta_index)
+        item_meta_indicies = torch.LongTensor(item_meta_indicies)
+        h_seq_meta = self.embedding_seq_meta.forward(seq_meta_index)
+        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+        weight = attention_weight(h_seq_meta, h_item_meta)
+        return weight
 
     @property
     def seq_embedding(self) -> Tensor:
@@ -339,13 +344,13 @@ class Doc2Vec(PyTorchModel):
         return self.embedding_item.weight.data
 
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_meta(
+    def attention_weight_to_item_meta(
         self,
         seq_index: int,
         meta_indicies: List[int],
     ) -> Tensor:
         raise NotImplementedError(
-            "attention_weight_to_meta is not supported for Doc2Vec"
+            "attention_weight_to_item_meta is not supported for Doc2Vec"
         )
 
     @torch.no_grad()  # type: ignore
@@ -359,9 +364,9 @@ class Doc2Vec(PyTorchModel):
         )
 
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_positional_encoding(
-        self, seq_index: int, item_indicies: List[int]
+    def attention_weight_from_seq_meta_to_item_meta(
+        self, seq_meta_index: int, item_meta_indicies: List[int]
     ) -> Tensor:
         raise NotImplementedError(
-            "attention_weight_to_positional_encoding is not supported for Doc2Vec"
+            "attention_weight_from_seq_meta_to_item_meta is not supported for Doc2Vec"
         )

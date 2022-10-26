@@ -160,17 +160,19 @@ class Analyst:
         print(f"coherence: {coherence}")
         return coherence
 
-    def attention_weights_to_meta(
-        self, seq_index: int, meta_name: str, num_top_values: int = 5
+    def attention_weights_to_item_meta(
+        self, seq_index: int, item_meta_name: str, num_top_values: int = 5
     ) -> None:
-        meta_values = list(self.dataset_manager.item_meta_dict[meta_name])
-        meta_names = [to_full_meta_value(meta_name, value) for value in meta_values]
+        meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
+        meta_names = [
+            to_full_meta_value(item_meta_name, value) for value in meta_values
+        ]
         meta_indicies = self.dataset_manager.item_meta_le.transform(meta_names)
         weight = list(
-            self.trainer.attention_weight_to_meta(seq_index, meta_indicies)[0]
+            self.trainer.attention_weight_to_item_meta(seq_index, meta_indicies)[0]
         )
         meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
-        print(f"attention weights of seq: {seq_index} for meta: {meta_name}")
+        print(f"attention weights of seq: {seq_index} for meta: {item_meta_name}")
         for weight, name in sorted(meta_weights)[::-1][:num_top_values]:
             print(f"{weight.item():.4f}", name)
 
@@ -188,6 +190,30 @@ class Analyst:
         print(f"item weights of seq: {seq_index}")
         for weight, name in sorted(item_weights)[::-1]:
             print(f"{weight.item():.4f}", self.dataset_manager.item_metadata[name])
+
+    def attention_weight_from_seq_meta_to_item_meta(
+        self,
+        seq_meta_name: str,
+        seq_meta_value: str,
+        item_meta_name: str,
+        num_top_values: int = 5,
+    ) -> None:
+        seq_meta = to_full_meta_value(seq_meta_name, seq_meta_value)
+        seq_meta_index = self.dataset_manager.seq_meta_le.transform([seq_meta])
+        meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
+        meta_names = [
+            to_full_meta_value(item_meta_name, value) for value in meta_values
+        ]
+        meta_indicies = self.dataset_manager.item_meta_le.transform(meta_names)
+        weight = list(
+            self.trainer.attention_weight_from_seq_meta_to_item_meta(
+                seq_meta_index, meta_indicies
+            )[0]
+        )
+        meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
+        print(f"attention weights of seq meta: {seq_meta} for meta: {item_meta_name}")
+        for weight, name in sorted(meta_weights)[::-1][:num_top_values]:
+            print(f"{weight.item():.4f}", name)
 
     def prediction_accuracy(
         self,
