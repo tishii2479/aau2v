@@ -2,12 +2,12 @@ import invoke
 
 
 @invoke.task
-def run(c):  # type: ignore
+def run_large(c):  # type: ignore
     params = [
         "--load_model",
         "--epochs=0",
         "--model_name=attentive",
-        "--model_path=weights/model_hm_meta.pt",
+        "--working_dir=cache/hm-large/",
     ]
     invoke.run("python3 train.py " + " ".join(params))
 
@@ -18,7 +18,7 @@ def run_doc2vec(c):  # type: ignore
         "--load_model",
         "--epochs=0",
         "--model_name=doc2vec",
-        "--model_path=weights/doc2vec_hm.pt",
+        "--working_dir=cache/hm-doc2vec/",
     ]
     invoke.run("python3 train.py " + " ".join(params))
 

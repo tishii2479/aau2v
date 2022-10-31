@@ -173,14 +173,11 @@ class PyTorchTrainer(Trainer):
             case _:
                 print(f"invalid model_name: {trainer_config.model_name}")
 
-        if (
-            self.trainer_config.load_model
-            and self.trainer_config.model_path is not None
-        ):
+        if self.trainer_config.load_model:
             print(f"load_state_dict from: {self.trainer_config.model_path}")
             loaded = torch.load(self.trainer_config.model_path)  # type: ignore
             self.model.load_state_dict(loaded)
-        elif self.trainer_config.model_path is not None:
+        else:
             check_model_path(self.trainer_config.model_path)
 
         self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
@@ -249,19 +246,16 @@ class PyTorchTrainer(Trainer):
 
             if validate_loss < best_validate_loss:
                 best_validate_loss = validate_loss
-                if self.trainer_config.model_path is not None:
-                    temp_model_path = "weights/best_model.pt"
-                    torch.save(self.model.state_dict(), temp_model_path)
-                    print(f"saved temporary model to {temp_model_path}")
+                torch.save(self.model.state_dict(), self.trainer_config.best_model_path)
+                print(f"saved best model to {self.trainer_config.best_model_path}")
 
             losses.append(total_loss)
             val_losses.append(validate_loss)
 
         print("train end")
 
-        if self.trainer_config.model_path is not None:
-            torch.save(self.model.state_dict(), self.trainer_config.model_path)
-            print(f"saved model to {self.trainer_config.model_path}")
+        torch.save(self.model.state_dict(), self.trainer_config.model_path)
+        print(f"saved model to {self.trainer_config.model_path}")
 
         if len(losses) > 0:
             print(f"final loss: {losses[-1]}")

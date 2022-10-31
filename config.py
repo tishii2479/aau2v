@@ -1,6 +1,7 @@
 from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from pathlib import Path
+from typing import Tuple
 
 
 @dataclass
@@ -10,7 +11,19 @@ class TrainerConfig:
     batch_size: int
     verbose: bool
     load_model: bool
-    model_path: Optional[str] = None
+    working_dir: str
+
+    @property
+    def model_path(self) -> str:
+        return str(Path(self.working_dir, "model.pt"))
+
+    @property
+    def best_model_path(self) -> str:
+        return str(Path(self.working_dir, "best_model.pt"))
+
+    @property
+    def dataset_path(self) -> str:
+        return str(Path(self.working_dir, "dataset.pickle"))
 
 
 @dataclass
@@ -55,10 +68,10 @@ def parse_args() -> Namespace:
     )
     parser.add_argument("--verbose", action="store_true", help="ログを詳細に出すかどうか")
     parser.add_argument(
-        "--load_model", action="store_true", help="`model_path`からモデルのパラメータを読み込むかどうか"
+        "--load_model", action="store_true", help="`working_dir`からモデルのパラメータを読み込むかどうか"
     )
     parser.add_argument(
-        "--model_path", type=str, default=None, help="読み込むモデルのパラメータのファイルパス"
+        "--working_dir", type=str, default="cache/", help="モデル、データセットを保存するディレクトリ"
     )
     return parser.parse_args()
 
@@ -70,7 +83,7 @@ def setup_config(args: Namespace) -> Tuple[TrainerConfig, ModelConfig]:
         batch_size=args.batch_size,
         load_model=args.load_model,
         verbose=args.verbose,
-        model_path=args.model_path,
+        working_dir=args.working_dir,
     )
     model_config = ModelConfig(
         d_model=args.d_model,
@@ -92,7 +105,7 @@ def default_config() -> Tuple[TrainerConfig, ModelConfig]:
         batch_size=10,
         load_model=False,
         verbose=False,
-        model_path=None,
+        working_dir="cache/",
     )
     model_config = ModelConfig(
         d_model=50,
