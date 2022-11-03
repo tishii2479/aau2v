@@ -19,11 +19,11 @@ def load_dataset(
             train_raw_sequences,
             item_metadata,
             seq_metadata,
-            test_raw_sequences,
+            test_raw_sequences_dict,
         ) = create_movielens_data(max_data_size=1000, test_data_size=500)
         dataset_manager = SequenceDatasetManager(
             train_raw_sequences=train_raw_sequences,
-            test_raw_sequences_dict=test_raw_sequences,
+            test_raw_sequences_dict=test_raw_sequences_dict,
             item_metadata=item_metadata,
             seq_metadata=seq_metadata,
             exclude_item_metadata_columns=["title"],

@@ -354,7 +354,7 @@ def create_hm_data(
     Dict[str, List[str]],
     Optional[Dict[str, Dict[str, Any]]],
     Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, List[str]]],
+    Optional[Dict[str, Dict[str, List[str]]]],
 ]:
     sequences_df = pd.read_csv(
         purchase_history_path, dtype={"customer_id": str}, index_col="customer_id"
@@ -390,7 +390,9 @@ def create_hm_data(
         filter(lambda item: item[0] in items_set, item_metadata.items())
     )
 
-    return raw_sequences, item_metadata, customer_metadata, test_raw_sequences
+    test_raw_sequences_dict = {"test": test_raw_sequences}
+
+    return raw_sequences, item_metadata, customer_metadata, test_raw_sequences_dict
 
 
 def create_movielens_data(
@@ -411,7 +413,7 @@ def create_movielens_data(
     Dict[str, List[str]],
     Optional[Dict[str, Dict[str, Any]]],
     Optional[Dict[str, Dict[str, Any]]],
-    Dict[str, Dict[str, List[str]]],
+    Optional[Dict[str, Dict[str, List[str]]]],
 ]:
     train_df = pd.read_csv(train_path, dtype={"user_id": str}, index_col="user_id")
     user_df = pd.read_csv(user_path, dtype={"user_id": str}, index_col="user_id")
@@ -427,11 +429,11 @@ def create_movielens_data(
     user_metadata = user_df.to_dict("index")
     movie_metadata = movie_df.to_dict("index")
 
-    test_raw_sequences: Dict[str, Dict[str, List[str]]] = {}
+    test_raw_sequences_dict: Dict[str, Dict[str, List[str]]] = {}
 
     for test_name, test_path in test_paths.items():
         test_df = pd.read_csv(test_path, dtype={"user_id": str}, index_col="user_id")
-        test_raw_sequences[test_name] = {
+        test_raw_sequences_dict[test_name] = {
             index: sequence.split(" ")
             for index, sequence in zip(
                 test_df.index.values,
@@ -439,7 +441,7 @@ def create_movielens_data(
             )
         }
 
-    return train_raw_sequences, movie_metadata, user_metadata, test_raw_sequences
+    return train_raw_sequences, movie_metadata, user_metadata, test_raw_sequences_dict
 
 
 def create_20newsgroup_data(
@@ -450,7 +452,7 @@ def create_20newsgroup_data(
     Dict[str, List[str]],
     Optional[Dict[str, Dict[str, Any]]],
     Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, List[str]]],
+    Optional[Dict[str, Dict[str, List[str]]]],
 ]:
     newsgroups_train = datasets.fetch_20newsgroups(
         data_home="data",
@@ -495,4 +497,8 @@ def create_20newsgroup_data(
         else:
             test_raw_sequences[str(doc_id)] = sequence
 
-    return train_raw_sequences, None, seq_metadata, test_raw_sequences
+    test_raw_sequences_dict: Dict[str, Dict[str, List[str]]] = {
+        "test": test_raw_sequences
+    }
+
+    return train_raw_sequences, None, seq_metadata, test_raw_sequences_dict
