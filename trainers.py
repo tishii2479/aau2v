@@ -256,16 +256,20 @@ class PyTorchTrainer(Trainer):
 
                 if validate_loss < best_validate_loss:
                     best_validate_loss = validate_loss
-                    torch.save(
-                        self.model.state_dict(), self.trainer_config.best_model_path
-                    )
-                    print(f"saved best model to {self.trainer_config.best_model_path}")
+                    if self.trainer_config.save_model:
+                        torch.save(
+                            self.model.state_dict(), self.trainer_config.best_model_path
+                        )
+                        print(
+                            f"saved best model to {self.trainer_config.best_model_path}"
+                        )
                 val_losses.append(validate_loss)
 
         print("train end")
 
-        torch.save(self.model.state_dict(), self.trainer_config.model_path)
-        print(f"saved model to {self.trainer_config.model_path}")
+        if self.trainer_config.save_model:
+            torch.save(self.model.state_dict(), self.trainer_config.model_path)
+            print(f"saved model to {self.trainer_config.model_path}")
 
         if len(losses) > 0:
             print(f"final loss: {losses[-1]}")

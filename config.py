@@ -11,6 +11,7 @@ class TrainerConfig:
     batch_size: int
     verbose: bool
     load_model: bool
+    save_model: bool
     working_dir: str
 
     @property
@@ -68,6 +69,9 @@ def parse_args() -> Namespace:
     )
     parser.add_argument("--verbose", action="store_true", help="ログを詳細に出すかどうか")
     parser.add_argument(
+        "--no_save_model", action="store_true", help="`working_dir`にモデルを保存するかどうか"
+    )
+    parser.add_argument(
         "--load_model", action="store_true", help="`working_dir`からモデルのパラメータを読み込むかどうか"
     )
     parser.add_argument(
@@ -82,6 +86,7 @@ def setup_config(args: Namespace) -> Tuple[TrainerConfig, ModelConfig]:
         epochs=args.epochs,
         batch_size=args.batch_size,
         load_model=args.load_model,
+        save_model=(args.no_save_model is False),
         verbose=args.verbose,
         working_dir=args.working_dir,
     )
@@ -104,6 +109,7 @@ def default_config() -> Tuple[TrainerConfig, ModelConfig]:
         epochs=2,
         batch_size=10,
         load_model=False,
+        save_model=True,
         verbose=False,
         working_dir="cache/",
     )
