@@ -209,13 +209,17 @@ class AttentiveModel(PyTorchModel):
 
         h_seq = self.embedding_seq.forward(seq_index)
         # add meta embedding
-        h_seq += self.embedding_seq_meta.forward(seq_meta_indicies).sum(dim=1)
+        h_seq += (
+            self.embedding_seq_meta.forward(seq_meta_indicies).mean(dim=2).sum(dim=1)
+        )
         # take mean
         h_seq /= num_seq_meta_types + 1
 
         h_items = self.embedding_item.forward(item_indicies)
         # add meta embedding
-        h_items += self.embedding_item_meta.forward(item_meta_indicies).sum(dim=2)
+        h_items += (
+            self.embedding_item_meta.forward(item_meta_indicies).mean(dim=3).sum(dim=2)
+        )
         # take mean
         h_items /= num_item_meta_types + 1
 
@@ -331,7 +335,7 @@ class Doc2Vec(PyTorchModel):
         h_seq = self.embedding_seq.forward(seq_index)
         h_items = self.embedding_item.forward(item_indicies)
 
-        v = (h_seq + h_items.sum(dim=1)) / (window_size)
+        v = (h_seq + h_items.sum(dim=1)) / (window_size + 1)
 
         return self.output.forward(v, target_index)
 

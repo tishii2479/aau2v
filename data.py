@@ -248,7 +248,13 @@ def process_metadata(
                 continue
             if meta_name not in meta_dict:
                 meta_dict[meta_name] = set()
-            meta_dict[meta_name].add(meta_value)
+
+            # 補助情報が複数ある場合はリストで渡される
+            if isinstance(meta_value, list):
+                for e in meta_value:
+                    meta_dict[meta_name].add(e)
+            else:
+                meta_dict[meta_name].add(meta_value)
 
     all_meta_values: List[str] = []
     for meta_name, meta_values in meta_dict.items():
@@ -281,22 +287,30 @@ def to_sequential_data(
             (sequences, data)
     """
 
-    def get_item_meta_indicies(item_ids: List[int]) -> List[List[int]]:
+    def get_item_meta_indicies(item_ids: List[int]) -> List[List[List[int]]]:
         item_names = item_le.inverse_transform(item_ids)
-        item_meta_indices: List[List[int]] = []
+        item_meta_indices: List[List[List[int]]] = []
         for item_name in item_names:
             if item_name not in item_metadata:
                 item_meta_indices.append([])
                 continue
-            item_meta: List[str] = []
+            item_meta: List[List[int]] = []
             for meta_name, meta_value in item_metadata[item_name].items():
                 if (
                     exclude_item_metadata_columns is not None
                     and meta_name in exclude_item_metadata_columns
                 ):
                     continue
-                item_meta.append(to_full_meta_value(meta_name, str(meta_value)))
-            item_meta_indices.append(list(item_meta_le.transform(item_meta)))
+                item_meta_values = []
+                if isinstance(meta_value, list):
+                    for e in meta_value:
+                        item_meta_values.append(to_full_meta_value(meta_name, str(e)))
+                else:
+                    item_meta_values.append(
+                        to_full_meta_value(meta_name, str(meta_value))
+                    )
+                item_meta.append(item_meta_le.transform(item_meta_values))
+            item_meta_indices.append(item_meta)
         return item_meta_indices
 
     def get_seq_meta_indicies(seq_name: str) -> List[int]:
@@ -304,7 +318,11 @@ def to_sequential_data(
         if seq_name not in seq_metadata:
             return []
         for meta_name, meta_value in seq_metadata[seq_name].items():
-            seq_meta.append(to_full_meta_value(meta_name, meta_value))
+            if (
+                exclude_seq_metadata_columns is not None
+                and meta_name in exclude_seq_metadata_columns
+            ):
+                seq_meta.append(to_full_meta_value(meta_name, meta_value))
         seq_meta_indicies: List[int] = seq_meta_le.transform(seq_meta)
         return seq_meta_indicies
 
@@ -427,6 +445,7 @@ def create_movielens_data(
         )
     }
     user_metadata = user_df.to_dict("index")
+    movie_df.genre = movie_df.genre.apply(lambda s: s.split("|"))
     movie_metadata = movie_df.to_dict("index")
 
     test_raw_sequences_dict: Dict[str, Dict[str, List[str]]] = {}
