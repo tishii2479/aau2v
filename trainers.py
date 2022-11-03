@@ -32,7 +32,7 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def fit(self) -> Tuple[List[float], Optional[List[float]]]:
+    def fit(self) -> Dict[str, List[float]]:
         """
         Called to fit to data
 
@@ -40,7 +40,7 @@ class Trainer(metaclass=abc.ABCMeta):
             NotImplementedError: if not implemented
 
         Returns:
-            Tuple[List[float], Optional[List[float]]]: losses
+            Dict[str, List[float]]: { 損失の名前 : 損失の推移 }
         """
         raise NotImplementedError()
 
@@ -215,11 +215,10 @@ class PyTorchTrainer(Trainer):
 
         return item_embeddings, seq_embeddings
 
-    def fit(self) -> Tuple[List[float], List[float]]:
+    def fit(self) -> Dict[str, List[float]]:
         self.model.train()
-        losses = []
-        val_losses = []
-        best_validate_loss = 1e10
+        loss_dict: Dict[str, List[float]] = {"train": []}
+        best_test_loss = 1e10
         print("train start")
         for epoch in range(self.trainer_config.epochs):
             total_loss = 0.0
@@ -248,14 +247,16 @@ class PyTorchTrainer(Trainer):
                 total_loss += loss.item()
 
             total_loss /= len(self.train_data_loader)
-            losses.append(total_loss)
+            loss_dict["train"].append(total_loss)
 
             if self.test_data_loaders is not None:
-                validate_loss, _ = self.eval(show_fig=False)
-                print(f"Epoch: {epoch}, loss: {total_loss}, val_loss: {validate_loss}")
+                test_loss, test_loss_dict = self.eval(show_fig=False)
+                print(
+                    f"Epoch: {epoch+1}, loss: {total_loss}, test_loss: {test_loss_dict}"
+                )
 
-                if validate_loss < best_validate_loss:
-                    best_validate_loss = validate_loss
+                if test_loss < best_test_loss:
+                    best_test_loss = test_loss
                     if self.trainer_config.save_model:
                         torch.save(
                             self.model.state_dict(), self.trainer_config.best_model_path
@@ -263,7 +264,13 @@ class PyTorchTrainer(Trainer):
                         print(
                             f"saved best model to {self.trainer_config.best_model_path}"
                         )
-                val_losses.append(validate_loss)
+
+                for loss_name, loss_value in test_loss_dict.items():
+                    if loss_name not in loss_dict:
+                        loss_dict[loss_name] = []
+                    loss_dict[loss_name].append(loss_value)
+            else:
+                print(f"Epoch: {epoch}, loss: {total_loss}")
 
         print("train end")
 
@@ -271,10 +278,7 @@ class PyTorchTrainer(Trainer):
             torch.save(self.model.state_dict(), self.trainer_config.model_path)
             print(f"saved model to {self.trainer_config.model_path}")
 
-        if len(losses) > 0:
-            print(f"final loss: {losses[-1]}")
-
-        return losses, val_losses
+        return loss_dict
 
     @torch.no_grad()
     def eval(self, show_fig: bool = False) -> Tuple[float, Dict[str, float]]:
@@ -282,7 +286,7 @@ class PyTorchTrainer(Trainer):
             print("No test dataset")
             return 0, {}
         self.model.eval()
-        total_losses: Dict[str, float] = {}
+        total_loss_dict: Dict[str, float] = {}
         for test_name, data_loader in self.test_data_loaders.items():
             pos_outputs: List[float] = []
             neg_outputs: List[float] = []
@@ -317,7 +321,7 @@ class PyTorchTrainer(Trainer):
                 total_loss += loss.item()
 
             total_loss /= len(data_loader)
-            total_losses[test_name] = total_loss
+            total_loss_dict[test_name] = total_loss
 
             if show_fig:
                 plt.hist(pos_outputs)
@@ -325,10 +329,12 @@ class PyTorchTrainer(Trainer):
                 plt.hist(neg_outputs)
                 plt.show()
 
-        val_loss_sum = 0.0
-        for val_loss in total_losses.values():
-            val_loss_sum += val_loss
-        return val_loss_sum, total_losses
+        eval_loss = 0.0
+        for val_loss in total_loss_dict.values():
+            eval_loss += val_loss
+        eval_loss /= len(total_loss_dict)
+
+        return eval_loss, total_loss_dict
 
     def attention_weight_to_item(
         self, seq_index: int, item_indicies: List[int]
