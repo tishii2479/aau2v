@@ -217,7 +217,7 @@ class Analyst:
 
     def prediction_accuracy(
         self,
-    ) -> float:
+    ) -> Tuple[float, Dict[str, float]]:
         return self.trainer.eval(show_fig=True)
 
     def similar_items(
