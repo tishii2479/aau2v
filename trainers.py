@@ -45,12 +45,13 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def eval(self, show_fig: bool = False) -> float:
+    def eval(self, show_fig: bool = False) -> Tuple[float, Dict[str, float]]:
         """
         予測精度を評価する
 
         Returns:
-            float: 予測精度
+            float, Dict[str, float]:
+                評価損失, { テストデータ名 : 損失の平均 }
         """
         raise NotImplementedError()
 
@@ -144,9 +145,15 @@ class PyTorchTrainer(Trainer):
             self.dataset_manager.train_dataset, batch_size=trainer_config.batch_size
         )
         if self.dataset_manager.test_dataset is not None:
-            self.test_data_loader = DataLoader(
-                self.dataset_manager.test_dataset, batch_size=trainer_config.batch_size
-            )
+            self.test_data_loaders: Optional[Dict[str, DataLoader]] = {}
+            for test_name, dataset in self.dataset_manager.test_dataset.items():
+                test_data_loader = DataLoader(
+                    dataset,
+                    batch_size=trainer_config.batch_size,
+                )
+                self.test_data_loaders[test_name] = test_data_loader
+        else:
+            self.test_data_loaders = None
         self.trainer_config = trainer_config
 
         match trainer_config.model_name:
@@ -241,16 +248,19 @@ class PyTorchTrainer(Trainer):
                 total_loss += loss.item()
 
             total_loss /= len(self.train_data_loader)
-            validate_loss = self.eval(show_fig=False)
-            print(f"Epoch: {epoch}, loss: {total_loss}, val_loss: {validate_loss}")
-
-            if validate_loss < best_validate_loss:
-                best_validate_loss = validate_loss
-                torch.save(self.model.state_dict(), self.trainer_config.best_model_path)
-                print(f"saved best model to {self.trainer_config.best_model_path}")
-
             losses.append(total_loss)
-            val_losses.append(validate_loss)
+
+            if self.test_data_loaders is not None:
+                validate_loss, _ = self.eval(show_fig=False)
+                print(f"Epoch: {epoch}, loss: {total_loss}, val_loss: {validate_loss}")
+
+                if validate_loss < best_validate_loss:
+                    best_validate_loss = validate_loss
+                    torch.save(
+                        self.model.state_dict(), self.trainer_config.best_model_path
+                    )
+                    print(f"saved best model to {self.trainer_config.best_model_path}")
+                val_losses.append(validate_loss)
 
         print("train end")
 
@@ -263,48 +273,58 @@ class PyTorchTrainer(Trainer):
         return losses, val_losses
 
     @torch.no_grad()
-    def eval(self, show_fig: bool = False) -> float:
+    def eval(self, show_fig: bool = False) -> Tuple[float, Dict[str, float]]:
+        if self.test_data_loaders is None:
+            print("No test dataset")
+            return 0, {}
         self.model.eval()
-        pos_outputs: List[float] = []
-        neg_outputs: List[float] = []
-        total_loss = 0.0
-        for i, data in enumerate(tqdm.tqdm(self.test_data_loader)):
-            (
-                seq_index,
-                item_indicies,
-                item_meta_indicies,
-                seq_meta_indicies,
-                target_index,
-            ) = data
+        total_losses: Dict[str, float] = {}
+        for test_name, data_loader in self.test_data_loaders.items():
+            pos_outputs: List[float] = []
+            neg_outputs: List[float] = []
+            total_loss = 0.0
+            for i, data in enumerate(tqdm.tqdm(data_loader)):
+                (
+                    seq_index,
+                    item_indicies,
+                    item_meta_indicies,
+                    seq_meta_indicies,
+                    target_index,
+                ) = data
 
-            pos_out, pos_label, neg_out, neg_label = self.model.calc_out(
-                seq_index,
-                item_indicies,
-                item_meta_indicies,
-                seq_meta_indicies,
-                target_index,
-            )
+                pos_out, pos_label, neg_out, neg_label = self.model.calc_out(
+                    seq_index,
+                    item_indicies,
+                    item_meta_indicies,
+                    seq_meta_indicies,
+                    target_index,
+                )
+
+                if show_fig:
+                    for e in pos_out.reshape(-1):
+                        pos_outputs.append(e.item())
+                    for e in neg_out.reshape(-1):
+                        neg_outputs.append(e.item())
+
+                loss_pos = F.binary_cross_entropy(pos_out, pos_label)
+                loss_neg = F.binary_cross_entropy(neg_out, neg_label)
+                negative_sample_size = neg_label.size(1)
+                loss = (loss_pos + loss_neg / negative_sample_size) / 2
+                total_loss += loss.item()
+
+            total_loss /= len(data_loader)
+            total_losses[test_name] = total_loss
 
             if show_fig:
-                for e in pos_out.reshape(-1):
-                    pos_outputs.append(e.item())
-                for e in neg_out.reshape(-1):
-                    neg_outputs.append(e.item())
+                plt.hist(pos_outputs)
+                plt.show()
+                plt.hist(neg_outputs)
+                plt.show()
 
-            loss_pos = F.binary_cross_entropy(pos_out, pos_label)
-            loss_neg = F.binary_cross_entropy(neg_out, neg_label)
-            negative_sample_size = neg_label.size(1)
-            loss = (loss_pos + loss_neg / negative_sample_size) / 2
-            total_loss += loss.item()
-
-        total_loss /= len(self.test_data_loader)
-
-        if show_fig:
-            plt.hist(pos_outputs)
-            plt.show()
-            plt.hist(neg_outputs)
-            plt.show()
-        return total_loss
+        val_loss_sum = 0.0
+        for val_loss in total_losses.values():
+            val_loss_sum += val_loss
+        return val_loss_sum, total_losses
 
     def attention_weight_to_item(
         self, seq_index: int, item_indicies: List[int]

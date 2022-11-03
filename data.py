@@ -23,7 +23,7 @@ class SequenceDatasetManager:
         train_raw_sequences: Dict[str, List[str]],
         item_metadata: Optional[Dict[str, MetaData]] = None,
         seq_metadata: Optional[Dict[str, MetaData]] = None,
-        test_raw_sequences: Optional[Dict[str, List[str]]] = None,
+        test_raw_sequences_dict: Optional[Dict[str, Dict[str, List[str]]]] = None,
         exclude_seq_metadata_columns: Optional[List[str]] = None,
         exclude_item_metadata_columns: Optional[List[str]] = None,
         window_size: int = 8,
@@ -55,9 +55,11 @@ class SequenceDatasetManager:
                     "単語数": 3
                 }
                 Defaults to None.
-            test_raw_sequences (Optional[Dict[str, List[str]]], optional):
+            test_raw_sequences (Optional[Dict[str, Dict[str, List[str]]]], optional):
                 生のテスト用シーケンシャルデータ
-                形式はtrain_raw_sequencesと一緒
+                複数のテストデータがあることを想定して、
+                { テストデータ名 : テストデータ } の形式で管理
+                テストデータの形式はtrain_raw_sequencesと一緒
                 Defaults to None.
             exclude_seq_metadata_columns (Optional[List[str]], optional):
                 `seq_metadata`の中で補助情報として扱わない列の名前のリスト（例: 顧客IDなど）
@@ -69,10 +71,15 @@ class SequenceDatasetManager:
                 学習するときに参照する過去の要素の個数
                 Defaults to 8.
         """
-        if test_raw_sequences is not None:
-            self.raw_sequences = ChainMap(train_raw_sequences, test_raw_sequences)
-        else:
-            self.raw_sequences = ChainMap(train_raw_sequences)
+        self.raw_sequences = train_raw_sequences
+        if test_raw_sequences_dict is not None:
+            # seq_idが一緒の訓練データとテストデータがあるかもしれないので、系列をマージする
+            for _, test_raw_sequences in test_raw_sequences_dict.items():
+                for seq_id, raw_sequence in test_raw_sequences.items():
+                    if seq_id in self.raw_sequences:
+                        self.raw_sequences[seq_id].extend(raw_sequence)
+                    else:
+                        self.raw_sequences[seq_id] = raw_sequence
 
         self.item_metadata = item_metadata if item_metadata is not None else {}
         self.seq_metadata = seq_metadata if seq_metadata is not None else {}
@@ -91,7 +98,6 @@ class SequenceDatasetManager:
         self.num_item = len(items)
         self.num_item_meta = len(self.item_meta_le.classes_)
         self.num_seq_meta = len(self.seq_meta_le.classes_)
-
         print(
             f"num_seq: {self.num_seq}, num_item: {self.num_item}, "
             + f"num_item_meta: {self.num_item_meta}, "
@@ -110,25 +116,26 @@ class SequenceDatasetManager:
             exclude_seq_metadata_columns=exclude_seq_metadata_columns,
             exclude_item_metadata_columns=exclude_item_metadata_columns,
         )
-        if test_raw_sequences is not None:
-            self.test_dataset: Optional[SequenceDataset] = SequenceDataset(
-                raw_sequences=test_raw_sequences,
-                item_metadata=self.item_metadata,
-                seq_metadata=self.seq_metadata,
-                seq_le=self.seq_le,
-                item_le=self.item_le,
-                seq_meta_le=self.seq_meta_le,
-                item_meta_le=self.item_meta_le,
-                window_size=window_size,
-                exclude_seq_metadata_columns=exclude_seq_metadata_columns,
-                exclude_item_metadata_columns=exclude_item_metadata_columns,
-            )
+        self.sequences = self.train_dataset.sequences
+
+        if test_raw_sequences_dict is not None:
+            self.test_dataset: Optional[Dict[str, SequenceDataset]] = {}
+            for test_name, test_raw_sequences in test_raw_sequences_dict.items():
+                self.test_dataset[test_name] = SequenceDataset(
+                    raw_sequences=test_raw_sequences,
+                    item_metadata=self.item_metadata,
+                    seq_metadata=self.seq_metadata,
+                    seq_le=self.seq_le,
+                    item_le=self.item_le,
+                    seq_meta_le=self.seq_meta_le,
+                    item_meta_le=self.item_meta_le,
+                    window_size=window_size,
+                    exclude_seq_metadata_columns=exclude_seq_metadata_columns,
+                    exclude_item_metadata_columns=exclude_item_metadata_columns,
+                )
+                self.sequences += self.test_dataset[test_name].sequences
         else:
             self.test_dataset = None
-
-        self.sequences = self.train_dataset.sequences
-        if self.test_dataset is not None:
-            self.sequences += self.test_dataset.sequences
 
 
 class SequenceDataset(Dataset):
@@ -384,6 +391,55 @@ def create_hm_data(
     )
 
     return raw_sequences, item_metadata, customer_metadata, test_raw_sequences
+
+
+def create_movielens_data(
+    train_path: str = "data/ml-1m/train.csv",
+    test_paths: Dict[str, str] = {
+        "sz10": "data/ml-1m/test-10.csv",
+        "sz20": "data/ml-1m/test-20.csv",
+        "sz30": "data/ml-1m/test-30.csv",
+        "sz40": "data/ml-1m/test-40.csv",
+        "sz50": "data/ml-1m/test-50.csv",
+    },
+    user_path: str = "data/ml-1m/users.csv",
+    movie_path: str = "data/ml-1m/movies.csv",
+    max_data_size: int = 1000,
+    min_seq_length: int = 50,
+    test_data_size: int = 500,
+) -> Tuple[
+    Dict[str, List[str]],
+    Optional[Dict[str, Dict[str, Any]]],
+    Optional[Dict[str, Dict[str, Any]]],
+    Dict[str, Dict[str, List[str]]],
+]:
+    train_df = pd.read_csv(train_path, dtype={"user_id": str}, index_col="user_id")
+    user_df = pd.read_csv(user_path, dtype={"user_id": str}, index_col="user_id")
+    movie_df = pd.read_csv(movie_path, dtype={"movie_id": str}, index_col="movie_id")
+
+    train_raw_sequences = {
+        index: sequence.split(" ")
+        for index, sequence in zip(
+            train_df.index.values,
+            train_df.sequence.values,
+        )
+    }
+    user_metadata = user_df.to_dict("index")
+    movie_metadata = movie_df.to_dict("index")
+
+    test_raw_sequences: Dict[str, Dict[str, List[str]]] = {}
+
+    for test_name, test_path in test_paths.items():
+        test_df = pd.read_csv(test_path, dtype={"user_id": str}, index_col="user_id")
+        test_raw_sequences[test_name] = {
+            index: sequence.split(" ")
+            for index, sequence in zip(
+                test_df.index.values,
+                test_df.sequence.values,
+            )
+        }
+
+    return train_raw_sequences, movie_metadata, user_metadata, test_raw_sequences
 
 
 def create_20newsgroup_data(
