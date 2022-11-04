@@ -1,12 +1,17 @@
 import abc
-from math import sqrt
 from typing import List, Tuple
 
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from layer import NegativeSampling, PositionalEncoding
+from layer import (
+    NegativeSampling,
+    PositionalEncoding,
+    attention,
+    attention_weight,
+    calc_weighted_meta,
+)
 
 
 class Model(metaclass=abc.ABCMeta):
@@ -122,23 +127,6 @@ class Model(metaclass=abc.ABCMeta):
     @property
     def item_embedding(self) -> Tensor:
         raise NotImplementedError()
-
-
-def attention_weight(Q: Tensor, K: Tensor) -> Tensor:
-    dim = len(Q.shape) - 1  # to handle batched and unbatched data
-    return F.softmax(torch.matmul(Q, K.mT) / sqrt(K.size(dim)), dim=dim)
-
-
-def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
-    a = attention_weight(Q, K)
-    return torch.matmul(a, V)
-
-
-def calc_weighted_meta(h_meta: Tensor, meta_weights: Tensor) -> Tensor:
-    return torch.matmul(
-        h_meta.mT,
-        meta_weights.view((*h_meta.shape[:3], 1)),
-    ).squeeze()
 
 
 class PyTorchModel(Model, nn.Module):
