@@ -34,3 +34,6 @@ $ python3 train.py --epochs=5
 - ちゃんと`nn.Embedding`とアイテムの順番が対応しているか確かめる
 - `dropout`の追加
 - `to_sequential_data`の並列化
+- データの指定を簡単にする
+- cos類似度による比較
+- 評価を考慮してデータをつくる
