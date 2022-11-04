@@ -228,6 +228,7 @@ class PyTorchTrainer(Trainer):
                     item_indicies,
                     seq_meta_indicies,
                     item_meta_indicies,
+                    item_meta_weights,
                     target_index,
                 ) = data
 
@@ -236,6 +237,7 @@ class PyTorchTrainer(Trainer):
                     item_indicies=item_indicies,
                     seq_meta_indicies=seq_meta_indicies,
                     item_meta_indicies=item_meta_indicies,
+                    item_meta_weights=item_meta_weights,
                     target_index=target_index,
                 )
                 self.optimizer.zero_grad()
@@ -295,17 +297,19 @@ class PyTorchTrainer(Trainer):
                 (
                     seq_index,
                     item_indicies,
-                    item_meta_indicies,
                     seq_meta_indicies,
+                    item_meta_indicies,
+                    item_meta_weights,
                     target_index,
                 ) = data
 
                 pos_out, pos_label, neg_out, neg_label = self.model.calc_out(
-                    seq_index,
-                    item_indicies,
-                    item_meta_indicies,
-                    seq_meta_indicies,
-                    target_index,
+                    seq_index=seq_index,
+                    item_indicies=item_indicies,
+                    seq_meta_indicies=seq_meta_indicies,
+                    item_meta_indicies=item_meta_indicies,
+                    item_meta_weights=item_meta_weights,
+                    target_index=target_index,
                 )
 
                 if show_fig:

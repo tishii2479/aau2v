@@ -1,7 +1,9 @@
 import unittest
 
 import torch
+
 from layer import EmbeddingDot, NegativeSampling, PositionalEncoding
+from model import calc_weighted_meta
 
 
 class TestLayer(unittest.TestCase):
@@ -44,6 +46,21 @@ class TestLayer(unittest.TestCase):
         )
         hs = torch.rand(batch_size, seq_length, d_model)
         _ = layer.forward(hs)
+
+    def test_weighted_meta(self) -> None:
+        batch_size = 3
+        window_size = 3
+        d_model = 2
+        item_meta_size = 4
+
+        h_item_meta = torch.rand(batch_size, window_size, item_meta_size, d_model)
+        item_meta_weights = torch.rand(batch_size, window_size, item_meta_size)
+
+        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weights)
+
+        self.assertTrue(
+            h_item_meta_weighted.shape == (batch_size, window_size, d_model)
+        )
 
 
 if __name__ == "__main__":

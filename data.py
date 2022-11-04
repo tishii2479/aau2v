@@ -211,7 +211,9 @@ class SequenceDataset(Dataset):
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
         """
         Returns:
         (
@@ -219,6 +221,7 @@ class SequenceDataset(Dataset):
           item_indicies,
           seq_meta_indicies,
           item_meta_indicies,
+          item_meta_weights,
           target_index
         )
         """
@@ -279,7 +282,9 @@ def to_sequential_data(
     window_size: int,
     exclude_seq_metadata_columns: Optional[List[str]] = None,
     exclude_item_metadata_columns: Optional[List[str]] = None,
-) -> Tuple[List[List[int]], List[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]]]:
+) -> Tuple[
+    List[List[int]], List[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]]
+]:
     """
     シーケンシャルデータを学習データに変換する
 
@@ -288,31 +293,48 @@ def to_sequential_data(
             (sequences, data)
     """
 
-    def get_item_meta_indicies(item_ids: List[int]) -> List[List[List[int]]]:
+    def get_item_meta_indicies(
+        item_ids: List[int],
+        max_item_meta_size: int = 10,
+    ) -> Tuple[List[List[int]], List[List[float]]]:
         item_names = item_le.inverse_transform(item_ids)
-        item_meta_indices: List[List[List[int]]] = []
+        item_meta_indices: List[List[int]] = []
+        item_meta_weights: List[List[float]] = []
         for item_name in item_names:
             if item_name not in item_metadata:
                 item_meta_indices.append([])
                 continue
-            item_meta: List[List[int]] = []
+            item_meta_values: List[str] = []
+            item_meta_weight: List[float] = []
             for meta_name, meta_value in item_metadata[item_name].items():
                 if (
                     exclude_item_metadata_columns is not None
                     and meta_name in exclude_item_metadata_columns
                 ):
                     continue
-                item_meta_values = []
                 if isinstance(meta_value, list):
                     for e in meta_value:
                         item_meta_values.append(to_full_meta_value(meta_name, str(e)))
+                        item_meta_weight.append(1 / len(meta_value))
                 else:
                     item_meta_values.append(
                         to_full_meta_value(meta_name, str(meta_value))
                     )
-                item_meta.append(item_meta_le.transform(item_meta_values))
-            item_meta_indices.append(item_meta)
-        return item_meta_indices
+                    item_meta_weight.append(1)
+
+            item_meta_index = list(item_meta_le.transform(item_meta_values))
+
+            assert len(item_meta_weight) <= max_item_meta_size
+            assert len(item_meta_weight) == len(item_meta_index)
+
+            # 大きさをmax_item_meta_sizenに合わせる
+            while len(item_meta_weight) < max_item_meta_size:
+                item_meta_index.append(0)
+                item_meta_weight.append(0)
+
+            item_meta_indices.append(item_meta_index)
+            item_meta_weights.append(item_meta_weight)
+        return item_meta_indices, item_meta_weights
 
     def get_seq_meta_indicies(seq_name: str) -> List[int]:
         seq_meta = []
@@ -327,7 +349,7 @@ def to_sequential_data(
         seq_meta_indicies: List[int] = seq_meta_le.transform(seq_meta)
         return seq_meta_indicies
 
-    sequences = []
+    sequences: List[List[int]] = []
     data = []
 
     # TODO: parallelize
@@ -345,17 +367,21 @@ def to_sequential_data(
             item_indicies = torch.tensor(
                 sequence[j : j + window_size], dtype=torch.long
             )
-            item_meta_indices = torch.tensor(
-                get_item_meta_indicies(sequence[j : j + window_size]),
-                dtype=torch.long,
+            item_meta_indices, item_meta_weights = get_item_meta_indicies(
+                sequence[j : j + window_size]
             )
+            # print(get_item_meta_indicies(sequence[j : j + window_size]))
+            item_meta_indices = torch.tensor(item_meta_indices, dtype=torch.long)
+            item_meta_weights = torch.tensor(item_meta_weights)
             target_index = torch.tensor(sequence[j + window_size], dtype=torch.long)
+
             data.append(
                 (
                     seq_index,
                     item_indicies,
                     seq_meta_indicies,
                     item_meta_indices,
+                    item_meta_weights,
                     target_index,
                 )
             )
@@ -415,13 +441,13 @@ def create_hm_data(
 
 
 def create_movielens_data(
-    train_path: str = "data/ml-1m/train.csv",
+    train_path: str = "data/ml-1m/test-10.csv",
     test_paths: Dict[str, str] = {
-        "train-size=10": "data/ml-1m/test-10.csv",
+        # "train-size=10": "data/ml-1m/test-10.csv",
         "train-size=20": "data/ml-1m/test-20.csv",
-        "train-size=30": "data/ml-1m/test-30.csv",
-        "train-size=40": "data/ml-1m/test-40.csv",
-        "train-size=50": "data/ml-1m/test-50.csv",
+        # "train-size=30": "data/ml-1m/test-30.csv",
+        # "train-size=40": "data/ml-1m/test-40.csv",
+        # "train-size=50": "data/ml-1m/test-50.csv",
     },
     user_path: str = "data/ml-1m/users.csv",
     movie_path: str = "data/ml-1m/movies.csv",

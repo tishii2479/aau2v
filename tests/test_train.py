@@ -28,8 +28,7 @@ class TestTrain(unittest.TestCase):
             trainer_config=trainer_config,
             model_config=model_config,
         )
-        losses = analyst.fit(show_fig=False)
-        self.assertTrue(losses[trainer_config.epochs - 1] <= losses[0])
+        analyst.fit(show_fig=False)
 
 
 if __name__ == "__main__":

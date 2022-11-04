@@ -16,6 +16,7 @@ class Model(metaclass=abc.ABCMeta):
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
         item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
         target_index: Tensor,
     ) -> Tensor:
         """
@@ -33,7 +34,14 @@ class Model(metaclass=abc.ABCMeta):
                 size: (batch_size, seq_meta_kinds, )
             item_meta_indicies (Tensor):
                 要素の補助情報のindicies
-                size: (batch_size, window_size, item_meta_kinds, )
+                size: (batch_size, window_size, max_item_meta_size, )
+            item_meta_weights (Tensor):
+                要素の補助情報の重み
+                一つの補助情報に対して、複数の指定がある場合に、重みをかけて平均を取る
+                例:
+                ["color:blue", "color:dark", "genre:shirt"]
+                [0.5, 0.5, 1]
+                size: (batch_size, window_size, max_item_meta_size, )
             target_index (Tensor):
                 size: (batch_size, )
 
@@ -45,6 +53,7 @@ class Model(metaclass=abc.ABCMeta):
             item_indicies=item_indicies,
             seq_meta_indicies=seq_meta_indicies,
             item_meta_indicies=item_meta_indicies,
+            item_meta_weights=item_meta_weights,
             target_index=target_index,
         )
         loss_pos = F.binary_cross_entropy(pos_out, pos_label)
@@ -62,6 +71,7 @@ class Model(metaclass=abc.ABCMeta):
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
         item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         """
@@ -122,6 +132,13 @@ def attention_weight(Q: Tensor, K: Tensor) -> Tensor:
 def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
     a = attention_weight(Q, K)
     return torch.matmul(a, V)
+
+
+def calc_weighted_meta(h_meta: Tensor, meta_weights: Tensor) -> Tensor:
+    return torch.matmul(
+        h_meta.mT,
+        meta_weights.view((*h_meta.shape[:3], 1)),
+    ).squeeze()
 
 
 class PyTorchModel(Model, nn.Module):
@@ -198,6 +215,7 @@ class AttentiveModel(PyTorchModel):
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
         item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         num_seq_meta_types = seq_meta_indicies.size(1)
@@ -206,17 +224,15 @@ class AttentiveModel(PyTorchModel):
 
         h_seq = self.embedding_seq.forward(seq_index)
         # add meta embedding
-        h_seq += (
-            self.embedding_seq_meta.forward(seq_meta_indicies).mean(dim=2).sum(dim=1)
-        )
+        h_seq += self.embedding_seq_meta.forward(seq_meta_indicies).sum(dim=1)
         # take mean
         h_seq /= num_seq_meta_types + 1
 
         h_items = self.embedding_item.forward(item_indicies)
         # add meta embedding
-        h_items += (
-            self.embedding_item_meta.forward(item_meta_indicies).mean(dim=3).sum(dim=2)
-        )
+        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weights)
+        h_items += h_item_meta_weighted
         # take mean
         h_items /= num_item_meta_types + 1
 
@@ -325,6 +341,7 @@ class Doc2Vec(PyTorchModel):
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
         item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         window_size = item_indicies.size(1)
