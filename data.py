@@ -441,13 +441,13 @@ def create_hm_data(
 
 
 def create_movielens_data(
-    train_path: str = "data/ml-1m/test-10.csv",
+    train_path: str = "data/ml-1m/train.csv",
     test_paths: Dict[str, str] = {
-        # "train-size=10": "data/ml-1m/test-10.csv",
+        "train-size=10": "data/ml-1m/test-10.csv",
         "train-size=20": "data/ml-1m/test-20.csv",
-        # "train-size=30": "data/ml-1m/test-30.csv",
-        # "train-size=40": "data/ml-1m/test-40.csv",
-        # "train-size=50": "data/ml-1m/test-50.csv",
+        "train-size=30": "data/ml-1m/test-30.csv",
+        "train-size=40": "data/ml-1m/test-40.csv",
+        "train-size=50": "data/ml-1m/test-50.csv",
     },
     user_path: str = "data/ml-1m/users.csv",
     movie_path: str = "data/ml-1m/movies.csv",
