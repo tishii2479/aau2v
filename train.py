@@ -47,9 +47,9 @@ def main() -> None:
         trainer_config=trainer_config,
         model_config=model_config,
     )
-    _ = analyst.fit(show_fig=True)
+    analyst.fit(show_fig=True)
 
-    # analyst.prediction_accuracy()
+    analyst.prediction_accuracy()
 
     # analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
     # _ = analyst.calc_coherence(num_cluster=args.num_cluster)
@@ -64,6 +64,10 @@ def main() -> None:
 
     analyst.attention_weight_from_seq_meta_to_item_meta("gender", "F", "genre")
     analyst.attention_weight_from_seq_meta_to_item_meta("gender", "M", "genre")
+
+    analyst.attention_weight_from_seq_meta_to_item_meta("age", "18-24", "year")
+    analyst.attention_weight_from_seq_meta_to_item_meta("age", "35-44", "year")
+    analyst.attention_weight_from_seq_meta_to_item_meta("age", "50-55", "year")
 
 
 if __name__ == "__main__":

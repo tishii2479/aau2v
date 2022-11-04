@@ -1,3 +1,4 @@
+import copy
 from collections import ChainMap
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -71,7 +72,7 @@ class SequenceDatasetManager:
                 学習するときに参照する過去の要素の個数
                 Defaults to 8.
         """
-        self.raw_sequences = train_raw_sequences
+        self.raw_sequences = copy.deepcopy(train_raw_sequences)
         if test_raw_sequences_dict is not None:
             # seq_idが一緒の訓練データとテストデータがあるかもしれないので、系列をマージする
             for _, test_raw_sequences in test_raw_sequences_dict.items():
@@ -416,11 +417,11 @@ def create_hm_data(
 def create_movielens_data(
     train_path: str = "data/ml-1m/train.csv",
     test_paths: Dict[str, str] = {
-        "sz10": "data/ml-1m/test-10.csv",
-        "sz20": "data/ml-1m/test-20.csv",
-        "sz30": "data/ml-1m/test-30.csv",
-        "sz40": "data/ml-1m/test-40.csv",
-        "sz50": "data/ml-1m/test-50.csv",
+        "train-size=10": "data/ml-1m/test-10.csv",
+        "train-size=20": "data/ml-1m/test-20.csv",
+        "train-size=30": "data/ml-1m/test-30.csv",
+        "train-size=40": "data/ml-1m/test-40.csv",
+        "train-size=50": "data/ml-1m/test-50.csv",
     },
     user_path: str = "data/ml-1m/users.csv",
     movie_path: str = "data/ml-1m/movies.csv",

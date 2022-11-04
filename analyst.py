@@ -42,14 +42,10 @@ class Analyst:
                 print(f"invalid model_name: {trainer_config.model_name}")
                 assert False
 
-    def fit(self, show_fig: bool = True) -> List[float]:
-        losses, val_losses = self.trainer.fit()
-        if show_fig and len(losses) > 0:
-            loss_dict = {"loss": losses}
-            if val_losses is not None:
-                loss_dict["val_loss"] = val_losses
+    def fit(self, show_fig: bool = True) -> None:
+        loss_dict = self.trainer.fit()
+        if show_fig:
             visualize_loss(loss_dict)
-        return losses
 
     def cluster_embeddings(
         self, num_cluster: int, show_fig: bool = True, target: str = "sequence"

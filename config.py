@@ -16,11 +16,11 @@ class TrainerConfig:
 
     @property
     def model_path(self) -> str:
-        return str(Path(self.working_dir, "model.pt"))
+        return str(Path(self.working_dir, f"{self.model_name}.pt"))
 
     @property
     def best_model_path(self) -> str:
-        return str(Path(self.working_dir, "best_model.pt"))
+        return str(Path(self.working_dir, f"best_{self.model_name}.pt"))
 
     @property
     def dataset_path(self) -> str:
