@@ -185,9 +185,6 @@ class AttentiveModel(PyTorchModel):
                 d_model, max_sequence_length, dropout
             )
 
-        self.W_q = nn.Linear(d_model, d_model)
-        self.W_k = nn.Linear(d_model, d_model)
-
         self.output = NegativeSampling(
             d_model=d_model,
             num_item=num_item,
@@ -222,8 +219,8 @@ class AttentiveModel(PyTorchModel):
         if self.add_positional_encoding:
             h_items = self.positional_encoding.forward(h_items)
 
-        Q = torch.reshape(self.W_q(h_seq), (-1, 1, self.d_model))
-        K = self.W_k(h_items)
+        Q = torch.reshape(h_seq, (-1, 1, self.d_model))
+        K = h_items
         V = h_items
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
 

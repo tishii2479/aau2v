@@ -36,4 +36,3 @@ $ python3 train.py --epochs=5
 - `to_sequential_data`の並列化
 - 複数ジャンルの映画への対応
     - 複数ある場合には平均を取る
-- `Q_k` を取り除く
