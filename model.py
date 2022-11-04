@@ -331,7 +331,7 @@ class Doc2Vec(PyTorchModel):
         h_seq = self.embedding_seq.forward(seq_index)
         h_items = self.embedding_item.forward(item_indicies)
 
-        v = (h_seq + h_items.sum(dim=1)) / (window_size)
+        v = (h_seq + h_items.sum(dim=1)) / (window_size + 1)
 
         return self.output.forward(v, target_index)
 
