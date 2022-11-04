@@ -34,5 +34,3 @@ $ python3 train.py --epochs=5
 - ちゃんと`nn.Embedding`とアイテムの順番が対応しているか確かめる
 - `dropout`の追加
 - `to_sequential_data`の並列化
-- 複数ジャンルの映画への対応
-    - 複数ある場合には平均を取る

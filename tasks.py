@@ -2,12 +2,12 @@ import invoke
 
 
 @invoke.task
-def run_large(c):  # type: ignore
+def run_ml(c):  # type: ignore
     params = [
         "--load_model",
         "--epochs=0",
         "--model_name=attentive",
-        "--working_dir=cache/hm-large/",
+        "--working_dir=cache/ml/",
     ]
     invoke.run("python3 train.py " + " ".join(params))
 
