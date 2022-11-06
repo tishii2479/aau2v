@@ -54,6 +54,27 @@ def visualize_cluster(
     plt.show()
 
 
+def visualize_vectors(embeddings: Dict[str, np.ndarray]) -> None:
+    vector_names = list(embeddings.keys())
+    vector_values = list(embeddings.values())
+
+    pca = PCA(n_components=2)
+    pca.fit(vector_values)
+    pca_features = pca.fit_transform(vector_values)
+
+    plt.figure()
+
+    for i in range(pca_features.shape[0]):
+        marker = "."
+        plt.scatter(
+            x=pca_features[i, 0],
+            y=pca_features[i, 1],
+            marker=marker,
+        )
+        plt.annotate(vector_names[i], (pca_features[i, 0], pca_features[i, 1]))
+    plt.show()
+
+
 def visualize_loss(loss_dict: Dict[str, List[float]]) -> None:
     fig, ax = plt.subplots()
     ax.set_xlabel("Epochs")

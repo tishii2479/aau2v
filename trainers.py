@@ -105,7 +105,7 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractproperty
-    def item_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
+    def item_meta_embedding(self) -> Dict[str, np.ndarray]:
         """
         Item Metadata embedding
 
@@ -118,7 +118,7 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractproperty
-    def seq_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
+    def seq_meta_embedding(self) -> Dict[str, np.ndarray]:
         """
         Sequence Metadata embedding
 
@@ -376,9 +376,21 @@ class PyTorchTrainer(Trainer):
         }
 
     @property
-    def seq_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
-        raise NotImplementedError()
+    def seq_meta_embedding(self) -> Dict[str, np.ndarray]:
+        return {
+            seq_meta_name: h_seq_meta.detach().numpy()
+            for seq_meta_name, h_seq_meta in zip(
+                self.dataset_manager.seq_meta_le.classes_,
+                self.model.seq_meta_embedding,
+            )
+        }
 
     @property
-    def item_meta_embedding(self) -> Dict[str, Dict[str, np.ndarray]]:
-        raise NotImplementedError()
+    def item_meta_embedding(self) -> Dict[str, np.ndarray]:
+        return {
+            item_meta_name: h_item_meta.detach().numpy()
+            for item_meta_name, h_item_meta in zip(
+                self.dataset_manager.item_meta_le.classes_,
+                self.model.item_meta_embedding,
+            )
+        }

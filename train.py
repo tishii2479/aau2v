@@ -62,12 +62,14 @@ def main() -> None:
     # analyst.similar_items(0)
     # analyst.similar_sequences(0)
 
-    analyst.attention_weight_from_seq_meta_to_item_meta("gender", "F", "genre")
-    analyst.attention_weight_from_seq_meta_to_item_meta("gender", "M", "genre")
+    # analyst.attention_weight_from_seq_meta_to_item_meta("gender", "F", "genre")
+    # analyst.attention_weight_from_seq_meta_to_item_meta("gender", "M", "genre")
 
-    analyst.attention_weight_from_seq_meta_to_item_meta("age", "18-24", "genre")
-    analyst.attention_weight_from_seq_meta_to_item_meta("age", "35-44", "genre")
-    analyst.attention_weight_from_seq_meta_to_item_meta("age", "50-55", "genre")
+    # analyst.attention_weight_from_seq_meta_to_item_meta("age", "18-24", "genre")
+    # analyst.attention_weight_from_seq_meta_to_item_meta("age", "35-44", "genre")
+    # analyst.attention_weight_from_seq_meta_to_item_meta("age", "50-55", "genre")
+
+    analyst.visualize_meta_embedding("gender", "genre")
 
 
 if __name__ == "__main__":

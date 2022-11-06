@@ -102,21 +102,30 @@ class Model(metaclass=abc.ABCMeta):
     def attention_weight_to_item_meta(
         self, seq_index: int, meta_indicies: List[int]
     ) -> Tensor:
-        raise NotImplementedError()
+        raise NotImplementedError(
+            "attention_weight_to_item_meta is not supported for "
+            + f"{self.__class__.__name__}"
+        )
 
     @abc.abstractmethod
     @torch.no_grad()  # type: ignore
     def attention_weight_to_item(
         self, seq_index: int, item_indicies: List[int]
     ) -> Tensor:
-        raise NotImplementedError()
+        raise NotImplementedError(
+            "attention_weight_to_item is not supported for "
+            + f"{self.__class__.__name__}"
+        )
 
     @abc.abstractmethod
     @torch.no_grad()  # type: ignore
     def attention_weight_from_seq_meta_to_item_meta(
         self, seq_meta_index: int, item_meta_indicies: List[int]
     ) -> Tensor:
-        raise NotImplementedError()
+        raise NotImplementedError(
+            "attention_weight_from_seq_meta_to_item_meta is not supported for "
+            + f"{self.__class__.__name__}"
+        )
 
     @abc.abstractproperty
     @property
@@ -127,6 +136,20 @@ class Model(metaclass=abc.ABCMeta):
     @property
     def item_embedding(self) -> Tensor:
         raise NotImplementedError()
+
+    @abc.abstractproperty
+    @property
+    def seq_meta_embedding(self) -> Tensor:
+        raise NotImplementedError(
+            "seq_meta_embedding is not supported for " + f"{self.__class__.__name__}"
+        )
+
+    @abc.abstractproperty
+    @property
+    def item_meta_embedding(self) -> Tensor:
+        raise NotImplementedError(
+            "item_meta_embedding is not supported for " + f"{self.__class__.__name__}"
+        )
 
 
 class PyTorchModel(Model, nn.Module):
@@ -284,6 +307,14 @@ class AttentiveModel(PyTorchModel):
     def item_embedding(self) -> Tensor:
         return self.embedding_item.weight.data
 
+    @property
+    def seq_meta_embedding(self) -> Tensor:
+        return self.embedding_seq_meta.weight.data
+
+    @property
+    def item_meta_embedding(self) -> Tensor:
+        return self.embedding_item_meta.weight.data
+
 
 class Doc2Vec(PyTorchModel):
     """Original Doc2Vec"""
@@ -348,31 +379,3 @@ class Doc2Vec(PyTorchModel):
     @property
     def item_embedding(self) -> Tensor:
         return self.embedding_item.weight.data
-
-    @torch.no_grad()  # type: ignore
-    def attention_weight_to_item_meta(
-        self,
-        seq_index: int,
-        meta_indicies: List[int],
-    ) -> Tensor:
-        raise NotImplementedError(
-            "attention_weight_to_item_meta is not supported for Doc2Vec"
-        )
-
-    @torch.no_grad()  # type: ignore
-    def attention_weight_to_item(
-        self,
-        seq_index: int,
-        item_indicies: List[int],
-    ) -> Tensor:
-        raise NotImplementedError(
-            "attention_weight_to_item is not supported for Doc2Vec"
-        )
-
-    @torch.no_grad()  # type: ignore
-    def attention_weight_from_seq_meta_to_item_meta(
-        self, seq_meta_index: int, item_meta_indicies: List[int]
-    ) -> Tensor:
-        raise NotImplementedError(
-            "attention_weight_from_seq_meta_to_item_meta is not supported for Doc2Vec"
-        )

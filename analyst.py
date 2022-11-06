@@ -15,6 +15,7 @@ from util import (
     top_cluster_items,
     visualize_cluster,
     visualize_loss,
+    visualize_vectors,
 )
 
 
@@ -280,3 +281,17 @@ class Analyst:
             print("\n".join(purchased_items[-5:]))
 
         return similar_customers[:num_seqs]
+
+    def visualize_meta_embedding(self, seq_meta_name: str, item_meta_name: str) -> None:
+        embeddings: Dict[str, np.ndarray] = {}
+        for seq_meta_value in self.dataset_manager.seq_meta_dict[seq_meta_name]:
+            full_seq_meta_value = to_full_meta_value(seq_meta_name, seq_meta_value)
+            embeddings[full_seq_meta_value] = self.trainer.seq_meta_embedding[
+                full_seq_meta_value
+            ]
+        for item_meta_value in self.dataset_manager.item_meta_dict[item_meta_name]:
+            full_item_meta_value = to_full_meta_value(item_meta_name, item_meta_value)
+            embeddings[full_item_meta_value] = self.trainer.item_meta_embedding[
+                full_item_meta_value
+            ]
+        visualize_vectors(embeddings)
