@@ -2,6 +2,16 @@ import invoke
 
 
 @invoke.task
+def train_ml(c):  # type: ignore
+    params = [
+        "--epochs=10",
+        "--model_name=attentive",
+        "--working_dir=cache/ml/",
+    ]
+    invoke.run("python3 train.py " + " ".join(params))
+
+
+@invoke.task
 def run_ml(c):  # type: ignore
     params = [
         "--load_model",

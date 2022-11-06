@@ -22,7 +22,7 @@ $ poetry install
 ### Train model
 
 ```shell
-$ python3 train.py --epochs=5
+$ inv train-ml
 ```
 
 ## TODO:
