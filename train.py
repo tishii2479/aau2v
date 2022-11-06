@@ -54,20 +54,30 @@ def main() -> None:
     # analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
     # _ = analyst.calc_coherence(num_cluster=args.num_cluster)
 
-    # analyst.attention_weights_to_meta(0, "colour_group_name")
-    # analyst.attention_weights_to_sequence(0)
+    # analyst.similarity_between_seq_and_item_meta(0, "colour_group_name")
+    # analyst.similarity_between_seq_and_item(0)
 
     # analyst.cluster_embeddings(args.num_cluster)
 
     # analyst.similar_items(0)
     # analyst.similar_sequences(0)
 
-    # analyst.attention_weight_from_seq_meta_to_item_meta("gender", "F", "genre")
-    # analyst.attention_weight_from_seq_meta_to_item_meta("gender", "M", "genre")
+    analyst.similarity_between_seq_meta_and_item_meta(
+        "gender", "F", "genre", method="cos"
+    )
+    analyst.similarity_between_seq_meta_and_item_meta(
+        "gender", "M", "genre", method="cos"
+    )
 
-    # analyst.attention_weight_from_seq_meta_to_item_meta("age", "18-24", "genre")
-    # analyst.attention_weight_from_seq_meta_to_item_meta("age", "35-44", "genre")
-    # analyst.attention_weight_from_seq_meta_to_item_meta("age", "50-55", "genre")
+    analyst.similarity_between_seq_meta_and_item_meta(
+        "age", "18-24", "genre", method="cos"
+    )
+    analyst.similarity_between_seq_meta_and_item_meta(
+        "age", "35-44", "genre", method="cos"
+    )
+    analyst.similarity_between_seq_meta_and_item_meta(
+        "age", "50-55", "genre", method="cos"
+    )
 
     analyst.visualize_meta_embedding("gender", "genre")
 

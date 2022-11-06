@@ -157,8 +157,12 @@ class Analyst:
         print(f"coherence: {coherence}")
         return coherence
 
-    def attention_weights_to_item_meta(
-        self, seq_index: int, item_meta_name: str, num_top_values: int = 5
+    def similarity_between_seq_and_item_meta(
+        self,
+        seq_index: int,
+        item_meta_name: str,
+        num_top_values: int = 5,
+        method: str = "attention",
     ) -> None:
         meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
         meta_names = [
@@ -166,34 +170,39 @@ class Analyst:
         ]
         meta_indicies = self.dataset_manager.item_meta_le.transform(meta_names)
         weight = list(
-            self.trainer.attention_weight_to_item_meta(seq_index, meta_indicies)[0]
+            self.trainer.similarity_between_seq_and_item_meta(
+                seq_index, meta_indicies, method
+            )
         )
         meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
         print(f"attention weights of seq: {seq_index} for meta: {item_meta_name}")
         for weight, name in sorted(meta_weights)[::-1][:num_top_values]:
             print(f"{weight.item():.4f}", name)
 
-    def attention_weights_to_sequence(
-        self, seq_index: int, num_recent_items: int = 100
+    def similarity_between_seq_and_item(
+        self, seq_index: int, num_recent_items: int = 100, method: str = "attention"
     ) -> None:
         item_indicies = self.dataset_manager.train_dataset.sequences[seq_index][
             -num_recent_items:
         ]
         item_names = self.dataset_manager.item_le.inverse_transform(item_indicies)
         weight = list(
-            self.trainer.attention_weight_to_item(seq_index, item_indicies)[0]
+            self.trainer.similarity_between_seq_and_item(
+                seq_index, item_indicies, method
+            )
         )
         item_weights = [(weight[i], item_names[i]) for i in range(num_recent_items)]
         print(f"item weights of seq: {seq_index}")
         for weight, name in sorted(item_weights)[::-1]:
             print(f"{weight.item():.4f}", self.dataset_manager.item_metadata[name])
 
-    def attention_weight_from_seq_meta_to_item_meta(
+    def similarity_between_seq_meta_and_item_meta(
         self,
         seq_meta_name: str,
         seq_meta_value: str,
         item_meta_name: str,
-        num_top_values: int = 5,
+        num_top_values: int = 10,
+        method: str = "attention",
     ) -> None:
         seq_meta = to_full_meta_value(seq_meta_name, seq_meta_value)
         seq_meta_index = self.dataset_manager.seq_meta_le.transform([seq_meta])
@@ -203,9 +212,9 @@ class Analyst:
         ]
         meta_indicies = self.dataset_manager.item_meta_le.transform(meta_names)
         weight = list(
-            self.trainer.attention_weight_from_seq_meta_to_item_meta(
-                seq_meta_index, meta_indicies
-            )[0]
+            self.trainer.similarity_between_seq_meta_and_item_meta(
+                seq_meta_index, meta_indicies, method
+            )
         )
         meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
         print(f"attention weights of seq meta: {seq_meta} for meta: {item_meta_name}")

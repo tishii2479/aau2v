@@ -57,24 +57,25 @@ class Trainer(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_item_meta(
+    def similarity_between_seq_and_item_meta(
+        self, seq_index: int, item_meta_indicies: List[int], method: str = "attention"
+    ) -> Tensor:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    @torch.no_grad()  # type: ignore
+    def similarity_between_seq_and_item(
+        self, seq_index: int, item_indicies: List[int], method: str = "attention"
+    ) -> Tensor:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    @torch.no_grad()  # type: ignore
+    def similarity_between_seq_meta_and_item_meta(
         self,
-        seq_index: int,
+        seq_meta_index: int,
         item_meta_indicies: List[int],
-    ) -> Tensor:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    @torch.no_grad()  # type: ignore
-    def attention_weight_to_item(
-        self, seq_index: int, item_indicies: List[int]
-    ) -> Tensor:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    @torch.no_grad()  # type: ignore
-    def attention_weight_from_seq_meta_to_item_meta(
-        self, seq_meta_index: int, item_meta_indicies: List[int]
+        method: str = "attention",
     ) -> Tensor:
         raise NotImplementedError()
 
@@ -340,21 +341,28 @@ class PyTorchTrainer(Trainer):
 
         return eval_loss, total_loss_dict
 
-    def attention_weight_to_item(
-        self, seq_index: int, item_indicies: List[int]
+    def similarity_between_seq_and_item(
+        self, seq_index: int, item_indicies: List[int], method: str = "attention"
     ) -> Tensor:
-        return self.model.attention_weight_to_item(seq_index, item_indicies)
+        return self.model.similarity_between_seq_and_item(
+            seq_index, item_indicies, method
+        )
 
-    def attention_weight_to_item_meta(
-        self, seq_index: int, item_meta_indicies: List[int]
+    def similarity_between_seq_and_item_meta(
+        self, seq_index: int, item_meta_indicies: List[int], method: str = "attention"
     ) -> Tensor:
-        return self.model.attention_weight_to_item_meta(seq_index, item_meta_indicies)
+        return self.model.similarity_between_seq_and_item_meta(
+            seq_index, item_meta_indicies, method
+        )
 
-    def attention_weight_from_seq_meta_to_item_meta(
-        self, seq_meta_index: int, item_meta_indicies: List[int]
+    def similarity_between_seq_meta_and_item_meta(
+        self,
+        seq_meta_index: int,
+        item_meta_indicies: List[int],
+        method: str = "attention",
     ) -> Tensor:
-        return self.model.attention_weight_from_seq_meta_to_item_meta(
-            seq_meta_index, item_meta_indicies
+        return self.model.similarity_between_seq_meta_and_item_meta(
+            seq_meta_index, item_meta_indicies, method
         )
 
     @property

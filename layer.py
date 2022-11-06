@@ -9,6 +9,10 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 
+def cosine_similarity(a: Tensor, b: Tensor) -> Tensor:
+    return F.cosine_similarity(a, b)
+
+
 def attention_weight(Q: Tensor, K: Tensor) -> Tensor:
     dim = len(Q.shape) - 1  # to handle batched and unbatched data
     return F.softmax(torch.matmul(Q, K.mT) / sqrt(K.size(dim)), dim=dim)

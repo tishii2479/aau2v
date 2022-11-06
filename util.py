@@ -66,12 +66,14 @@ def visualize_vectors(embeddings: Dict[str, np.ndarray]) -> None:
 
     for i in range(pca_features.shape[0]):
         marker = "."
+        norm_vec = pca_features[i] / np.linalg.norm(pca_features[i], ord=2)
         plt.scatter(
-            x=pca_features[i, 0],
-            y=pca_features[i, 1],
+            x=norm_vec[0],
+            y=norm_vec[1],
             marker=marker,
         )
-        plt.annotate(vector_names[i], (pca_features[i, 0], pca_features[i, 1]))
+        plt.annotate(vector_names[i], (norm_vec[0], norm_vec[1]))
+    plt.savefig("data/vis_vectors.svg", format="svg")
     plt.show()
 
 

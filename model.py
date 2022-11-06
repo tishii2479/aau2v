@@ -11,6 +11,7 @@ from layer import (
     attention,
     attention_weight,
     calc_weighted_meta,
+    cosine_similarity,
 )
 
 
@@ -97,33 +98,33 @@ class Model(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
-    @abc.abstractmethod
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_item_meta(
-        self, seq_index: int, meta_indicies: List[int]
+    def similarity_between_seq_and_item_meta(
+        self, seq_index: int, meta_indicies: List[int], method: str = "attention"
     ) -> Tensor:
         raise NotImplementedError(
-            "attention_weight_to_item_meta is not supported for "
+            "similarity_between_seq_and_item_meta is not supported for "
             + f"{self.__class__.__name__}"
         )
 
-    @abc.abstractmethod
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_item(
-        self, seq_index: int, item_indicies: List[int]
+    def similarity_between_seq_and_item(
+        self, seq_index: int, item_indicies: List[int], method: str = "attention"
     ) -> Tensor:
         raise NotImplementedError(
-            "attention_weight_to_item is not supported for "
+            "similarity_between_seq_and_item is not supported for "
             + f"{self.__class__.__name__}"
         )
 
-    @abc.abstractmethod
     @torch.no_grad()  # type: ignore
-    def attention_weight_from_seq_meta_to_item_meta(
-        self, seq_meta_index: int, item_meta_indicies: List[int]
+    def similarity_between_seq_meta_and_item_meta(
+        self,
+        seq_meta_index: int,
+        item_meta_indicies: List[int],
+        method: str = "attention",
     ) -> Tensor:
         raise NotImplementedError(
-            "attention_weight_from_seq_meta_to_item_meta is not supported for "
+            "similarity_between_seq_meta_and_item_meta is not supported for "
             + f"{self.__class__.__name__}"
         )
 
@@ -137,14 +138,12 @@ class Model(metaclass=abc.ABCMeta):
     def item_embedding(self) -> Tensor:
         raise NotImplementedError()
 
-    @abc.abstractproperty
     @property
     def seq_meta_embedding(self) -> Tensor:
         raise NotImplementedError(
             "seq_meta_embedding is not supported for " + f"{self.__class__.__name__}"
         )
 
-    @abc.abstractproperty
     @property
     def item_meta_embedding(self) -> Tensor:
         raise NotImplementedError(
@@ -263,40 +262,58 @@ class AttentiveModel(PyTorchModel):
         return self.output.forward(v, target_index)
 
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_item_meta(
-        self,
-        seq_index: int,
-        item_meta_indicies: List[int],
+    def similarity_between_seq_and_item_meta(
+        self, seq_index: int, item_meta_indicies: List[int], method: str = "attention"
     ) -> Tensor:
         seq_index = torch.LongTensor([seq_index])
         item_meta_indicies = torch.LongTensor(item_meta_indicies)
         h_seq = self.embedding_seq.forward(seq_index)
         h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
-        weight = attention_weight(h_seq, h_item_meta)
+        match method:
+            case "attention":
+                attention_weight(h_seq, h_item_meta).squeeze()
+            case "cos":
+                weight = cosine_similarity(h_seq, h_item_meta)
+            case _:
+                assert False, f"Invalid method {method}"
         return weight
 
     @torch.no_grad()  # type: ignore
-    def attention_weight_to_item(
-        self,
-        seq_index: int,
-        item_indicies: List[int],
+    def similarity_between_seq_and_item(
+        self, seq_index: int, item_indicies: List[int], method: str = "attention"
     ) -> Tensor:
         seq_index = torch.LongTensor([seq_index])
         item_indicies = torch.LongTensor(item_indicies)
         h_seq = self.embedding_seq.forward(seq_index)
         h_item = self.embedding_item.forward(item_indicies)
-        weight = attention_weight(h_seq, h_item)
+        match method:
+            case "attention":
+                weight = attention_weight(h_seq, h_item).squeeze()
+            case "cos":
+                weight = cosine_similarity(h_seq, h_item)
+            case _:
+                assert False, f"Invalid method {method}"
         return weight
 
     @torch.no_grad()  # type: ignore
-    def attention_weight_from_seq_meta_to_item_meta(
-        self, seq_meta_index: int, item_meta_indicies: List[int]
+    def similarity_between_seq_meta_and_item_meta(
+        self,
+        seq_meta_index: int,
+        item_meta_indicies: List[int],
+        method: str = "attention",
     ) -> Tensor:
         seq_meta_index = torch.LongTensor(seq_meta_index)
         item_meta_indicies = torch.LongTensor(item_meta_indicies)
         h_seq_meta = self.embedding_seq_meta.forward(seq_meta_index)
         h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
-        weight = attention_weight(h_seq_meta, h_item_meta)
+
+        match method:
+            case "attention":
+                weight = attention_weight(h_seq_meta, h_item_meta).squeeze()
+            case "cos":
+                weight = cosine_similarity(h_seq_meta, h_item_meta)
+            case _:
+                assert False, f"Invalid method {method}"
         return weight
 
     @property
