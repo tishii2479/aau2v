@@ -32,7 +32,7 @@ def visualize_cluster(
     r"""
     Visualize cluster to 2d
     """
-    pca = PCA(n_components=2)
+    pca = PCA(n_components=2, random_state=0)
     pca.fit(features)
     pca_features = pca.fit_transform(features)
 
@@ -58,7 +58,7 @@ def visualize_vectors(embeddings: Dict[str, np.ndarray]) -> None:
     vector_names = list(embeddings.keys())
     vector_values = list(embeddings.values())
 
-    pca = PCA(n_components=2)
+    pca = PCA(n_components=2, random_state=0)
     pca.fit(vector_values)
     pca_features = pca.fit_transform(vector_values)
 
