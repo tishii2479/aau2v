@@ -63,20 +63,10 @@ def main() -> None:
     # analyst.similar_sequences(0)
 
     analyst.similarity_between_seq_meta_and_item_meta(
-        "gender", "F", "genre", method="cos"
+        "gender", "F", "genre", method="inner-product", num_top_values=30
     )
     analyst.similarity_between_seq_meta_and_item_meta(
-        "gender", "M", "genre", method="cos"
-    )
-
-    analyst.similarity_between_seq_meta_and_item_meta(
-        "age", "18-24", "genre", method="cos"
-    )
-    analyst.similarity_between_seq_meta_and_item_meta(
-        "age", "35-44", "genre", method="cos"
-    )
-    analyst.similarity_between_seq_meta_and_item_meta(
-        "age", "50-55", "genre", method="cos"
+        "gender", "M", "genre", method="inner-product", num_top_values=30
     )
 
     analyst.visualize_meta_embedding("gender", "genre")

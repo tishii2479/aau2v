@@ -274,6 +274,8 @@ class AttentiveModel(PyTorchModel):
                 attention_weight(h_seq, h_item_meta).squeeze()
             case "cos":
                 weight = cosine_similarity(h_seq, h_item_meta)
+            case "inner-product":
+                weight = torch.matmul(h_seq, h_item_meta.mT)
             case _:
                 assert False, f"Invalid method {method}"
         return weight
@@ -291,6 +293,8 @@ class AttentiveModel(PyTorchModel):
                 weight = attention_weight(h_seq, h_item).squeeze()
             case "cos":
                 weight = cosine_similarity(h_seq, h_item)
+            case "inner-product":
+                weight = torch.matmul(h_item, h_seq.mT)
             case _:
                 assert False, f"Invalid method {method}"
         return weight
@@ -312,6 +316,8 @@ class AttentiveModel(PyTorchModel):
                 weight = attention_weight(h_seq_meta, h_item_meta).squeeze()
             case "cos":
                 weight = cosine_similarity(h_seq_meta, h_item_meta)
+            case "inner-product":
+                weight = torch.matmul(h_item_meta, h_seq_meta.mT)
             case _:
                 assert False, f"Invalid method {method}"
         return weight

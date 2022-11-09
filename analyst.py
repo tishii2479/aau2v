@@ -175,7 +175,7 @@ class Analyst:
             )
         )
         meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
-        print(f"attention weights of seq: {seq_index} for meta: {item_meta_name}")
+        print(f"similarity of seq: {seq_index} for meta: {item_meta_name}")
         for weight, name in sorted(meta_weights)[::-1][:num_top_values]:
             print(f"{weight.item():.4f}", name)
 
@@ -217,7 +217,7 @@ class Analyst:
             )
         )
         meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
-        print(f"attention weights of seq meta: {seq_meta} for meta: {item_meta_name}")
+        print(f"similarity of seq meta: {seq_meta} for meta: {item_meta_name}")
         for weight, name in sorted(meta_weights)[::-1][:num_top_values]:
             print(f"{weight.item():.4f}", name)
 

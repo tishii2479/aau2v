@@ -29,6 +29,7 @@ $ inv train-ml
 
 - 重みの初期値を変える
 - コメントを日本語にする
+    - `Analyst`の各関数にドキュメントを書く
 - `Trainer.attention_weights_to_...`のリファクタリング
 - ログをわかりやすく
 - ちゃんと`nn.Embedding`とアイテムの順番が対応しているか確かめる
