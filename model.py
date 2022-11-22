@@ -271,14 +271,14 @@ class AttentiveModel(PyTorchModel):
         h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
         match method:
             case "attention":
-                attention_weight(h_seq, h_item_meta).squeeze()
+                attention_weight(h_seq, h_item_meta)
             case "cos":
                 weight = cosine_similarity(h_seq, h_item_meta)
             case "inner-product":
                 weight = torch.matmul(h_seq, h_item_meta.mT)
             case _:
                 assert False, f"Invalid method {method}"
-        return weight
+        return weight.squeeze()
 
     @torch.no_grad()  # type: ignore
     def similarity_between_seq_and_item(
@@ -290,14 +290,14 @@ class AttentiveModel(PyTorchModel):
         h_item = self.embedding_item.forward(item_indicies)
         match method:
             case "attention":
-                weight = attention_weight(h_seq, h_item).squeeze()
+                weight = attention_weight(h_seq, h_item)
             case "cos":
                 weight = cosine_similarity(h_seq, h_item)
             case "inner-product":
                 weight = torch.matmul(h_item, h_seq.mT)
             case _:
                 assert False, f"Invalid method {method}"
-        return weight
+        return weight.squeeze()
 
     @torch.no_grad()  # type: ignore
     def similarity_between_seq_meta_and_item_meta(
@@ -313,14 +313,14 @@ class AttentiveModel(PyTorchModel):
 
         match method:
             case "attention":
-                weight = attention_weight(h_seq_meta, h_item_meta).squeeze()
+                weight = attention_weight(h_seq_meta, h_item_meta)
             case "cos":
                 weight = cosine_similarity(h_seq_meta, h_item_meta)
             case "inner-product":
                 weight = torch.matmul(h_item_meta, h_seq_meta.mT)
             case _:
                 assert False, f"Invalid method {method}"
-        return weight
+        return weight.squeeze()
 
     @property
     def seq_embedding(self) -> Tensor:

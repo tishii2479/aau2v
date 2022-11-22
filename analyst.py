@@ -169,10 +169,8 @@ class Analyst:
             to_full_meta_value(item_meta_name, value) for value in meta_values
         ]
         meta_indicies = self.dataset_manager.item_meta_le.transform(meta_names)
-        weight = list(
-            self.trainer.similarity_between_seq_and_item_meta(
-                seq_index, meta_indicies, method
-            )
+        weight = self.trainer.similarity_between_seq_and_item_meta(
+            seq_index, meta_indicies, method
         )
         meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
         print(f"similarity of seq: {seq_index} for meta: {item_meta_name}")
@@ -186,10 +184,8 @@ class Analyst:
             -num_recent_items:
         ]
         item_names = self.dataset_manager.item_le.inverse_transform(item_indicies)
-        weight = list(
-            self.trainer.similarity_between_seq_and_item(
-                seq_index, item_indicies, method
-            )
+        weight = self.trainer.similarity_between_seq_and_item(
+            seq_index, item_indicies, method
         )
         item_weights = [(weight[i], item_names[i]) for i in range(num_recent_items)]
         print(f"item weights of seq: {seq_index}")
@@ -211,10 +207,8 @@ class Analyst:
             to_full_meta_value(item_meta_name, value) for value in meta_values
         ]
         meta_indicies = self.dataset_manager.item_meta_le.transform(meta_names)
-        weight = list(
-            self.trainer.similarity_between_seq_meta_and_item_meta(
-                seq_meta_index, meta_indicies, method
-            )
+        weight = self.trainer.similarity_between_seq_meta_and_item_meta(
+            seq_meta_index, meta_indicies, method
         )
         meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
         print(f"similarity of seq meta: {seq_meta} for meta: {item_meta_name}")

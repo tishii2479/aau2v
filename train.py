@@ -49,12 +49,12 @@ def main() -> None:
     )
     analyst.fit(show_fig=True)
 
-    # analyst.prediction_accuracy()
+    _, loss_dict = analyst.prediction_accuracy()
+    print("loss_dict:", loss_dict)
 
     # analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
     # _ = analyst.calc_coherence(num_cluster=args.num_cluster)
 
-    # analyst.similarity_between_seq_and_item_meta(0, "colour_group_name")
     # analyst.similarity_between_seq_and_item(0)
 
     # analyst.cluster_embeddings(args.num_cluster)
@@ -62,6 +62,9 @@ def main() -> None:
     # analyst.similar_items(0)
     # analyst.similar_sequences(0)
 
+    # analyst.similarity_between_seq_meta_and_item_meta(
+    #     "age", "18-24", "genre", method="inner-product", num_top_values=30
+    # )
     analyst.similarity_between_seq_meta_and_item_meta(
         "gender", "F", "genre", method="inner-product", num_top_values=30
     )
