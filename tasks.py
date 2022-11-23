@@ -23,12 +23,23 @@ def run_ml(c):  # type: ignore
 
 
 @invoke.task
+def run_ml_debug(c):  # type: ignore
+    params = [
+        "--load_model",
+        "--epochs=0",
+        "--model_name=attentive",
+        "--working_dir=cache/ml-debug/",
+    ]
+    invoke.run("python3 train.py " + " ".join(params))
+
+
+@invoke.task
 def run_doc2vec(c):  # type: ignore
     params = [
         "--load_model",
         "--epochs=0",
         "--model_name=doc2vec",
-        "--working_dir=cache/hm-doc2vec/",
+        "--working_dir=cache/ml-doc2vec/",
     ]
     invoke.run("python3 train.py " + " ".join(params))
 

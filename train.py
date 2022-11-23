@@ -47,10 +47,12 @@ def main() -> None:
         trainer_config=trainer_config,
         model_config=model_config,
     )
-    analyst.fit(show_fig=True)
+    analyst.fit(show_fig=False)
 
-    _, loss_dict = analyst.prediction_accuracy()
-    print("loss_dict:", loss_dict)
+    analyst.eval_prediction_accuracy()
+
+    # _, loss_dict = analyst.eval_prediction_loss()
+    # print("loss_dict:", loss_dict)
 
     # analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
     # _ = analyst.calc_coherence(num_cluster=args.num_cluster)
@@ -65,14 +67,14 @@ def main() -> None:
     # analyst.similarity_between_seq_meta_and_item_meta(
     #     "age", "18-24", "genre", method="inner-product", num_top_values=30
     # )
-    analyst.similarity_between_seq_meta_and_item_meta(
-        "gender", "F", "genre", method="inner-product", num_top_values=30
-    )
-    analyst.similarity_between_seq_meta_and_item_meta(
-        "gender", "M", "genre", method="inner-product", num_top_values=30
-    )
+    # analyst.similarity_between_seq_meta_and_item_meta(
+    #     "gender", "F", "genre", method="inner-product", num_top_values=30
+    # )
+    # analyst.similarity_between_seq_meta_and_item_meta(
+    #     "gender", "M", "genre", method="inner-product", num_top_values=30
+    # )
 
-    analyst.visualize_meta_embedding("gender", "genre")
+    # analyst.visualize_meta_embedding("gender", "genre")
 
 
 if __name__ == "__main__":

@@ -98,6 +98,27 @@ class Model(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
+    def calc_context_vector(
+        self,
+        seq_index: Tensor,
+        item_indicies: Tensor,
+        seq_meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
+    ) -> Tensor:
+        """
+        モデルに入力を与えた時の、出力層に入力する前のコンテキストベクトルを返す
+        `calc_out`の中で使われることを想定している
+
+        Args:
+            Same as `Model.forward()`
+
+        Returns:
+            c: コンテキストベクトル (batch_size, d_model)
+        """
+        raise NotImplementedError()
+
     @torch.no_grad()  # type: ignore
     def similarity_between_seq_and_item_meta(
         self, seq_index: int, meta_indicies: List[int], method: str = "attention"
@@ -149,6 +170,10 @@ class Model(metaclass=abc.ABCMeta):
         raise NotImplementedError(
             "item_meta_embedding is not supported for " + f"{self.__class__.__name__}"
         )
+
+    @property
+    def output_item_embedding(self) -> Tensor:
+        raise NotImplementedError()
 
 
 class PyTorchModel(Model, nn.Module):
@@ -228,6 +253,23 @@ class AttentiveModel(PyTorchModel):
         item_meta_weights: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        c = self.calc_context_vector(
+            seq_index=seq_index,
+            item_indicies=item_indicies,
+            seq_meta_indicies=seq_meta_indicies,
+            item_meta_indicies=item_meta_indicies,
+            item_meta_weights=item_meta_weights,
+        )
+        return self.output.forward(c, target_index)
+
+    def calc_context_vector(
+        self,
+        seq_index: Tensor,
+        item_indicies: Tensor,
+        seq_meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
+    ) -> Tensor:
         num_seq_meta_types = seq_meta_indicies.size(1)
         num_item_meta_types = item_meta_indicies.size(2)
         window_size = item_indicies.size(1)
@@ -255,11 +297,9 @@ class AttentiveModel(PyTorchModel):
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
 
         if self.add_seq_embedding:
-            v = (c * window_size + h_seq) / (window_size + 1)
-        else:
-            v = c
+            c = (c * window_size + h_seq) / (window_size + 1)
 
-        return self.output.forward(v, target_index)
+        return c
 
     @torch.no_grad()  # type: ignore
     def similarity_between_seq_and_item_meta(
@@ -338,6 +378,10 @@ class AttentiveModel(PyTorchModel):
     def item_meta_embedding(self) -> Tensor:
         return self.embedding_item_meta.weight.data
 
+    @property
+    def output_item_embedding(self) -> Tensor:
+        return self.output.embedding.embedding.weight.data
+
 
 class Doc2Vec(PyTorchModel):
     """Original Doc2Vec"""
@@ -386,14 +430,30 @@ class Doc2Vec(PyTorchModel):
         item_meta_weights: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        c = self.calc_context_vector(
+            seq_index=seq_index,
+            item_indicies=item_indicies,
+            seq_meta_indicies=seq_meta_indicies,
+            item_meta_indicies=item_meta_indicies,
+            item_meta_weights=item_meta_weights,
+        )
+        return self.output.forward(c, target_index)
+
+    def calc_context_vector(
+        self,
+        seq_index: Tensor,
+        item_indicies: Tensor,
+        seq_meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
+    ) -> Tensor:
         window_size = item_indicies.size(1)
 
         h_seq = self.embedding_seq.forward(seq_index)
         h_items = self.embedding_item.forward(item_indicies)
 
-        v = (h_seq + h_items.sum(dim=1)) / (window_size + 1)
-
-        return self.output.forward(v, target_index)
+        c = (h_seq + h_items.sum(dim=1)) / (window_size + 1)
+        return c
 
     @property
     def seq_embedding(self) -> Tensor:
@@ -402,3 +462,7 @@ class Doc2Vec(PyTorchModel):
     @property
     def item_embedding(self) -> Tensor:
         return self.embedding_item.weight.data
+
+    @property
+    def output_item_embedding(self) -> Tensor:
+        return self.output.embedding.embedding.weight.data

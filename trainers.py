@@ -45,13 +45,20 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def eval(self, show_fig: bool = False) -> Tuple[float, Dict[str, float]]:
+    def eval_loss(self, show_fig: bool = False) -> Tuple[float, Dict[str, float]]:
         """
-        予測精度を評価する
+        予測時の誤差を評価する
 
         Returns:
             float, Dict[str, float]:
                 評価損失, { テストデータ名 : 損失の平均 }
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def eval_pred(self) -> None:
+        """
+        予測精度を評価する
         """
         raise NotImplementedError()
 
@@ -253,7 +260,7 @@ class PyTorchTrainer(Trainer):
             loss_dict["train"].append(total_loss)
 
             if self.test_data_loaders is not None:
-                test_loss, test_loss_dict = self.eval(show_fig=False)
+                test_loss, test_loss_dict = self.eval_loss(show_fig=False)
                 print(
                     f"Epoch: {epoch+1}, loss: {total_loss}, test_loss: {test_loss_dict}"
                 )
@@ -284,7 +291,7 @@ class PyTorchTrainer(Trainer):
         return loss_dict
 
     @torch.no_grad()
-    def eval(self, show_fig: bool = False) -> Tuple[float, Dict[str, float]]:
+    def eval_loss(self, show_fig: bool = False) -> Tuple[float, Dict[str, float]]:
         if self.test_data_loaders is None:
             print("No test dataset")
             return 0, {}
@@ -340,6 +347,46 @@ class PyTorchTrainer(Trainer):
         eval_loss /= len(total_loss_dict)
 
         return eval_loss, total_loss_dict
+
+    @torch.no_grad()
+    def eval_pred(self) -> None:
+        if self.test_data_loaders is None:
+            print("No test dataset")
+            return
+        self.model.eval()
+        output_embeddings = self.model.output_item_embedding.detach().numpy()
+        correct_count = 0
+        total_count = 0
+        for test_name, data_loader in self.test_data_loaders.items():
+            for i, data in enumerate(tqdm.tqdm(data_loader)):
+                (
+                    seq_index,
+                    item_indicies,
+                    seq_meta_indicies,
+                    item_meta_indicies,
+                    item_meta_weights,
+                    target_index,
+                ) = data
+
+                c = self.model.calc_context_vector(
+                    seq_index=seq_index,
+                    item_indicies=item_indicies,
+                    seq_meta_indicies=seq_meta_indicies,
+                    item_meta_indicies=item_meta_indicies,
+                    item_meta_weights=item_meta_weights,
+                )
+                c = c.detach().numpy()
+                v = np.dot(c, output_embeddings.T)
+                rank = v.argsort()
+                pred = rank[:, 0:100]
+                target = target_index.detach().numpy()
+                for p, t in zip(pred, target):
+                    if t in p:
+                        print(f"{correct_count}, {total_count}")
+                        correct_count += 1
+                    total_count += 1
+
+        print(f"accuracy: {correct_count / total_count}")
 
     def similarity_between_seq_and_item(
         self, seq_index: int, item_indicies: List[int], method: str = "attention"

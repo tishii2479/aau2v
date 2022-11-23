@@ -215,10 +215,15 @@ class Analyst:
         for weight, name in sorted(meta_weights)[::-1][:num_top_values]:
             print(f"{weight.item():.4f}", name)
 
-    def prediction_accuracy(
+    def eval_prediction_loss(
         self,
     ) -> Tuple[float, Dict[str, float]]:
-        return self.trainer.eval(show_fig=True)
+        return self.trainer.eval_loss(show_fig=True)
+
+    def eval_prediction_accuracy(
+        self,
+    ) -> None:
+        self.trainer.eval_pred()
 
     def similar_items(
         self, item_index: int, num_items: int = 10

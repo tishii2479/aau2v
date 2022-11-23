@@ -103,7 +103,7 @@ class NegativeSampling(nn.Module):
         r"""
         Args:
             h size of (batch_size, d_model)
-            target_index index, size of (batch_size, 1)
+            target_index index, size of (batch_size, )
         """
         batch_size = target_index.size(0)
 
