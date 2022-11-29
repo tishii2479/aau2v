@@ -327,7 +327,7 @@ def to_sequential_data(
             assert len(item_meta_weight) <= max_item_meta_size
             assert len(item_meta_weight) == len(item_meta_index)
 
-            # 大きさをmax_item_meta_sizenに合わせる
+            # 大きさをmax_item_meta_sizeに合わせる
             while len(item_meta_weight) < max_item_meta_size:
                 item_meta_index.append(0)
                 item_meta_weight.append(0)
@@ -372,7 +372,7 @@ def to_sequential_data(
             )
             # print(get_item_meta_indicies(sequence[j : j + window_size]))
             item_meta_indices = torch.tensor(item_meta_indices, dtype=torch.long)
-            item_meta_weights = torch.tensor(item_meta_weights)
+            item_meta_weights = torch.tensor(item_meta_weights, dtype=torch.float)
             target_index = torch.tensor(sequence[j + window_size], dtype=torch.long)
 
             data.append(
@@ -438,6 +438,32 @@ def create_hm_data(
     test_raw_sequences_dict = {"test": test_raw_sequences}
 
     return raw_sequences, item_metadata, customer_metadata, test_raw_sequences_dict
+
+
+def create_toydata(
+    train_path: str = "data/toydata-simple/train.csv",
+    user_path: str = "data/toydata-simple/users.csv",
+    item_path: str = "data/toydata-simple/items.csv",
+) -> Tuple[
+    Dict[str, List[str]],
+    Optional[Dict[str, Dict[str, Any]]],
+    Optional[Dict[str, Dict[str, Any]]],
+    Optional[Dict[str, Dict[str, List[str]]]],
+]:
+    train_df = pd.read_csv(train_path, dtype={"user_id": str}, index_col="user_id")
+    user_df = pd.read_csv(user_path, dtype={"user_id": str}, index_col="user_id")
+    item_df = pd.read_csv(item_path, dtype={"item_id": str}, index_col="item_id")
+    train_raw_sequences = {
+        user_name: sequence.split(" ")
+        for user_name, sequence in zip(
+            train_df.index.values,
+            train_df.sequence.values,
+        )
+    }
+    user_metadata = user_df.to_dict("index")
+    item_metadata = item_df.to_dict("index")
+
+    return train_raw_sequences, item_metadata, user_metadata, None
 
 
 def create_movielens_data(
