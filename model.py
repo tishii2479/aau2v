@@ -312,7 +312,7 @@ class AttentiveModel(PyTorchModel):
         h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
         match method:
             case "attention":
-                attention_weight(h_seq, h_item_meta)
+                weight = attention_weight(h_seq, h_item_meta)
             case "cos":
                 weight = cosine_similarity(h_seq, h_item_meta)
             case "inner-product":
