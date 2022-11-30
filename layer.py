@@ -130,6 +130,48 @@ class NegativeSampling(nn.Module):
         return pos_out, pos_label, neg_out, neg_label
 
 
+class WeightSharedNegativeSampling(nn.Module):
+    def __init__(
+        self,
+        d_model: int,
+        sequences: List[List[int]],
+        item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
+        embedding_item: nn.Embedding,
+        embedding_item_meta: nn.Embedding,
+        power: float = 0.75,
+        negative_sample_size: int = 5,
+    ) -> None:
+        self.d_model = d_model
+        self.negative_sample_size = negative_sample_size
+        self.item_meta_indicies = item_meta_indicies
+        self.item_meta_weights = item_meta_weights
+        self.embedding_item = embedding_item
+        self.embedding_item_meta = embedding_item_meta
+        self.sampler = UnigramSampler(sequences, power)
+
+    def forward(
+        self,
+        h: Tensor,
+        target_index: Tensor,
+    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        batch_size = target_index.size(0)
+
+        h = torch.reshape(h, (batch_size, 1, self.d_model))
+
+        # item_meta_index = self.item_meta_indicies[target_index]
+        # # positive
+        # h_items = self.embedding_item.forward(target_index)
+        # # add meta embedding
+        # h_item_meta = self.embedding_item_meta.forward(item_meta_index)
+        # h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weights)
+        # h_items += h_item_meta_weighted
+        # # take mean
+        # h_items /= num_item_meta_types + 1
+
+        raise NotImplementedError()
+
+
 class PositionalEncoding(nn.Module):
     def __init__(
         self, d_model: int, max_sequence_length: int, dropout: float = 0.1
