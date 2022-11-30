@@ -271,6 +271,7 @@ class AttentiveModel(PyTorchModel):
         item_meta_weights: Tensor,
     ) -> Tensor:
         num_seq_meta_types = seq_meta_indicies.size(1)
+        # FIXME: num_item_meta_types=`max_item_meta_size`になっている
         num_item_meta_types = item_meta_indicies.size(2)
         window_size = item_indicies.size(1)
 
