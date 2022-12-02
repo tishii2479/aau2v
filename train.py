@@ -20,7 +20,7 @@ def load_dataset(
             item_metadata,
             seq_metadata,
             test_raw_sequences_dict,
-        ) = create_toydata()
+        ) = create_movielens_data()
         dataset_manager = SequenceDatasetManager(
             train_raw_sequences=train_raw_sequences,
             test_raw_sequences_dict=test_raw_sequences_dict,

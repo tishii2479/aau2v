@@ -26,7 +26,7 @@ def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
 def calc_weighted_meta(h_meta: Tensor, meta_weights: Tensor) -> Tensor:
     return torch.matmul(
         h_meta.mT,
-        meta_weights.view((*h_meta.shape[:3], 1)),
+        meta_weights.view((*h_meta.shape[:-1], 1)),
     ).squeeze()
 
 
@@ -134,6 +134,7 @@ class WeightSharedNegativeSampling(nn.Module):
     def __init__(
         self,
         d_model: int,
+        num_item_meta_types: int,
         sequences: List[List[int]],
         item_meta_indicies: Tensor,
         item_meta_weights: Tensor,
@@ -142,7 +143,9 @@ class WeightSharedNegativeSampling(nn.Module):
         power: float = 0.75,
         negative_sample_size: int = 5,
     ) -> None:
+        super().__init__()
         self.d_model = d_model
+        self.num_item_meta_types = num_item_meta_types
         self.negative_sample_size = negative_sample_size
         self.item_meta_indicies = item_meta_indicies
         self.item_meta_weights = item_meta_weights
@@ -159,17 +162,43 @@ class WeightSharedNegativeSampling(nn.Module):
 
         h = torch.reshape(h, (batch_size, 1, self.d_model))
 
-        # item_meta_index = self.item_meta_indicies[target_index]
-        # # positive
-        # h_items = self.embedding_item.forward(target_index)
-        # # add meta embedding
-        # h_item_meta = self.embedding_item_meta.forward(item_meta_index)
-        # h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weights)
-        # h_items += h_item_meta_weighted
-        # # take mean
-        # h_items /= num_item_meta_types + 1
+        item_meta_index = self.item_meta_indicies[target_index]
+        item_meta_weight = self.item_meta_weights[target_index]
 
-        raise NotImplementedError()
+        # positive
+        h_items = self.embedding_item.forward(target_index)
+        # add meta embedding
+        h_item_meta = self.embedding_item_meta.forward(item_meta_index)
+        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weight)
+        h_items += h_item_meta_weighted
+        # take mean
+        h_items /= self.num_item_meta_types + 1
+        h_items = torch.reshape(h_items, (-1, 1, self.d_model))
+        pos_out = torch.sigmoid(torch.matmul(h, h_items.mT))
+        pos_out = torch.reshape(pos_out, (batch_size, 1))
+        pos_label = torch.ones(batch_size, 1)
+
+        # negative
+        # (batch_size, negative_sample_size)
+        negative_sample = torch.tensor(
+            self.sampler.get_negative_sample(batch_size, self.negative_sample_size),
+            dtype=torch.long,
+        )
+        item_meta_index = self.item_meta_indicies[negative_sample]
+        item_meta_weight = self.item_meta_weights[negative_sample]
+        h_items = self.embedding_item.forward(negative_sample)
+        # add meta embedding
+        h_item_meta = self.embedding_item_meta.forward(item_meta_index)
+        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weight)
+        h_items += h_item_meta_weighted
+        # take mean
+        h_items /= self.num_item_meta_types + 1
+        h_items = torch.reshape(h_items, (-1, self.negative_sample_size, self.d_model))
+        neg_out = torch.sigmoid(torch.matmul(h, h_items.mT))
+        neg_out = torch.reshape(neg_out, (batch_size, self.negative_sample_size))
+        neg_label = torch.zeros(batch_size, self.negative_sample_size)
+
+        return pos_out, pos_label, neg_out, neg_label
 
 
 class PositionalEncoding(nn.Module):

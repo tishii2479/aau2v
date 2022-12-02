@@ -102,7 +102,6 @@ class SequenceDatasetManager:
 
         if len(self.item_metadata) > 0:
             # itemのmetadataの個数が全て一緒であると仮定している
-            print(next(iter(self.item_metadata.values())))
             self.num_item_meta_types = len(next(iter(self.item_metadata.values())))
         else:
             self.num_item_meta_types = 0
@@ -110,7 +109,7 @@ class SequenceDatasetManager:
         print(
             f"num_seq: {self.num_seq}, num_item: {self.num_item}, "
             + f"num_item_meta: {self.num_item_meta}, "
-            + f"num_seq_meta: {self.num_seq_meta}"
+            + f"num_seq_meta: {self.num_seq_meta}, "
             + f"num_item_meta_types: {self.num_item_meta_types}"
         )
 
@@ -527,10 +526,7 @@ def create_movielens_data(
 
     train_raw_sequences = {
         index: sequence.split(" ")
-        for index, sequence in zip(
-            train_df.index.values,
-            train_df.sequence.values,
-        )
+        for index, sequence in zip(train_df.index.values, train_df.sequence.values)
     }
     user_metadata = user_df.to_dict("index")
     movie_df.genre = movie_df.genre.apply(lambda s: s.split("|"))
