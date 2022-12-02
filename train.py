@@ -70,12 +70,12 @@ def main() -> None:
     # analyst.similarity_between_seq_meta_and_item_meta(
     #     "gender", "F", "genre", method="inner-product", num_top_values=30
     # )
-    analyst.similarity_between_seq_meta_and_item_meta(
-        "gender", "M", "genre", method="attention", num_top_values=30
-    )
-    analyst.similarity_between_seq_meta_and_item_meta(
-        "gender", "F", "genre", method="attention", num_top_values=30
-    )
+    # analyst.similarity_between_seq_meta_and_item_meta(
+    #     "gender", "M", "genre", method="attention", num_top_values=30
+    # )
+    # analyst.similarity_between_seq_meta_and_item_meta(
+    #     "gender", "F", "genre", method="attention", num_top_values=30
+    # )
 
     # analyst.visualize_meta_embedding("gender", "genre")
 

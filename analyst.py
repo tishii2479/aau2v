@@ -33,7 +33,7 @@ class Analyst:
         self.model_config = model_config
 
         match self.trainer_config.model_name:
-            case "attentive" | "doc2vec":
+            case "attentive" | "attentive2" | "doc2vec":
                 self.trainer = PyTorchTrainer(
                     dataset_manager=self.dataset_manager,
                     trainer_config=trainer_config,

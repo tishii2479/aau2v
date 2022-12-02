@@ -158,6 +158,18 @@ class WeightSharedNegativeSampling(nn.Module):
         h: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        """
+        Args:
+            h (Tensor): (batch_size, d_model)
+            target_index (Tensor): (batch_size, )
+
+        Returns:
+            Tuple[Tensor, Tensor, Tensor, Tensor]:
+                pos_out: (batch_size, ),
+                pos_label: (batch_size, ),
+                neg_out: (batch_size, negative_sample_size),
+                neg_label: (batch_size, negative_sample_size)
+        """
         batch_size = target_index.size(0)
 
         h = torch.reshape(h, (batch_size, 1, self.d_model))

@@ -244,6 +244,7 @@ class AttentiveModel2(PyTorchModel):
 
         self.output = WeightSharedNegativeSampling(
             d_model=d_model,
+            num_item_meta_types=num_item_meta_types,
             sequences=sequences,
             negative_sample_size=negative_sample_size,
             item_meta_indicies=item_meta_indicies,
