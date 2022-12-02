@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
 from data import SequenceDataset, SequenceDatasetManager
-from model import AttentiveModel, Doc2Vec, PyTorchModel
+from model import AttentiveModel, AttentiveModel2, Doc2Vec, PyTorchModel
 from util import check_model_path
 
 
@@ -165,12 +165,28 @@ class PyTorchTrainer(Trainer):
         self.trainer_config = trainer_config
 
         match trainer_config.model_name:
+            case "attentive2":
+                self.model = AttentiveModel2(
+                    num_seq=self.dataset_manager.num_seq,
+                    num_item=self.dataset_manager.num_item,
+                    num_seq_meta=dataset_manager.num_seq_meta,
+                    num_item_meta=self.dataset_manager.num_item_meta,
+                    num_item_meta_types=self.dataset_manager.num_item_meta_types,
+                    d_model=model_config.d_model,
+                    sequences=self.dataset_manager.sequences,
+                    item_meta_indicies=self.dataset_manager.item_meta_indicies,
+                    item_meta_weights=self.dataset_manager.item_meta_weights,
+                    negative_sample_size=model_config.negative_sample_size,
+                    add_seq_embedding=model_config.add_seq_embedding,
+                    add_positional_encoding=model_config.add_positional_encoding,
+                )
             case "attentive":
                 self.model = AttentiveModel(
                     num_seq=self.dataset_manager.num_seq,
                     num_item=self.dataset_manager.num_item,
                     num_seq_meta=dataset_manager.num_seq_meta,
                     num_item_meta=self.dataset_manager.num_item_meta,
+                    num_item_meta_types=self.dataset_manager.num_item_meta_types,
                     d_model=model_config.d_model,
                     sequences=self.dataset_manager.sequences,
                     negative_sample_size=model_config.negative_sample_size,
@@ -280,7 +296,7 @@ class PyTorchTrainer(Trainer):
                         loss_dict[loss_name] = []
                     loss_dict[loss_name].append(loss_value)
             else:
-                print(f"Epoch: {epoch}, loss: {total_loss}")
+                print(f"Epoch: {epoch+1}, loss: {total_loss}")
 
         print("train end")
 

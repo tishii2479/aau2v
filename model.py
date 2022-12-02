@@ -8,6 +8,7 @@ from torch import Tensor, nn
 from layer import (
     NegativeSampling,
     PositionalEncoding,
+    WeightSharedNegativeSampling,
     attention,
     attention_weight,
     calc_weighted_meta,
@@ -180,6 +181,212 @@ class PyTorchModel(Model, nn.Module):
     pass
 
 
+class AttentiveModel2(PyTorchModel):
+    """AttentiveModel（提案モデル）のクラス"""
+
+    def __init__(
+        self,
+        num_seq: int,
+        num_item: int,
+        num_seq_meta: int,
+        num_item_meta: int,
+        num_item_meta_types: int,
+        d_model: int,
+        sequences: List[List[int]],
+        item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
+        negative_sample_size: int = 30,
+        max_sequence_length: int = 1000,
+        dropout: float = 0.1,
+        add_seq_embedding: bool = False,
+        add_positional_encoding: bool = False,
+    ) -> None:
+        """
+        AttentiveModel（提案モデル）のクラスを生成する
+
+        Args:
+            num_seq (int):
+                系列の総数
+            num_item (int):
+                要素の総数
+            num_meta (int):
+                要素の補助情報の総数
+            d_model (int):
+                埋め込み表現の次元数
+            sequences (List[List[int]]):
+                変換後の系列データ
+            negative_sample_size (int, optional):
+                ネガティブサンプリングのサンプリング数. Defaults to 30.
+            max_sequence_length (int, optional):
+                系列の最大長. Defaults to 1000.
+            dropout (float, optional):
+                位置エンコーディング時にドロップアウトする比率. Defaults to 0.1.
+            add_seq_embedding (bool, optional):
+                系列の埋め込み表現を予測ベクトルに足すかどうか. Defaults to True.
+            add_positional_encoding (bool, optional):
+                位置エンコーディングを行うかどうか. Defaults to False.
+        """
+        super().__init__()
+        self.d_model = d_model
+
+        self.embedding_seq = nn.Embedding(num_seq, d_model)
+        self.embedding_item = nn.Embedding(num_item, d_model)
+        self.embedding_seq_meta = nn.Embedding(num_seq_meta, d_model)
+        self.embedding_item_meta = nn.Embedding(num_item_meta, d_model)
+        self.add_seq_embedding = add_seq_embedding
+        self.add_positional_encoding = add_positional_encoding
+        self.num_item_meta_types = num_item_meta_types
+
+        if self.add_positional_encoding:
+            self.positional_encoding = PositionalEncoding(
+                d_model, max_sequence_length, dropout
+            )
+
+        self.output = WeightSharedNegativeSampling(
+            d_model=d_model,
+            num_item_meta_types=num_item_meta_types,
+            sequences=sequences,
+            negative_sample_size=negative_sample_size,
+            item_meta_indicies=item_meta_indicies,
+            item_meta_weights=item_meta_weights,
+            embedding_item=self.embedding_item,
+            embedding_item_meta=self.embedding_item_meta,
+        )
+
+    def calc_out(
+        self,
+        seq_index: Tensor,
+        item_indicies: Tensor,
+        seq_meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
+        target_index: Tensor,
+    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+        c = self.calc_context_vector(
+            seq_index=seq_index,
+            item_indicies=item_indicies,
+            seq_meta_indicies=seq_meta_indicies,
+            item_meta_indicies=item_meta_indicies,
+            item_meta_weights=item_meta_weights,
+        )
+        return self.output.forward(c, target_index)
+
+    def calc_context_vector(
+        self,
+        seq_index: Tensor,
+        item_indicies: Tensor,
+        seq_meta_indicies: Tensor,
+        item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
+    ) -> Tensor:
+        num_seq_meta_types = seq_meta_indicies.size(1)
+        window_size = item_indicies.size(1)
+
+        h_seq = self.embedding_seq.forward(seq_index)
+        # add meta embedding
+        h_seq += self.embedding_seq_meta.forward(seq_meta_indicies).sum(dim=1)
+        # take mean
+        h_seq /= num_seq_meta_types + 1
+
+        h_items = self.embedding_item.forward(item_indicies)
+        # add meta embedding
+        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weights)
+        h_items += h_item_meta_weighted
+        # take mean
+        h_items /= self.num_item_meta_types + 1
+
+        if self.add_positional_encoding:
+            h_items = self.positional_encoding.forward(h_items)
+
+        Q = torch.reshape(h_seq, (-1, 1, self.d_model))
+        K = h_items
+        V = h_items
+        c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
+
+        if self.add_seq_embedding:
+            c = (c * window_size + h_seq) / (window_size + 1)
+
+        return c
+
+    @torch.no_grad()  # type: ignore
+    def similarity_between_seq_and_item_meta(
+        self, seq_index: int, item_meta_indicies: List[int], method: str = "attention"
+    ) -> Tensor:
+        seq_index = torch.LongTensor([seq_index])
+        item_meta_indicies = torch.LongTensor(item_meta_indicies)
+        h_seq = self.embedding_seq.forward(seq_index)
+        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+        match method:
+            case "attention":
+                attention_weight(h_seq, h_item_meta)
+            case "cos":
+                weight = cosine_similarity(h_seq, h_item_meta)
+            case "inner-product":
+                weight = torch.matmul(h_seq, h_item_meta.mT)
+            case _:
+                assert False, f"Invalid method {method}"
+        return weight.squeeze()
+
+    @torch.no_grad()  # type: ignore
+    def similarity_between_seq_and_item(
+        self, seq_index: int, item_indicies: List[int], method: str = "attention"
+    ) -> Tensor:
+        seq_index = torch.LongTensor([seq_index])
+        item_indicies = torch.LongTensor(item_indicies)
+        h_seq = self.embedding_seq.forward(seq_index)
+        h_item = self.embedding_item.forward(item_indicies)
+        match method:
+            case "attention":
+                weight = attention_weight(h_seq, h_item)
+            case "cos":
+                weight = cosine_similarity(h_seq, h_item)
+            case "inner-product":
+                weight = torch.matmul(h_item, h_seq.mT)
+            case _:
+                assert False, f"Invalid method {method}"
+        return weight.squeeze()
+
+    @torch.no_grad()  # type: ignore
+    def similarity_between_seq_meta_and_item_meta(
+        self,
+        seq_meta_index: int,
+        item_meta_indicies: List[int],
+        method: str = "attention",
+    ) -> Tensor:
+        seq_meta_index = torch.LongTensor(seq_meta_index)
+        item_meta_indicies = torch.LongTensor(item_meta_indicies)
+        h_seq_meta = self.embedding_seq_meta.forward(seq_meta_index)
+        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+
+        match method:
+            case "attention":
+                weight = attention_weight(h_seq_meta, h_item_meta)
+            case "cos":
+                weight = cosine_similarity(h_seq_meta, h_item_meta)
+            case "inner-product":
+                weight = torch.matmul(h_item_meta, h_seq_meta.mT)
+            case _:
+                assert False, f"Invalid method {method}"
+        return weight.squeeze()
+
+    @property
+    def seq_embedding(self) -> Tensor:
+        return self.embedding_seq.weight.data
+
+    @property
+    def item_embedding(self) -> Tensor:
+        return self.embedding_item.weight.data
+
+    @property
+    def seq_meta_embedding(self) -> Tensor:
+        return self.embedding_seq_meta.weight.data
+
+    @property
+    def item_meta_embedding(self) -> Tensor:
+        return self.embedding_item_meta.weight.data
+
+
 class AttentiveModel(PyTorchModel):
     """AttentiveModel（提案モデル）のクラス"""
 
@@ -189,6 +396,7 @@ class AttentiveModel(PyTorchModel):
         num_item: int,
         num_seq_meta: int,
         num_item_meta: int,
+        num_item_meta_types: int,
         d_model: int,
         sequences: List[List[int]],
         negative_sample_size: int = 30,
@@ -231,6 +439,7 @@ class AttentiveModel(PyTorchModel):
         self.embedding_item_meta = nn.Embedding(num_item_meta, d_model)
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
+        self.num_item_meta_types = num_item_meta_types
 
         if self.add_positional_encoding:
             self.positional_encoding = PositionalEncoding(
@@ -271,8 +480,6 @@ class AttentiveModel(PyTorchModel):
         item_meta_weights: Tensor,
     ) -> Tensor:
         num_seq_meta_types = seq_meta_indicies.size(1)
-        # FIXME: num_item_meta_types=`max_item_meta_size`になっている
-        num_item_meta_types = item_meta_indicies.size(2)
         window_size = item_indicies.size(1)
 
         h_seq = self.embedding_seq.forward(seq_index)
@@ -287,7 +494,7 @@ class AttentiveModel(PyTorchModel):
         h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weights)
         h_items += h_item_meta_weighted
         # take mean
-        h_items /= num_item_meta_types + 1
+        h_items /= self.num_item_meta_types + 1
 
         if self.add_positional_encoding:
             h_items = self.positional_encoding.forward(h_items)

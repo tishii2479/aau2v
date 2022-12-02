@@ -20,7 +20,7 @@ def load_dataset(
             item_metadata,
             seq_metadata,
             test_raw_sequences_dict,
-        ) = create_toydata()
+        ) = create_movielens_data()
         dataset_manager = SequenceDatasetManager(
             train_raw_sequences=train_raw_sequences,
             test_raw_sequences_dict=test_raw_sequences_dict,
@@ -70,12 +70,12 @@ def main() -> None:
     # analyst.similarity_between_seq_meta_and_item_meta(
     #     "gender", "F", "genre", method="inner-product", num_top_values=30
     # )
-    analyst.similarity_between_seq_meta_and_item_meta(
-        "gender", "M", "genre", method="attention", num_top_values=30
-    )
-    analyst.similarity_between_seq_meta_and_item_meta(
-        "gender", "F", "genre", method="attention", num_top_values=30
-    )
+    # analyst.similarity_between_seq_meta_and_item_meta(
+    #     "gender", "M", "genre", method="attention", num_top_values=30
+    # )
+    # analyst.similarity_between_seq_meta_and_item_meta(
+    #     "gender", "F", "genre", method="attention", num_top_values=30
+    # )
 
     # analyst.visualize_meta_embedding("gender", "genre")
 
