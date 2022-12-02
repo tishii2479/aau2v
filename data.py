@@ -99,10 +99,19 @@ class SequenceDatasetManager:
         self.num_item = len(items)
         self.num_item_meta = len(self.item_meta_le.classes_)
         self.num_seq_meta = len(self.seq_meta_le.classes_)
+
+        if len(self.item_metadata) > 0:
+            # itemのmetadataの個数が全て一緒であると仮定している
+            print(next(iter(self.item_metadata.values())))
+            self.num_item_meta_types = len(next(iter(self.item_metadata.values())))
+        else:
+            self.num_item_meta_types = 0
+
         print(
             f"num_seq: {self.num_seq}, num_item: {self.num_item}, "
             + f"num_item_meta: {self.num_item_meta}, "
             + f"num_seq_meta: {self.num_seq_meta}"
+            + f"num_item_meta_types: {self.num_item_meta_types}"
         )
 
         self.train_dataset = SequenceDataset(

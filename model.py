@@ -190,6 +190,7 @@ class AttentiveModel2(PyTorchModel):
         num_item: int,
         num_seq_meta: int,
         num_item_meta: int,
+        num_item_meta_types: int,
         d_model: int,
         sequences: List[List[int]],
         item_meta_indicies: Tensor,
@@ -234,6 +235,7 @@ class AttentiveModel2(PyTorchModel):
         self.embedding_item_meta = nn.Embedding(num_item_meta, d_model)
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
+        self.num_item_meta_types = num_item_meta_types
 
         if self.add_positional_encoding:
             self.positional_encoding = PositionalEncoding(
@@ -277,8 +279,6 @@ class AttentiveModel2(PyTorchModel):
         item_meta_weights: Tensor,
     ) -> Tensor:
         num_seq_meta_types = seq_meta_indicies.size(1)
-        # FIXME: num_item_meta_types=`max_item_meta_size`になっている
-        num_item_meta_types = item_meta_indicies.size(2)
         window_size = item_indicies.size(1)
 
         h_seq = self.embedding_seq.forward(seq_index)
@@ -293,7 +293,7 @@ class AttentiveModel2(PyTorchModel):
         h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weights)
         h_items += h_item_meta_weighted
         # take mean
-        h_items /= num_item_meta_types + 1
+        h_items /= self.num_item_meta_types + 1
 
         if self.add_positional_encoding:
             h_items = self.positional_encoding.forward(h_items)
@@ -395,6 +395,7 @@ class AttentiveModel(PyTorchModel):
         num_item: int,
         num_seq_meta: int,
         num_item_meta: int,
+        num_item_meta_types: int,
         d_model: int,
         sequences: List[List[int]],
         negative_sample_size: int = 30,
@@ -437,6 +438,7 @@ class AttentiveModel(PyTorchModel):
         self.embedding_item_meta = nn.Embedding(num_item_meta, d_model)
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
+        self.num_item_meta_types = num_item_meta_types
 
         if self.add_positional_encoding:
             self.positional_encoding = PositionalEncoding(
@@ -477,7 +479,6 @@ class AttentiveModel(PyTorchModel):
         item_meta_weights: Tensor,
     ) -> Tensor:
         num_seq_meta_types = seq_meta_indicies.size(1)
-        num_item_meta_types = item_meta_indicies.size(2)
         window_size = item_indicies.size(1)
 
         h_seq = self.embedding_seq.forward(seq_index)
@@ -492,7 +493,7 @@ class AttentiveModel(PyTorchModel):
         h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weights)
         h_items += h_item_meta_weighted
         # take mean
-        h_items /= num_item_meta_types + 1
+        h_items /= self.num_item_meta_types + 1
 
         if self.add_positional_encoding:
             h_items = self.positional_encoding.forward(h_items)
