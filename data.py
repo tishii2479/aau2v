@@ -475,9 +475,9 @@ def create_hm_data(
 
 
 def create_toydata(
-    train_path: str = "data/toydata-simple/train.csv",
-    user_path: str = "data/toydata-simple/users.csv",
-    item_path: str = "data/toydata-simple/items.csv",
+    train_path: str = "data/toydata/train.csv",
+    user_path: str = "data/toydata/users.csv",
+    item_path: str = "data/toydata/items.csv",
 ) -> Tuple[
     Dict[str, List[str]],
     Optional[Dict[str, Dict[str, Any]]],
@@ -498,6 +498,19 @@ def create_toydata(
     item_metadata = item_df.to_dict("index")
 
     return train_raw_sequences, item_metadata, user_metadata, None
+
+
+def create_simple_toydata(
+    train_path: str = "data/toydata-simple/train.csv",
+    user_path: str = "data/toydata-simple/users.csv",
+    item_path: str = "data/toydata-simple/items.csv",
+) -> Tuple[
+    Dict[str, List[str]],
+    Optional[Dict[str, Dict[str, Any]]],
+    Optional[Dict[str, Dict[str, Any]]],
+    Optional[Dict[str, Dict[str, List[str]]]],
+]:
+    return create_toydata(train_path, user_path, item_path)
 
 
 def create_movielens_data(

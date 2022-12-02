@@ -1,5 +1,5 @@
 import abc
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,7 +32,7 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def fit(self) -> Dict[str, List[float]]:
+    def fit(self, on_epoch_end: Callable) -> Dict[str, List[float]]:
         """
         Called to fit to data
 
@@ -239,7 +239,7 @@ class PyTorchTrainer(Trainer):
 
         return item_embeddings, seq_embeddings
 
-    def fit(self) -> Dict[str, List[float]]:
+    def fit(self, on_epoch_end: Callable) -> Dict[str, List[float]]:
         self.model.train()
         loss_dict: Dict[str, List[float]] = {"train": []}
         best_test_loss = 1e10
@@ -297,6 +297,13 @@ class PyTorchTrainer(Trainer):
                     loss_dict[loss_name].append(loss_value)
             else:
                 print(f"Epoch: {epoch+1}, loss: {total_loss}")
+                if self.trainer_config.save_model:
+                    torch.save(
+                        self.model.state_dict(), self.trainer_config.best_model_path
+                    )
+                    print(f"saved best model to {self.trainer_config.best_model_path}")
+
+            on_epoch_end()
 
         print("train end")
 

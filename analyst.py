@@ -1,5 +1,5 @@
 import collections
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -43,8 +43,8 @@ class Analyst:
                 print(f"invalid model_name: {trainer_config.model_name}")
                 assert False
 
-    def fit(self, show_fig: bool = True) -> None:
-        loss_dict = self.trainer.fit()
+    def fit(self, on_epoch_end: Callable, show_fig: bool = True) -> None:
+        loss_dict = self.trainer.fit(on_epoch_end=on_epoch_end)
         if show_fig:
             visualize_loss(loss_dict)
 
