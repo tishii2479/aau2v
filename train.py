@@ -1,11 +1,10 @@
 from analyst import Analyst
-from config import parse_args, setup_config
+from config import parse_config
 from dataset import load_dataset_manager
 
 
 def main() -> None:
-    args = parse_args()
-    trainer_config, model_config = setup_config(args)
+    trainer_config, model_config = parse_config()
     print("trainer_config:", trainer_config)
     print("model_config:", model_config)
 

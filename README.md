@@ -40,3 +40,7 @@ $ inv train-ml
 - コメントを日本語にする
     - `Analyst`の各関数にドキュメントを書く
     - Tensorの引数にサイズを書く
+- `config`にデフォルト値を足す
+- `analyst`のリファクタリング
+    - `runner`に名前を変える
+    - `onTrainStart`、`onEpochEnd`などのコールバックを受け入れる

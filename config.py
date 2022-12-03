@@ -1,4 +1,4 @@
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Tuple
@@ -41,7 +41,7 @@ class ModelConfig:
     add_positional_encoding: bool
 
 
-def parse_args() -> Namespace:
+def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
     parser = ArgumentParser()
     parser.add_argument("--model_name", type=str, default="attentive", help="使用するモデル")
     parser.add_argument("--num_cluster", type=int, default=10, help="クラスタリングの際に使うクラスタ数")
@@ -88,10 +88,9 @@ def parse_args() -> Namespace:
     parser.add_argument(
         "--dataset_dir", type=str, default="cache/dataset/", help="データセットを保存するディレクトリ"
     )
-    return parser.parse_args()
 
+    args = parser.parse_args()
 
-def setup_config(args: Namespace) -> Tuple[TrainerConfig, ModelConfig]:
     trainer_config = TrainerConfig(
         model_name=args.model_name,
         dataset_name=args.dataset_name,
