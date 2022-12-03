@@ -241,6 +241,9 @@ class AttentiveModel2(PyTorchModel):
         self.embedding_item_meta = MyEmbedding(
             num_item_meta, d_model, max_norm=max_embedding_norm
         )
+
+        self.Qk = nn.Linear(d_model, d_model)
+
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
         self.num_item_meta_types = num_item_meta_types
@@ -308,7 +311,7 @@ class AttentiveModel2(PyTorchModel):
             h_items = self.positional_encoding.forward(h_items)
 
         Q = torch.reshape(h_seq, (-1, 1, self.d_model))
-        K = h_items
+        K = self.Qk.forward(h_items)
         V = h_items
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
 
@@ -366,6 +369,7 @@ class AttentiveModel2(PyTorchModel):
         item_meta_indicies = torch.LongTensor(item_meta_indicies)
         h_seq_meta = self.embedding_seq_meta.forward(seq_meta_index)
         h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+        h_item_meta = self.Qk.forward(h_item_meta)
 
         match method:
             case "attention":

@@ -47,3 +47,6 @@ $ inv train-ml
     - `add_positional_encoding`、`use_learnable_embedding`など
 - 必要なディレクトリを自動で作る
 - モデルの引数にデフォルト値を足す
+- 反転する理由を調べる
+    - 他のところで内積が大きくなっているかも
+    - valueに差がなくなっているかも

@@ -11,6 +11,7 @@ class TrainerConfig:
     epochs: int = 5
     batch_size: int = 16
     verbose: bool = False
+    ignore_saved_model: bool = False
     load_model: bool = True
     save_model: bool = True
     load_dataset: bool = True
@@ -84,6 +85,11 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         "--load-model", action="store_true", help="`cache_dir`からモデルのパラメータを読み込むかどうか"
     )
     parser.add_argument(
+        "--ignore-saved-model",
+        action="store_true",
+        help="`cache_dir`にあるモデルのパラメータを無視するかどうか",
+    )
+    parser.add_argument(
         "--no-save-model", action="store_true", help="`cache_dir`にモデルを保存するかどうか"
     )
     parser.add_argument(
@@ -107,6 +113,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         epochs=args.epochs,
         batch_size=args.batch_size,
         load_model=args.load_model,
+        ignore_saved_model=args.ignore_saved_model,
         save_model=(args.no_save_model is False),
         load_dataset=(args.no_load_dataset is False),
         save_dataset=(args.no_save_dataset is False),

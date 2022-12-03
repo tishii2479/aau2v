@@ -80,6 +80,21 @@ def load_dataset_manager(
                 user_path="data/ml-1m/users.csv",
                 movie_path="data/ml-1m/movies.csv",
             )
+        case "movielens-simple":
+            dataset = create_movielens_data(
+                train_path="data/ml-1m/train.csv",
+                test_paths={
+                    "train-size=10": "data/ml-1m/test-10.csv",
+                    "train-size=20": "data/ml-1m/test-20.csv",
+                    "train-size=30": "data/ml-1m/test-30.csv",
+                    "train-size=40": "data/ml-1m/test-40.csv",
+                    "train-size=50": "data/ml-1m/test-50.csv",
+                },
+                user_path="data/ml-1m/users.csv",
+                movie_path="data/ml-1m/movies.csv",
+                user_columns=["gender"],
+                movie_columns=["genre"],
+            )
         case "20newsgroup":
             dataset = create_20newsgroup_data(
                 max_data_size=1000,
@@ -216,10 +231,17 @@ def create_movielens_data(
     test_paths: Dict[str, str],
     user_path: str,
     movie_path: str,
+    user_columns: Optional[List[str]] = None,
+    movie_columns: Optional[List[str]] = None,
 ) -> DatasetTuple:
     train_df = pd.read_csv(train_path, dtype={"user_id": str}, index_col="user_id")
     user_df = pd.read_csv(user_path, dtype={"user_id": str}, index_col="user_id")
     movie_df = pd.read_csv(movie_path, dtype={"movie_id": str}, index_col="movie_id")
+
+    if user_columns is not None:
+        user_df = user_df[user_columns]
+    if movie_columns is not None:
+        movie_df = movie_df[movie_columns]
 
     train_raw_sequences = {
         index: sequence.split(" ")

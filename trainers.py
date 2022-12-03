@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 from config import ModelConfig, TrainerConfig
 from dataset_manager import SequenceDataset, SequenceDatasetManager
 from model import AttentiveModel, AttentiveModel2, Doc2Vec, PyTorchModel
+from util import check_model_path
 
 
 class Trainer(metaclass=abc.ABCMeta):
@@ -210,8 +211,8 @@ class PyTorchTrainer(Trainer):
             print(f"load_state_dict from: {self.trainer_config.model_path}")
             loaded = torch.load(self.trainer_config.model_path)  # type: ignore
             self.model.load_state_dict(loaded)
-        # else:
-        #     check_model_path(self.trainer_config.model_path)
+        elif self.trainer_config.ignore_saved_model is False:
+            check_model_path(self.trainer_config.model_path)
 
         self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
 
