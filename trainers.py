@@ -245,6 +245,8 @@ class PyTorchTrainer(Trainer):
         best_test_loss = 1e10
         print("train start")
         for epoch in range(self.trainer_config.epochs):
+            on_epoch_end()
+
             total_loss = 0.0
             for i, data in enumerate(tqdm.tqdm(self.train_data_loader)):
                 (
@@ -302,8 +304,6 @@ class PyTorchTrainer(Trainer):
                         self.model.state_dict(), self.trainer_config.best_model_path
                     )
                     print(f"saved best model to {self.trainer_config.best_model_path}")
-
-            on_epoch_end()
 
         print("train end")
 

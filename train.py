@@ -3,7 +3,7 @@ import pickle
 
 from analyst import Analyst
 from config import parse_args, setup_config
-from data import SequenceDatasetManager, create_simple_toydata
+from data import SequenceDatasetManager, create_toydata
 
 
 def load_dataset(
@@ -20,7 +20,7 @@ def load_dataset(
             item_metadata,
             seq_metadata,
             test_raw_sequences_dict,
-        ) = create_simple_toydata()
+        ) = create_toydata()
         dataset_manager = SequenceDatasetManager(
             train_raw_sequences=train_raw_sequences,
             test_raw_sequences_dict=test_raw_sequences_dict,
@@ -50,10 +50,10 @@ def main() -> None:
 
     def on_epoch_end() -> None:
         analyst.similarity_between_seq_meta_and_item_meta(
-            "gender", "M", "genre", method="attention", num_top_values=30
+            "gender", "M", "genre", method="inner-product", num_top_values=30
         )
         analyst.similarity_between_seq_meta_and_item_meta(
-            "gender", "F", "genre", method="attention", num_top_values=30
+            "gender", "F", "genre", method="inner-product", num_top_values=30
         )
 
     analyst.fit(on_epoch_end=on_epoch_end, show_fig=False)

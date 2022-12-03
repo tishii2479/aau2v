@@ -476,6 +476,7 @@ def create_hm_data(
 
 def create_toydata(
     train_path: str = "data/toydata/train.csv",
+    test_path: str = "data/toydata/test.csv",
     user_path: str = "data/toydata/users.csv",
     item_path: str = "data/toydata/items.csv",
 ) -> Tuple[
@@ -485,6 +486,7 @@ def create_toydata(
     Optional[Dict[str, Dict[str, List[str]]]],
 ]:
     train_df = pd.read_csv(train_path, dtype={"user_id": str}, index_col="user_id")
+    test_df = pd.read_csv(test_path, dtype={"user_id": str}, index_col="user_id")
     user_df = pd.read_csv(user_path, dtype={"user_id": str}, index_col="user_id")
     item_df = pd.read_csv(item_path, dtype={"item_id": str}, index_col="item_id")
     train_raw_sequences = {
@@ -494,10 +496,18 @@ def create_toydata(
             train_df.sequence.values,
         )
     }
+    test_raw_sequences = {
+        user_name: sequence.split(" ")
+        for user_name, sequence in zip(
+            test_df.index.values,
+            test_df.sequence.values,
+        )
+    }
+    test_raw_sequences_dict = {"test": test_raw_sequences}
     user_metadata = user_df.to_dict("index")
     item_metadata = item_df.to_dict("index")
 
-    return train_raw_sequences, item_metadata, user_metadata, None
+    return train_raw_sequences, item_metadata, user_metadata, test_raw_sequences_dict
 
 
 def create_simple_toydata(
