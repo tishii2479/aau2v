@@ -192,6 +192,7 @@ class AttentiveModel2(PyTorchModel):
         num_item_meta: int,
         num_item_meta_types: int,
         d_model: int,
+        max_embedding_norm: float,
         sequences: List[List[int]],
         item_meta_indicies: Tensor,
         item_meta_weights: Tensor,
@@ -229,10 +230,16 @@ class AttentiveModel2(PyTorchModel):
         super().__init__()
         self.d_model = d_model
 
-        self.embedding_seq = nn.Embedding(num_seq, d_model)
-        self.embedding_item = nn.Embedding(num_item, d_model)
-        self.embedding_seq_meta = nn.Embedding(num_seq_meta, d_model)
-        self.embedding_item_meta = nn.Embedding(num_item_meta, d_model)
+        self.embedding_seq = nn.Embedding(num_seq, d_model, max_norm=max_embedding_norm)
+        self.embedding_item = nn.Embedding(
+            num_item, d_model, max_norm=max_embedding_norm
+        )
+        self.embedding_seq_meta = nn.Embedding(
+            num_seq_meta, d_model, max_norm=max_embedding_norm
+        )
+        self.embedding_item_meta = nn.Embedding(
+            num_item_meta, d_model, max_norm=max_embedding_norm
+        )
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
         self.num_item_meta_types = num_item_meta_types
@@ -398,6 +405,7 @@ class AttentiveModel(PyTorchModel):
         num_item_meta: int,
         num_item_meta_types: int,
         d_model: int,
+        max_embedding_norm: float,
         sequences: List[List[int]],
         negative_sample_size: int = 30,
         max_sequence_length: int = 1000,
@@ -433,10 +441,16 @@ class AttentiveModel(PyTorchModel):
         super().__init__()
         self.d_model = d_model
 
-        self.embedding_seq = nn.Embedding(num_seq, d_model)
-        self.embedding_item = nn.Embedding(num_item, d_model)
-        self.embedding_seq_meta = nn.Embedding(num_seq_meta, d_model)
-        self.embedding_item_meta = nn.Embedding(num_item_meta, d_model)
+        self.embedding_seq = nn.Embedding(num_seq, d_model, max_norm=max_embedding_norm)
+        self.embedding_item = nn.Embedding(
+            num_item, d_model, max_norm=max_embedding_norm
+        )
+        self.embedding_seq_meta = nn.Embedding(
+            num_seq_meta, d_model, max_norm=max_embedding_norm
+        )
+        self.embedding_item_meta = nn.Embedding(
+            num_item_meta, d_model, max_norm=max_embedding_norm
+        )
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
         self.num_item_meta_types = num_item_meta_types
@@ -599,6 +613,7 @@ class Doc2Vec(PyTorchModel):
         num_seq: int,
         num_item: int,
         d_model: int,
+        max_embedding_norm: float,
         sequences: List[List[int]],
         negative_sample_size: int = 30,
     ) -> None:
@@ -619,8 +634,10 @@ class Doc2Vec(PyTorchModel):
         """
         super().__init__()
 
-        self.embedding_seq = nn.Embedding(num_seq, d_model)
-        self.embedding_item = nn.Embedding(num_item, d_model)
+        self.embedding_seq = nn.Embedding(num_seq, d_model, max_norm=max_embedding_norm)
+        self.embedding_item = nn.Embedding(
+            num_item, d_model, max_norm=max_embedding_norm
+        )
 
         self.output = NegativeSampling(
             d_model=d_model,

@@ -28,7 +28,7 @@ class TestLayer(unittest.TestCase):
         self.assertAlmostEqual(1, layer.sampler.word_p.sum())
 
     def test_embedding_dot(self) -> None:
-        layer = EmbeddingDot(d_model=3, num_item=4)
+        layer = EmbeddingDot(d_model=3, num_item=4, max_embedding_norm=1.0)
         embedding_weight = layer.embedding.weight
         h = torch.Tensor([[[0, 1, 0]], [[1, 0, 0]]])
         indicies = torch.tensor([[1], [2]], dtype=torch.long)
@@ -74,6 +74,7 @@ class TestLayer(unittest.TestCase):
         num_item = 4
         num_item_meta = 5
         num_item_meta_types = 2
+        max_embedding_norm = 1.0
         sequences = [
             [1, 2, 0],
             [1, 3, 2],
@@ -95,8 +96,10 @@ class TestLayer(unittest.TestCase):
                 [1, 1, 0, 0],
             ]
         )
-        embedding_item = nn.Embedding(num_item, d_model)
-        embedding_item_meta = nn.Embedding(num_item_meta, d_model)
+        embedding_item = nn.Embedding(num_item, d_model, max_norm=max_embedding_norm)
+        embedding_item_meta = nn.Embedding(
+            num_item_meta, d_model, max_norm=max_embedding_norm
+        )
         layer = WeightSharedNegativeSampling(
             d_model=d_model,
             num_item_meta_types=num_item_meta_types,

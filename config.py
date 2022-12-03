@@ -6,17 +6,17 @@ from typing import Tuple
 
 @dataclass
 class TrainerConfig:
-    model_name: str
-    dataset_name: str
-    epochs: int
-    batch_size: int
-    verbose: bool
-    load_model: bool
-    save_model: bool
-    load_dataset: bool
-    save_dataset: bool
-    cache_dir: str
-    dataset_dir: str
+    model_name: str = "attentive2"
+    dataset_name: str = "20newsgroup-small"
+    epochs: int = 5
+    batch_size: int = 16
+    verbose: bool = False
+    load_model: bool = True
+    save_model: bool = True
+    load_dataset: bool = True
+    save_dataset: bool = True
+    cache_dir: str = "cache/"
+    dataset_dir: str = "cache/dataset/"
 
     @property
     def model_path(self) -> str:
@@ -31,14 +31,15 @@ class TrainerConfig:
 
 @dataclass
 class ModelConfig:
-    d_model: int
-    window_size: int
-    negative_sample_size: int
-    lr: float
-    use_learnable_embedding: bool
-    dropout: float
-    add_seq_embedding: bool
-    add_positional_encoding: bool
+    d_model: int = 64
+    max_embedding_norm: float = 1
+    window_size: int = 8
+    negative_sample_size: int = 5
+    lr: float = 0.01
+    use_learnable_embedding: bool = True
+    dropout: float = 0.1
+    add_seq_embedding: bool = False
+    add_positional_encoding: bool = False
 
 
 def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
@@ -49,13 +50,16 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
     )
     parser.add_argument("--num-cluster", type=int, default=10, help="クラスタリングの際に使うクラスタ数")
     parser.add_argument("--d-model", type=int, default=50, help="埋め込み表現の次元数")
+    parser.add_argument(
+        "--max-embedding-norm", type=float, default=1.0, help="埋め込み表現のノルムの最大値"
+    )
     parser.add_argument("--window-size", type=int, default=8, help="学習する際に参照する過去の要素の個数")
     parser.add_argument(
         "--negative_sample_size", type=int, default=5, help="ネガティブサンプリングのサンプル数"
     )
     parser.add_argument("--batch-size", type=int, default=64, help="バッチサイズ")
     parser.add_argument("--epochs", type=int, default=5, help="エポック数")
-    parser.add_argument("--lr", type=float, default=0.0005, help="学習率")
+    parser.add_argument("--lr", type=float, default=0.01, help="学習率")
     parser.add_argument(
         "--dropout", type=float, default=0.1, help="位置エンコーディング時にドロップアウトする割合"
     )
@@ -80,7 +84,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         "--no-save-model", action="store_true", help="`cache_dir`にモデルを保存するかどうか"
     )
     parser.add_argument(
-        "--load-dataset", action="store_true", help="`cache_dir`からデータセットを読み込むかどうか"
+        "--no-load-dataset", action="store_true", help="`cache_dir`からデータセットを読み込むかどうか"
     )
     parser.add_argument(
         "--no-save-dataset", action="store_true", help="`dataset_dir`にデータセットを保存するかどうか"
@@ -101,7 +105,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         batch_size=args.batch_size,
         load_model=args.load_model,
         save_model=(args.no_save_model is False),
-        load_dataset=args.load_dataset,
+        load_dataset=(args.no_load_dataset is False),
         save_dataset=(args.no_save_dataset is False),
         verbose=args.verbose,
         cache_dir=args.cache_dir,
@@ -109,6 +113,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
     )
     model_config = ModelConfig(
         d_model=args.d_model,
+        max_embedding_norm=args.max_embedding_norm,
         window_size=args.window_size,
         negative_sample_size=args.negative_sample_size,
         lr=args.lr,

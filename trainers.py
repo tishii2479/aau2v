@@ -173,6 +173,7 @@ class PyTorchTrainer(Trainer):
                     num_item_meta=self.dataset_manager.num_item_meta,
                     num_item_meta_types=self.dataset_manager.num_item_meta_types,
                     d_model=model_config.d_model,
+                    max_embedding_norm=model_config.max_embedding_norm,
                     sequences=self.dataset_manager.sequences,
                     item_meta_indicies=self.dataset_manager.item_meta_indicies,
                     item_meta_weights=self.dataset_manager.item_meta_weights,
@@ -188,6 +189,7 @@ class PyTorchTrainer(Trainer):
                     num_item_meta=self.dataset_manager.num_item_meta,
                     num_item_meta_types=self.dataset_manager.num_item_meta_types,
                     d_model=model_config.d_model,
+                    max_embedding_norm=model_config.max_embedding_norm,
                     sequences=self.dataset_manager.sequences,
                     negative_sample_size=model_config.negative_sample_size,
                     add_seq_embedding=model_config.add_seq_embedding,
@@ -198,6 +200,7 @@ class PyTorchTrainer(Trainer):
                     num_seq=self.dataset_manager.num_seq,
                     num_item=self.dataset_manager.num_item,
                     d_model=model_config.d_model,
+                    max_embedding_norm=model_config.max_embedding_norm,
                     sequences=self.dataset_manager.sequences,
                     negative_sample_size=model_config.negative_sample_size,
                 )

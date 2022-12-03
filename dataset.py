@@ -1,6 +1,7 @@
 import os
 import pickle
 from collections import ChainMap
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import gensim
@@ -11,6 +12,15 @@ from torchtext.data import get_tokenizer
 from dataset_manager import SequenceDatasetManager
 from util import get_all_items
 
+DatasetTuple = Tuple[
+    Dict[str, List[str]],
+    Optional[Dict[str, Dict[str, Any]]],
+    Optional[Dict[str, Dict[str, Any]]],
+    Optional[Dict[str, Dict[str, List[str]]]],
+    Optional[List[str]],
+    Optional[List[str]],
+]
+
 
 def load_dataset_manager(
     dataset_name: str,
@@ -18,7 +28,7 @@ def load_dataset_manager(
     load_dataset: bool,
     save_dataset: bool,
 ) -> SequenceDatasetManager:
-    pickle_path = f"{dataset_dir}/{dataset_name}.pickle"
+    pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")
     if load_dataset and os.path.exists(pickle_path):
         print(f"load cached dataset_manager from: {pickle_path}")
         with open(pickle_path, "rb") as f:
@@ -77,6 +87,7 @@ def load_dataset_manager(
                 test_data_size=500,
             )
         case "20newsgroup-small":
+            # テスト用の小さいデータ
             dataset = create_20newsgroup_data(
                 max_data_size=10,
                 min_seq_length=50,
@@ -115,14 +126,7 @@ def create_hm_data(
     customer_path: str,
     max_data_size: int,
     test_data_size: int,
-) -> Tuple[
-    Dict[str, List[str]],
-    Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, Dict[str, List[str]]]],
-    Optional[List[str]],
-    Optional[List[str]],
-]:
+) -> DatasetTuple:
     sequences_df = pd.read_csv(
         purchase_history_path, dtype={"customer_id": str}, index_col="customer_id"
     )
@@ -174,14 +178,7 @@ def create_toydata(
     test_path: str,
     user_path: str,
     item_path: str,
-) -> Tuple[
-    Dict[str, List[str]],
-    Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, Dict[str, List[str]]]],
-    Optional[List[str]],
-    Optional[List[str]],
-]:
+) -> DatasetTuple:
     train_df = pd.read_csv(train_path, dtype={"user_id": str}, index_col="user_id")
     test_df = pd.read_csv(test_path, dtype={"user_id": str}, index_col="user_id")
     user_df = pd.read_csv(user_path, dtype={"user_id": str}, index_col="user_id")
@@ -219,14 +216,7 @@ def create_movielens_data(
     test_paths: Dict[str, str],
     user_path: str,
     movie_path: str,
-) -> Tuple[
-    Dict[str, List[str]],
-    Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, Dict[str, List[str]]]],
-    Optional[List[str]],
-    Optional[List[str]],
-]:
+) -> DatasetTuple:
     train_df = pd.read_csv(train_path, dtype={"user_id": str}, index_col="user_id")
     user_df = pd.read_csv(user_path, dtype={"user_id": str}, index_col="user_id")
     movie_df = pd.read_csv(movie_path, dtype={"movie_id": str}, index_col="movie_id")
@@ -265,14 +255,7 @@ def create_20newsgroup_data(
     max_data_size: int = 1000,
     min_seq_length: int = 50,
     test_data_size: int = 500,
-) -> Tuple[
-    Dict[str, List[str]],
-    Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, Dict[str, List[str]]]],
-    Optional[List[str]],
-    Optional[List[str]],
-]:
+) -> DatasetTuple:
     newsgroups_train = datasets.fetch_20newsgroups(
         data_home="data",
         subset="train",

@@ -9,17 +9,13 @@ from torch.utils.data import Dataset
 
 from util import get_all_items, to_full_meta_value
 
-MetaData = Dict[str, Any]
-Item = Tuple[str, MetaData]
-Sequence = List[Item]
-
 
 class SequenceDatasetManager:
     def __init__(
         self,
         train_raw_sequences: Dict[str, List[str]],
-        item_metadata: Optional[Dict[str, MetaData]] = None,
-        seq_metadata: Optional[Dict[str, MetaData]] = None,
+        item_metadata: Optional[Dict[str, Dict[str, Any]]] = None,
+        seq_metadata: Optional[Dict[str, Dict[str, Any]]] = None,
         test_raw_sequences_dict: Optional[Dict[str, Dict[str, List[str]]]] = None,
         exclude_seq_metadata_columns: Optional[List[str]] = None,
         exclude_item_metadata_columns: Optional[List[str]] = None,
@@ -32,7 +28,7 @@ class SequenceDatasetManager:
                 生の訓練用シーケンシャルデータ
                 系列ID : [要素1, 要素2, ..., 要素n]
                 例: "doc_001", [ "私", "は", "猫" ]
-            item_metadata (Optional[Dict[str, MetaData]], optional):
+            item_metadata (Optional[Dict[str, Dict[str, Any]]], optional):
                 要素の補助情報の辞書
                 要素 : {
                     補助情報ID: 補助情報の値
@@ -42,7 +38,7 @@ class SequenceDatasetManager:
                     "長さ": 1
                 }
                 Defaults to None.
-            seq_metadata (Optional[Dict[str, MetaData]], optional):
+            seq_metadata (Optional[Dict[str, Dict[str, Any]]], optional):
                 系列の補助情報の辞書
                 系列: {
                     補助情報ID: 補助情報の値
@@ -157,8 +153,8 @@ class SequenceDataset(Dataset):
     def __init__(
         self,
         raw_sequences: Dict[str, List[str]],
-        item_metadata: Dict[str, MetaData],
-        seq_metadata: Dict[str, MetaData],
+        item_metadata: Dict[str, Dict[str, Any]],
+        seq_metadata: Dict[str, Dict[str, Any]],
         seq_le: preprocessing.LabelEncoder,
         item_le: preprocessing.LabelEncoder,
         seq_meta_le: preprocessing.LabelEncoder,
@@ -175,7 +171,7 @@ class SequenceDataset(Dataset):
                 生のシーケンシャルデータ
                 系列ID : [要素1, 要素2, ..., 要素n]
                 例: "doc_001", [ "私", "は", "猫" ]
-            item_metadata (Dict[str, MetaData]):
+            item_metadata (Dict[str, Dict[str, Any]]):
                 要素の補助情報の辞書
                 要素 : {
                     補助情報ID: 補助情報の値
@@ -184,7 +180,7 @@ class SequenceDataset(Dataset):
                     "品詞": "名詞",
                     "長さ": 1
                 }
-            seq_metadata (Dict[str, MetaData]):
+            seq_metadata (Dict[str, Dict[str, Any]]):
                 系列の補助情報の辞書
                 系列名: {
                     補助情報ID: 補助情報の値
