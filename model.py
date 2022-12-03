@@ -1,5 +1,5 @@
 import abc
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -193,10 +193,10 @@ class AttentiveModel2(PyTorchModel):
         num_item_meta: int,
         num_item_meta_types: int,
         d_model: int,
-        max_embedding_norm: float,
         sequences: List[List[int]],
         item_meta_indicies: Tensor,
         item_meta_weights: Tensor,
+        max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
         max_sequence_length: int = 1000,
         dropout: float = 0.1,
@@ -406,8 +406,8 @@ class AttentiveModel(PyTorchModel):
         num_item_meta: int,
         num_item_meta_types: int,
         d_model: int,
-        max_embedding_norm: float,
         sequences: List[List[int]],
+        max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
         max_sequence_length: int = 1000,
         dropout: float = 0.1,
@@ -614,8 +614,8 @@ class Doc2Vec(PyTorchModel):
         num_seq: int,
         num_item: int,
         d_model: int,
-        max_embedding_norm: float,
         sequences: List[List[int]],
+        max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
     ) -> None:
         """

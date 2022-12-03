@@ -60,7 +60,9 @@ class UnigramSampler:
 
 
 class EmbeddingDot(nn.Module):
-    def __init__(self, d_model: int, num_item: int, max_embedding_norm: float):
+    def __init__(
+        self, d_model: int, num_item: int, max_embedding_norm: Optional[float] = None
+    ):
         super().__init__()
         self.d_model = d_model
         self.embedding = MyEmbedding(num_item, d_model, max_norm=max_embedding_norm)
@@ -90,7 +92,7 @@ class NegativeSampling(nn.Module):
         sequences: List[List[int]],
         power: float = 0.75,
         negative_sample_size: int = 5,
-        max_embedding_norm: float = 1,
+        max_embedding_norm: Optional[float] = None,
     ) -> None:
         super().__init__()
         self.d_model = d_model
