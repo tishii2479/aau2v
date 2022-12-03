@@ -512,6 +512,7 @@ def create_toydata(
 
 def create_simple_toydata(
     train_path: str = "data/toydata-simple/train.csv",
+    test_path: str = "data/toydata-simple/test.csv",
     user_path: str = "data/toydata-simple/users.csv",
     item_path: str = "data/toydata-simple/items.csv",
 ) -> Tuple[
@@ -520,7 +521,7 @@ def create_simple_toydata(
     Optional[Dict[str, Dict[str, Any]]],
     Optional[Dict[str, Dict[str, List[str]]]],
 ]:
-    return create_toydata(train_path, user_path, item_path)
+    return create_toydata(train_path, test_path, user_path, item_path)
 
 
 def create_movielens_data(

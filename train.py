@@ -3,7 +3,7 @@ import pickle
 
 from analyst import Analyst
 from config import parse_args, setup_config
-from data import SequenceDatasetManager, create_toydata
+from data import SequenceDatasetManager, create_simple_toydata
 
 
 def load_dataset(
@@ -20,7 +20,7 @@ def load_dataset(
             item_metadata,
             seq_metadata,
             test_raw_sequences_dict,
-        ) = create_toydata()
+        ) = create_simple_toydata()
         dataset_manager = SequenceDatasetManager(
             train_raw_sequences=train_raw_sequences,
             test_raw_sequences_dict=test_raw_sequences_dict,
@@ -57,6 +57,7 @@ def main() -> None:
         )
 
     analyst.fit(on_epoch_end=on_epoch_end, show_fig=False)
+    on_epoch_end()
 
     # analyst.eval_prediction_accuracy()
 
