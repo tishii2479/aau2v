@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
 
 
 @dataclass
@@ -32,7 +32,7 @@ class TrainerConfig:
 @dataclass
 class ModelConfig:
     d_model: int = 64
-    max_embedding_norm: float = 1
+    max_embedding_norm: Optional[float] = None
     window_size: int = 8
     negative_sample_size: int = 5
     lr: float = 0.01
@@ -51,7 +51,10 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
     parser.add_argument("--num-cluster", type=int, default=10, help="クラスタリングの際に使うクラスタ数")
     parser.add_argument("--d-model", type=int, default=50, help="埋め込み表現の次元数")
     parser.add_argument(
-        "--max-embedding-norm", type=float, default=1.0, help="埋め込み表現のノルムの最大値"
+        "--max-embedding-norm",
+        type=float,
+        default=None,
+        help="埋め込み表現のノルムの最大値",
     )
     parser.add_argument("--window-size", type=int, default=8, help="学習する際に参照する過去の要素の個数")
     parser.add_argument(

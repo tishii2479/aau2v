@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from layer import (
+    MyEmbedding,
     NegativeSampling,
     PositionalEncoding,
     WeightSharedNegativeSampling,
@@ -230,14 +231,14 @@ class AttentiveModel2(PyTorchModel):
         super().__init__()
         self.d_model = d_model
 
-        self.embedding_seq = nn.Embedding(num_seq, d_model, max_norm=max_embedding_norm)
-        self.embedding_item = nn.Embedding(
+        self.embedding_seq = MyEmbedding(num_seq, d_model, max_norm=max_embedding_norm)
+        self.embedding_item = MyEmbedding(
             num_item, d_model, max_norm=max_embedding_norm
         )
-        self.embedding_seq_meta = nn.Embedding(
+        self.embedding_seq_meta = MyEmbedding(
             num_seq_meta, d_model, max_norm=max_embedding_norm
         )
-        self.embedding_item_meta = nn.Embedding(
+        self.embedding_item_meta = MyEmbedding(
             num_item_meta, d_model, max_norm=max_embedding_norm
         )
         self.add_seq_embedding = add_seq_embedding
@@ -441,14 +442,14 @@ class AttentiveModel(PyTorchModel):
         super().__init__()
         self.d_model = d_model
 
-        self.embedding_seq = nn.Embedding(num_seq, d_model, max_norm=max_embedding_norm)
-        self.embedding_item = nn.Embedding(
+        self.embedding_seq = MyEmbedding(num_seq, d_model, max_norm=max_embedding_norm)
+        self.embedding_item = MyEmbedding(
             num_item, d_model, max_norm=max_embedding_norm
         )
-        self.embedding_seq_meta = nn.Embedding(
+        self.embedding_seq_meta = MyEmbedding(
             num_seq_meta, d_model, max_norm=max_embedding_norm
         )
-        self.embedding_item_meta = nn.Embedding(
+        self.embedding_item_meta = MyEmbedding(
             num_item_meta, d_model, max_norm=max_embedding_norm
         )
         self.add_seq_embedding = add_seq_embedding
@@ -634,8 +635,8 @@ class Doc2Vec(PyTorchModel):
         """
         super().__init__()
 
-        self.embedding_seq = nn.Embedding(num_seq, d_model, max_norm=max_embedding_norm)
-        self.embedding_item = nn.Embedding(
+        self.embedding_seq = MyEmbedding(num_seq, d_model, max_norm=max_embedding_norm)
+        self.embedding_item = MyEmbedding(
             num_item, d_model, max_norm=max_embedding_norm
         )
 

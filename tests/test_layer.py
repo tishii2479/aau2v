@@ -1,10 +1,10 @@
 import unittest
 
 import torch
-from torch import nn
 
 from layer import (
     EmbeddingDot,
+    MyEmbedding,
     NegativeSampling,
     PositionalEncoding,
     WeightSharedNegativeSampling,
@@ -96,8 +96,8 @@ class TestLayer(unittest.TestCase):
                 [1, 1, 0, 0],
             ]
         )
-        embedding_item = nn.Embedding(num_item, d_model, max_norm=max_embedding_norm)
-        embedding_item_meta = nn.Embedding(
+        embedding_item = MyEmbedding(num_item, d_model, max_norm=max_embedding_norm)
+        embedding_item_meta = MyEmbedding(
             num_item_meta, d_model, max_norm=max_embedding_norm
         )
         layer = WeightSharedNegativeSampling(

@@ -1,7 +1,7 @@
 import collections
 import math
 from math import sqrt
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -63,7 +63,7 @@ class EmbeddingDot(nn.Module):
     def __init__(self, d_model: int, num_item: int, max_embedding_norm: float):
         super().__init__()
         self.d_model = d_model
-        self.embedding = nn.Embedding(num_item, d_model, max_norm=max_embedding_norm)
+        self.embedding = MyEmbedding(num_item, d_model, max_norm=max_embedding_norm)
 
     def forward(self, h: Tensor, indicies: Tensor) -> Tensor:
         """Forward Embedding Dot
@@ -133,6 +133,35 @@ class NegativeSampling(nn.Module):
         return pos_out, pos_label, neg_out, neg_label
 
 
+class MyEmbedding(nn.Module):
+    """
+    nn.Embeddingのラッパークラス
+    """
+
+    def __init__(
+        self,
+        num_embeddings: int,
+        embedding_dim: int,
+        max_norm: Optional[float] = None,
+        mean: float = 0,
+        std: float = 0.1,
+    ):
+        super().__init__()
+        self.embedding = nn.Embedding(
+            num_embeddings=num_embeddings,
+            embedding_dim=embedding_dim,
+            max_norm=max_norm,
+        )
+        nn.init.normal_(self.embedding.weight, mean=mean, std=std)
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.embedding.forward(x)
+
+    @property
+    def weight(self) -> Tensor:
+        return self.embedding.weight
+
+
 class WeightSharedNegativeSampling(nn.Module):
     def __init__(
         self,
@@ -141,8 +170,8 @@ class WeightSharedNegativeSampling(nn.Module):
         sequences: List[List[int]],
         item_meta_indicies: Tensor,
         item_meta_weights: Tensor,
-        embedding_item: nn.Embedding,
-        embedding_item_meta: nn.Embedding,
+        embedding_item: MyEmbedding,
+        embedding_item_meta: MyEmbedding,
         power: float = 0.75,
         negative_sample_size: int = 5,
     ) -> None:
