@@ -28,7 +28,11 @@ class TestTrain(unittest.TestCase):
             trainer_config=trainer_config,
             model_config=model_config,
         )
-        analyst.fit(show_fig=False)
+
+        def on_epoch_end() -> None:
+            pass
+
+        analyst.fit(show_fig=False, on_epoch_end=on_epoch_end)
 
 
 if __name__ == "__main__":
