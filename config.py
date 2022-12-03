@@ -20,11 +20,13 @@ class TrainerConfig:
 
     @property
     def model_path(self) -> str:
-        return str(Path(self.cache_dir, f"{self.model_name}.pt"))
+        return str(Path(self.cache_dir, f"{self.dataset_name}-{self.model_name}.pt"))
 
     @property
     def best_model_path(self) -> str:
-        return str(Path(self.cache_dir, f"best_{self.model_name}.pt"))
+        return str(
+            Path(self.cache_dir, f"best-{self.dataset_name}-{self.model_name}.pt")
+        )
 
 
 @dataclass

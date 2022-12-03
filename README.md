@@ -29,16 +29,14 @@ $ inv train-ml
 
 - 重みの初期値を変える
     - 大きすぎるのかも
+- `dropout`の追加
+- `item_meta_weight/indicies`のリファクタリング
+
+## ISSUE:
+
+- `to_sequential_data`の並列化
+- ログをわかりやすく
+- `pathlib`を使う
 - コメントを日本語にする
     - `Analyst`の各関数にドキュメントを書く
     - Tensorの引数にサイズを書く
-- ログをわかりやすく
-- ちゃんと`nn.Embedding`とアイテムの順番が対応しているか確かめる
-- `dropout`の追加
-- `to_sequential_data`の並列化
-- 評価を考慮してデータをつくる
-- データ作成あたりのリファクタリング
-    - データの種類を指定できるようにする
-    - データをキャッシュする場所を変える
-- `item_meta_weight/indicies`のリファクタリング
-- `pathlib`を使う
