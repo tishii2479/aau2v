@@ -44,3 +44,5 @@ $ inv train-ml
 - `analyst`のリファクタリング
     - `runner`に名前を変える
     - `onTrainStart`、`onEpochEnd`などのコールバックを受け入れる
+- 不要なオプションを消す
+    - `add_positional_encoding`、`use_learnable_embedding`など

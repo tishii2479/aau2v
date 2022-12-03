@@ -43,50 +43,53 @@ class ModelConfig:
 
 def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
     parser = ArgumentParser()
-    parser.add_argument("--model_name", type=str, default="attentive", help="使用するモデル")
-    parser.add_argument("--num_cluster", type=int, default=10, help="クラスタリングの際に使うクラスタ数")
-    parser.add_argument("--d_model", type=int, default=50, help="埋め込み表現の次元数")
-    parser.add_argument("--window_size", type=int, default=8, help="学習する際に参照する過去の要素の個数")
+    parser.add_argument("--model-name", type=str, default="attentive", help="使用するモデル")
+    parser.add_argument(
+        "--dataset-name", type=str, default="attentive", help="使用するデータセット"
+    )
+    parser.add_argument("--num-cluster", type=int, default=10, help="クラスタリングの際に使うクラスタ数")
+    parser.add_argument("--d-model", type=int, default=50, help="埋め込み表現の次元数")
+    parser.add_argument("--window-size", type=int, default=8, help="学習する際に参照する過去の要素の個数")
     parser.add_argument(
         "--negative_sample_size", type=int, default=5, help="ネガティブサンプリングのサンプル数"
     )
-    parser.add_argument("--batch_size", type=int, default=64, help="バッチサイズ")
+    parser.add_argument("--batch-size", type=int, default=64, help="バッチサイズ")
     parser.add_argument("--epochs", type=int, default=5, help="エポック数")
     parser.add_argument("--lr", type=float, default=0.0005, help="学習率")
     parser.add_argument(
         "--dropout", type=float, default=0.1, help="位置エンコーディング時にドロップアウトする割合"
     )
     parser.add_argument(
-        "--add_seq_embedding", action="store_true", help="予測ベクトルに系列の埋め込み表現を足すかどうか"
+        "--add-seq-embedding", action="store_true", help="予測ベクトルに系列の埋め込み表現を足すかどうか"
     )
     parser.add_argument(
-        "--add_positional_encoding",
+        "--add-positional-encoding",
         action="store_true",
         help="位置エンコーディングを要素の埋め込み表現に足すかどうか",
     )
     parser.add_argument(
-        "--use_learnable_embedding",
+        "--use-learnable-embedding",
         action="store_true",
         help="要素の埋め込み表現を学習可能にするかどうか（experimental）",
     )
     parser.add_argument("--verbose", action="store_true", help="ログを詳細に出すかどうか")
     parser.add_argument(
-        "--load_model", action="store_true", help="`cache_dir`からモデルのパラメータを読み込むかどうか"
+        "--load-model", action="store_true", help="`cache_dir`からモデルのパラメータを読み込むかどうか"
     )
     parser.add_argument(
-        "--no_save_model", action="store_true", help="`cache_dir`にモデルを保存するかどうか"
+        "--no-save-model", action="store_true", help="`cache_dir`にモデルを保存するかどうか"
     )
     parser.add_argument(
-        "--load_dataset", action="store_true", help="`cache_dir`からデータセットを読み込むかどうか"
+        "--load-dataset", action="store_true", help="`cache_dir`からデータセットを読み込むかどうか"
     )
     parser.add_argument(
-        "--no_save_dataset", action="store_true", help="`dataset_dir`にデータセットを保存するかどうか"
+        "--no-save-dataset", action="store_true", help="`dataset_dir`にデータセットを保存するかどうか"
     )
     parser.add_argument(
-        "--cache_dir", type=str, default="cache/", help="モデルを保存するディレクトリ"
+        "--cache-dir", type=str, default="cache/", help="モデルを保存するディレクトリ"
     )
     parser.add_argument(
-        "--dataset_dir", type=str, default="cache/dataset/", help="データセットを保存するディレクトリ"
+        "--dataset-dir", type=str, default="cache/dataset/", help="データセットを保存するディレクトリ"
     )
 
     args = parser.parse_args()
