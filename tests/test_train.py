@@ -1,28 +1,41 @@
 import unittest
 
 from analyst import Analyst
-from config import default_config
-from data import SequenceDatasetManager, create_20newsgroup_data
+from config import ModelConfig, TrainerConfig
+from dataset import load_dataset_manager
 
 
 class TestTrain(unittest.TestCase):
     def test_train(self) -> None:
-        trainer_config, model_config = default_config()
-        (
-            train_raw_sequences,
-            item_metadata,
-            seq_metadata,
-            test_raw_sequences_dict,
-        ) = create_20newsgroup_data(max_data_size=10, test_data_size=50)
-        dataset_manager = SequenceDatasetManager(
-            train_raw_sequences=train_raw_sequences,
-            item_metadata=item_metadata,
-            seq_metadata=seq_metadata,
-            test_raw_sequences_dict=test_raw_sequences_dict,
-            exclude_item_metadata_columns=["prod_name"],
+        trainer_config = TrainerConfig(
+            model_name="attentive",
+            dataset_name="20newsgroup-small",
+            epochs=2,
+            batch_size=10,
+            load_model=False,
+            save_model=False,
+            load_dataset=False,
+            save_dataset=False,
+            verbose=False,
+            cache_dir="tmp/",
+            dataset_dir="tmp/",
         )
-        trainer_config.working_dir = "tmp/"
-        trainer_config.save_model = False
+        model_config = ModelConfig(
+            d_model=50,
+            window_size=8,
+            negative_sample_size=5,
+            dropout=0.1,
+            lr=0.0005,
+            use_learnable_embedding=False,
+            add_seq_embedding=False,
+            add_positional_encoding=False,
+        )
+        dataset_manager = load_dataset_manager(
+            dataset_name=trainer_config.dataset_name,
+            dataset_dir=trainer_config.dataset_dir,
+            load_dataset=trainer_config.load_dataset,
+            save_dataset=trainer_config.save_dataset,
+        )
         analyst = Analyst(
             dataset_manager=dataset_manager,
             trainer_config=trainer_config,

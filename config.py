@@ -7,24 +7,24 @@ from typing import Tuple
 @dataclass
 class TrainerConfig:
     model_name: str
+    dataset_name: str
     epochs: int
     batch_size: int
     verbose: bool
     load_model: bool
     save_model: bool
-    working_dir: str
+    load_dataset: bool
+    save_dataset: bool
+    cache_dir: str
+    dataset_dir: str
 
     @property
     def model_path(self) -> str:
-        return str(Path(self.working_dir, f"{self.model_name}.pt"))
+        return str(Path(self.cache_dir, f"{self.model_name}.pt"))
 
     @property
     def best_model_path(self) -> str:
-        return str(Path(self.working_dir, f"best_{self.model_name}.pt"))
-
-    @property
-    def dataset_path(self) -> str:
-        return str(Path(self.working_dir, "dataset.pickle"))
+        return str(Path(self.cache_dir, f"best_{self.model_name}.pt"))
 
 
 @dataclass
@@ -34,9 +34,9 @@ class ModelConfig:
     negative_sample_size: int
     lr: float
     use_learnable_embedding: bool
-    dropout: float = 0.1
-    add_seq_embedding: bool = True
-    add_positional_encoding: bool = False
+    dropout: float
+    add_seq_embedding: bool
+    add_positional_encoding: bool
 
 
 def parse_args() -> Namespace:
@@ -69,13 +69,22 @@ def parse_args() -> Namespace:
     )
     parser.add_argument("--verbose", action="store_true", help="ログを詳細に出すかどうか")
     parser.add_argument(
-        "--no_save_model", action="store_true", help="`working_dir`にモデルを保存するかどうか"
+        "--load_model", action="store_true", help="`cache_dir`からモデルのパラメータを読み込むかどうか"
     )
     parser.add_argument(
-        "--load_model", action="store_true", help="`working_dir`からモデルのパラメータを読み込むかどうか"
+        "--no_save_model", action="store_true", help="`cache_dir`にモデルを保存するかどうか"
     )
     parser.add_argument(
-        "--working_dir", type=str, default="cache/", help="モデル、データセットを保存するディレクトリ"
+        "--load_dataset", action="store_true", help="`cache_dir`からデータセットを読み込むかどうか"
+    )
+    parser.add_argument(
+        "--no_save_dataset", action="store_true", help="`dataset_dir`にデータセットを保存するかどうか"
+    )
+    parser.add_argument(
+        "--cache_dir", type=str, default="cache/", help="モデルを保存するディレクトリ"
+    )
+    parser.add_argument(
+        "--dataset_dir", type=str, default="cache/dataset/", help="データセットを保存するディレクトリ"
     )
     return parser.parse_args()
 
@@ -83,12 +92,16 @@ def parse_args() -> Namespace:
 def setup_config(args: Namespace) -> Tuple[TrainerConfig, ModelConfig]:
     trainer_config = TrainerConfig(
         model_name=args.model_name,
+        dataset_name=args.dataset_name,
         epochs=args.epochs,
         batch_size=args.batch_size,
         load_model=args.load_model,
         save_model=(args.no_save_model is False),
+        load_dataset=args.load_dataset,
+        save_dataset=(args.no_save_dataset is False),
         verbose=args.verbose,
-        working_dir=args.working_dir,
+        cache_dir=args.cache_dir,
+        dataset_dir=args.dataset_dir,
     )
     model_config = ModelConfig(
         d_model=args.d_model,
@@ -99,27 +112,5 @@ def setup_config(args: Namespace) -> Tuple[TrainerConfig, ModelConfig]:
         dropout=args.dropout,
         add_seq_embedding=args.add_seq_embedding,
         add_positional_encoding=args.add_positional_encoding,
-    )
-    return trainer_config, model_config
-
-
-def default_config() -> Tuple[TrainerConfig, ModelConfig]:
-    trainer_config = TrainerConfig(
-        model_name="attentive",
-        epochs=2,
-        batch_size=10,
-        load_model=False,
-        save_model=True,
-        verbose=False,
-        working_dir="cache/",
-    )
-    model_config = ModelConfig(
-        d_model=50,
-        window_size=8,
-        negative_sample_size=5,
-        lr=0.0005,
-        use_learnable_embedding=False,
-        add_seq_embedding=False,
-        add_positional_encoding=False,
     )
     return trainer_config, model_config

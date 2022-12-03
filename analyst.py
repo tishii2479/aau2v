@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 
 from config import ModelConfig, TrainerConfig
-from data import SequenceDatasetManager
+from dataset_manager import SequenceDatasetManager
 from trainers import PyTorchTrainer, Trainer
 from util import (
     calc_cluster_occurence_array,

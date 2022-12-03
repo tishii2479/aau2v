@@ -41,3 +41,4 @@ $ inv train-ml
     - データの種類を指定できるようにする
     - データをキャッシュする場所を変える
 - `item_meta_weight/indicies`のリファクタリング
+- `pathlib`を使う

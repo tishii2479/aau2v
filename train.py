@@ -1,37 +1,6 @@
-import os
-import pickle
-
 from analyst import Analyst
 from config import parse_args, setup_config
-from data import SequenceDatasetManager, create_simple_toydata
-
-
-def load_dataset(
-    dataset_path: str,
-) -> SequenceDatasetManager:
-    if os.path.exists(dataset_path):
-        print(f"load dataset at: {dataset_path}")
-        with open(dataset_path, "rb") as f:
-            dataset_manager: SequenceDatasetManager = pickle.load(f)
-    else:
-        print(f"dataset does not exist at: {dataset_path}, create dataset")
-        (
-            train_raw_sequences,
-            item_metadata,
-            seq_metadata,
-            test_raw_sequences_dict,
-        ) = create_simple_toydata()
-        dataset_manager = SequenceDatasetManager(
-            train_raw_sequences=train_raw_sequences,
-            test_raw_sequences_dict=test_raw_sequences_dict,
-            item_metadata=item_metadata,
-            seq_metadata=seq_metadata,
-            exclude_item_metadata_columns=["title"],
-        )
-        with open(dataset_path, "wb") as f:
-            pickle.dump(dataset_manager, f)
-    print("end loading dataset")
-    return dataset_manager
+from dataset import load_dataset_manager
 
 
 def main() -> None:
@@ -40,7 +9,12 @@ def main() -> None:
     print("trainer_config:", trainer_config)
     print("model_config:", model_config)
 
-    dataset_manager = load_dataset(trainer_config.dataset_path)
+    dataset_manager = load_dataset_manager(
+        dataset_name=trainer_config.dataset_name,
+        dataset_dir=trainer_config.dataset_dir,
+        load_dataset=trainer_config.load_dataset,
+        save_dataset=trainer_config.save_dataset,
+    )
 
     analyst = Analyst(
         dataset_manager=dataset_manager,
@@ -58,30 +32,6 @@ def main() -> None:
 
     analyst.fit(on_epoch_end=on_epoch_end, show_fig=False)
     on_epoch_end()
-
-    # analyst.eval_prediction_accuracy()
-
-    # _, loss_dict = analyst.eval_prediction_loss()
-    # print("loss_dict:", loss_dict)
-
-    # analyst.top_items(num_cluster=args.num_cluster, show_fig=False)
-    # _ = analyst.calc_coherence(num_cluster=args.num_cluster)
-
-    # analyst.similarity_between_seq_and_item(0)
-
-    # analyst.cluster_embeddings(args.num_cluster)
-
-    # analyst.similar_items(0)
-    # analyst.similar_sequences(0)
-
-    # analyst.similarity_between_seq_meta_and_item_meta(
-    #     "age", "18-24", "genre", method="inner-product", num_top_values=30
-    # )
-    # analyst.similarity_between_seq_meta_and_item_meta(
-    #     "gender", "F", "genre", method="inner-product", num_top_values=30
-    # )
-
-    # analyst.visualize_meta_embedding("gender", "genre")
 
 
 if __name__ == "__main__":

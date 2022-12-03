@@ -12,7 +12,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
-from data import SequenceDataset, SequenceDatasetManager
+from dataset_manager import SequenceDataset, SequenceDatasetManager
 from model import AttentiveModel, AttentiveModel2, Doc2Vec, PyTorchModel
 from util import check_model_path
 
