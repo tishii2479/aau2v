@@ -292,7 +292,9 @@ class Analyst:
 
         return similar_customers[:num_seqs]
 
-    def visualize_meta_embedding(self, seq_meta_name: str, item_meta_name: str) -> None:
+    def visualize_meta_embedding(
+        self, seq_meta_name: str, item_meta_name: str, method: str = "pca"
+    ) -> None:
         embeddings: Dict[str, np.ndarray] = {}
         for seq_meta_value in self.dataset_manager.seq_meta_dict[seq_meta_name]:
             full_seq_meta_value = to_full_meta_value(seq_meta_name, seq_meta_value)
@@ -304,4 +306,4 @@ class Analyst:
             embeddings[full_item_meta_value] = self.trainer.item_meta_embedding[
                 full_item_meta_value
             ]
-        visualize_vectors(embeddings)
+        visualize_vectors(embeddings, method=method)

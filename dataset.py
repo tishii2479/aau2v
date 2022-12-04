@@ -108,6 +108,8 @@ def load_dataset_manager(
                 min_seq_length=50,
                 test_data_size=50,
             )
+        case _:
+            raise ValueError(f"invalid dataset-name: {dataset_name}")
 
     (
         train_raw_sequences,

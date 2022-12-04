@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import cm
 from sklearn.decomposition import PCA
 from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.manifold import TSNE
+from sklearn.manifold import TSNE  # noqa
 
 
 def to_full_meta_value(meta_name: str, meta_value: Any) -> str:
@@ -55,19 +55,28 @@ def visualize_cluster(
     plt.show()
 
 
-def visualize_vectors(embeddings: Dict[str, np.ndarray]) -> None:
+def visualize_vectors(embeddings: Dict[str, np.ndarray], method: str = "pca") -> None:
     vector_names = np.array(list(embeddings.keys()))
     vector_values = np.array(list(embeddings.values()))
 
-    pca = TSNE(n_components=2, random_state=0, learning_rate="auto", init="random")
-    pca.fit(vector_values)
-    pca_features = pca.fit_transform(vector_values)
+    match method:
+        case "pca":
+            dec = PCA(n_components=2, random_state=0)
+        case "tsne":
+            dec = TSNE(
+                n_components=2, random_state=0, learning_rate="auto", init="random"
+            )
+        case _:
+            assert False, f"Invalid method {method}"
+
+    dec.fit(vector_values)
+    dec_features = dec.fit_transform(vector_values)
 
     plt.figure()
 
-    for i in range(pca_features.shape[0]):
+    for i in range(dec_features.shape[0]):
         marker = "."
-        norm_vec = pca_features[i]
+        norm_vec = dec_features[i]
         plt.scatter(
             x=norm_vec[0],
             y=norm_vec[1],
