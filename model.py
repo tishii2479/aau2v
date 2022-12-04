@@ -328,6 +328,8 @@ class AttentiveModel2(PyTorchModel):
         item_meta_indicies = torch.LongTensor(item_meta_indicies)
         h_seq = self.embedding_seq.forward(seq_index)
         h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+        h_item_meta = self.Qk.forward(h_item_meta)
+
         match method:
             case "attention":
                 attention_weight(h_seq, h_item_meta)
@@ -347,6 +349,8 @@ class AttentiveModel2(PyTorchModel):
         item_indicies = torch.LongTensor(item_indicies)
         h_seq = self.embedding_seq.forward(seq_index)
         h_item = self.embedding_item.forward(item_indicies)
+        h_item = self.Qk.forward(h_item)
+
         match method:
             case "attention":
                 weight = attention_weight(h_seq, h_item)
