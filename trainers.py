@@ -32,7 +32,7 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def fit(self, on_epoch_end: Callable) -> Dict[str, List[float]]:
+    def fit(self, on_epoch_start: Optional[Callable]) -> Dict[str, List[float]]:
         """
         Called to fit to data
 
@@ -242,13 +242,14 @@ class PyTorchTrainer(Trainer):
 
         return item_embeddings, seq_embeddings
 
-    def fit(self, on_epoch_end: Callable) -> Dict[str, List[float]]:
+    def fit(self, on_epoch_start: Optional[Callable] = None) -> Dict[str, List[float]]:
         self.model.train()
         loss_dict: Dict[str, List[float]] = {"train": []}
         best_test_loss = 1e10
         print("train start")
         for epoch in range(self.trainer_config.epochs):
-            on_epoch_end()
+            if on_epoch_start is not None:
+                on_epoch_start()
 
             total_loss = 0.0
             for i, data in enumerate(tqdm.tqdm(self.train_data_loader)):

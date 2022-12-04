@@ -43,8 +43,10 @@ class Analyst:
                 print(f"invalid model_name: {trainer_config.model_name}")
                 assert False
 
-    def fit(self, on_epoch_end: Callable, show_fig: bool = True) -> None:
-        loss_dict = self.trainer.fit(on_epoch_end=on_epoch_end)
+    def fit(
+        self, on_epoch_start: Optional[Callable] = None, show_fig: bool = True
+    ) -> None:
+        loss_dict = self.trainer.fit(on_epoch_start=on_epoch_start)
         if show_fig:
             visualize_loss(loss_dict)
 

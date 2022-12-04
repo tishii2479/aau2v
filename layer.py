@@ -177,6 +177,7 @@ class WeightSharedNegativeSampling(nn.Module):
         power: float = 0.75,
         negative_sample_size: int = 5,
     ) -> None:
+        # TODO: doc
         super().__init__()
         self.d_model = d_model
         self.num_item_meta_types = num_item_meta_types

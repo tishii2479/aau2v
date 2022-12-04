@@ -25,13 +25,6 @@ $ poetry install
 $ inv train-ml
 ```
 
-## TODO:
-
-- 重みの初期値を変える
-    - 大きすぎるのかも
-- `dropout`の追加
-- `item_meta_weight/indicies`のリファクタリング
-
 ## ISSUE:
 
 - `to_sequential_data`の並列化
@@ -47,6 +40,12 @@ $ inv train-ml
     - `add_positional_encoding`、`use_learnable_embedding`など
 - 必要なディレクトリを自動で作る
 - モデルの引数にデフォルト値を足す
+- `eval.py`を作る
+
+## TODO:
+
+- `dropout`の追加
+- `item_meta_weight/indicies`のリファクタリング
 - 反転する理由を調べる
     - 他のところで内積が大きくなっているかも
     - valueに差がなくなっているかも
