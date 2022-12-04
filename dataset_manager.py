@@ -295,6 +295,7 @@ def get_item_meta_indicies(
     for item_name in item_names:
         if item_name not in item_metadata:
             item_meta_indices.append([])
+            item_meta_weights.append([])
             continue
         item_meta_values: List[str] = []
         item_meta_weight: List[float] = []
@@ -324,6 +325,7 @@ def get_item_meta_indicies(
 
         item_meta_indices.append(item_meta_index)
         item_meta_weights.append(item_meta_weight)
+
     return item_meta_indices, item_meta_weights
 
 
