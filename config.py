@@ -31,11 +31,11 @@ class TrainerConfig:
 
 @dataclass
 class ModelConfig:
-    d_model: int = 64
+    d_model: int = 32
     max_embedding_norm: Optional[float] = None
     window_size: int = 8
     negative_sample_size: int = 5
-    lr: float = 0.005
+    lr: float = 0.001
     use_learnable_embedding: bool = True
     dropout: float = 0.1
     add_seq_embedding: bool = False

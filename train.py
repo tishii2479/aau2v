@@ -49,7 +49,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         "--dataset-name", type=str, default="attentive", help="使用するデータセット"
     )
     parser.add_argument("--num-cluster", type=int, default=10, help="クラスタリングの際に使うクラスタ数")
-    parser.add_argument("--d-model", type=int, default=50, help="埋め込み表現の次元数")
+    parser.add_argument("--d-model", type=int, default=32, help="埋め込み表現の次元数")
     parser.add_argument(
         "--max-embedding-norm",
         type=float,
@@ -61,8 +61,8 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         "--negative_sample_size", type=int, default=5, help="ネガティブサンプリングのサンプル数"
     )
     parser.add_argument("--batch-size", type=int, default=64, help="バッチサイズ")
-    parser.add_argument("--epochs", type=int, default=5, help="エポック数")
-    parser.add_argument("--lr", type=float, default=0.01, help="学習率")
+    parser.add_argument("--epochs", type=int, default=3, help="エポック数")
+    parser.add_argument("--lr", type=float, default=0.001, help="学習率")
     parser.add_argument(
         "--dropout", type=float, default=0.1, help="位置エンコーディング時にドロップアウトする割合"
     )
