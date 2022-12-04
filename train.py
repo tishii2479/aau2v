@@ -22,6 +22,7 @@ def main() -> None:
         dataset_dir=trainer_config.dataset_dir,
         load_dataset=trainer_config.load_dataset,
         save_dataset=trainer_config.save_dataset,
+        window_size=model_config.window_size,
     )
 
     analyst = Analyst(

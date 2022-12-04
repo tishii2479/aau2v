@@ -27,6 +27,7 @@ def load_dataset_manager(
     dataset_dir: str,
     load_dataset: bool,
     save_dataset: bool,
+    window_size: int = 8,
 ) -> SequenceDatasetManager:
     pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")
     if load_dataset and os.path.exists(pickle_path):
@@ -126,6 +127,7 @@ def load_dataset_manager(
         seq_metadata=seq_metadata,
         exclude_seq_metadata_columns=exclude_seq_metadata_columns,
         exclude_item_metadata_columns=exclude_item_metadata_columns,
+        window_size=window_size,
     )
 
     if save_dataset:
