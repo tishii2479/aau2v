@@ -6,13 +6,12 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import tqdm
-from gensim.models import word2vec
 from torch import Tensor
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
-from dataset_manager import SequenceDataset, SequenceDatasetManager
+from dataset_manager import SequenceDatasetManager
 from model import AttentiveModel, AttentiveModel2, Doc2Vec, PyTorchModel
 from util import check_model_path
 
@@ -215,32 +214,6 @@ class PyTorchTrainer(Trainer):
             check_model_path(self.trainer_config.model_path)
 
         self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
-
-    def _pretrain_embeddings(
-        self, dataset: SequenceDataset, d_model: int, items: List[str]
-    ) -> Tuple[Tensor, Tensor]:
-        # TODO: オプションを付ける
-        print("word2vec start.")
-        word2vec_model = word2vec.Word2Vec(
-            sentences=dataset.raw_sequences, vector_size=d_model, min_count=1
-        )
-        print("word2vec end.")
-        item_embeddings = torch.Tensor(
-            [list(word2vec_model.wv[item]) for item in items]
-        )
-
-        print("learn_sequence_embedding start")
-
-        # TODO: refactor
-        seq_embedding_list = []
-        for sequence in tqdm.tqdm(dataset.raw_sequences):
-            a = item_embeddings[self.dataset_manager.item_le.transform(sequence)]
-            seq_embedding_list.append(list(a.mean(dim=0)))
-
-        seq_embeddings = torch.Tensor(seq_embedding_list)
-        print("learn_sequence_embedding end")
-
-        return item_embeddings, seq_embeddings
 
     def fit(self, on_epoch_start: Optional[Callable] = None) -> Dict[str, List[float]]:
         self.model.train()

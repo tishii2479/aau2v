@@ -343,7 +343,8 @@ def get_seq_meta_indicies(
             exclude_seq_metadata_columns is not None
             and meta_name in exclude_seq_metadata_columns
         ):
-            seq_meta.append(to_full_meta_value(meta_name, meta_value))
+            continue
+        seq_meta.append(to_full_meta_value(meta_name, meta_value))
     seq_meta_indicies: List[int] = seq_meta_le.transform(seq_meta)
     return seq_meta_indicies
 
