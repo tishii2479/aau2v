@@ -179,7 +179,8 @@ class Model(metaclass=abc.ABCMeta):
 
 
 class PyTorchModel(Model, nn.Module):
-    pass
+    def set_train_mode(self, mode: str) -> None:
+        pass
 
 
 class AttentiveModel2(PyTorchModel):
@@ -323,6 +324,16 @@ class AttentiveModel2(PyTorchModel):
             c = (c * window_size + h_seq) / (window_size + 1)
 
         return c
+
+    def set_train_mode(self, mode: str) -> None:
+        train_seq = mode == "seq" or mode == "all"
+        train_item = mode == "item" or mode == "all"
+
+        self.seq_embedding.requires_grad_(train_seq)
+        self.seq_meta_embedding.requires_grad_(train_seq)
+        self.item_embedding.requires_grad_(train_item)
+        self.item_meta_embedding.requires_grad_(train_item)
+        self.Qk.requires_grad_(train_item)
 
     @torch.no_grad()  # type: ignore
     def similarity_between_seq_and_item_meta(
