@@ -61,11 +61,17 @@ class UnigramSampler:
 
 class EmbeddingDot(nn.Module):
     def __init__(
-        self, d_model: int, num_item: int, max_embedding_norm: Optional[float] = None
+        self,
+        d_model: int,
+        num_item: int,
+        max_embedding_norm: Optional[float] = None,
+        init_embedding_std: float = 1,
     ):
         super().__init__()
         self.d_model = d_model
-        self.embedding = MyEmbedding(num_item, d_model, max_norm=max_embedding_norm)
+        self.embedding = MyEmbedding(
+            num_item, d_model, max_norm=max_embedding_norm, std=init_embedding_std
+        )
 
     def forward(self, h: Tensor, indicies: Tensor) -> Tensor:
         """Forward Embedding Dot
@@ -90,6 +96,7 @@ class NegativeSampling(nn.Module):
         d_model: int,
         num_item: int,
         sequences: List[List[int]],
+        init_embedding_std: float = 1,
         power: float = 0.75,
         negative_sample_size: int = 5,
         max_embedding_norm: Optional[float] = None,
@@ -99,7 +106,10 @@ class NegativeSampling(nn.Module):
         self.negative_sample_size = negative_sample_size
         self.sampler = UnigramSampler(sequences, power)
         self.embedding = EmbeddingDot(
-            d_model, num_item, max_embedding_norm=max_embedding_norm
+            d_model,
+            num_item,
+            max_embedding_norm=max_embedding_norm,
+            init_embedding_std=init_embedding_std,
         )
 
     def forward(
@@ -146,7 +156,7 @@ class MyEmbedding(nn.Module):
         embedding_dim: int,
         max_norm: Optional[float] = None,
         mean: float = 0,
-        std: float = 0.1,
+        std: float = 1,
     ):
         super().__init__()
         self.embedding = nn.Embedding(

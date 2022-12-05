@@ -57,6 +57,9 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         default=None,
         help="埋め込み表現のノルムの最大値",
     )
+    parser.add_argument(
+        "--init-embedding-std", type=float, default=1, help="埋め込み表現を初期化する時に用いる正規分布の標準偏差"
+    )
     parser.add_argument("--window-size", type=int, default=8, help="学習する際に参照する過去の要素の個数")
     parser.add_argument(
         "--negative_sample_size", type=int, default=5, help="ネガティブサンプリングのサンプル数"
@@ -123,6 +126,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
     )
     model_config = ModelConfig(
         d_model=args.d_model,
+        init_embedding_std=args.init_embedding_std,
         max_embedding_norm=args.max_embedding_norm,
         window_size=args.window_size,
         negative_sample_size=args.negative_sample_size,

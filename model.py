@@ -196,6 +196,7 @@ class AttentiveModel2(PyTorchModel):
         sequences: List[List[int]],
         item_meta_indicies: Tensor,
         item_meta_weights: Tensor,
+        init_embedding_std: float = 1,
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
         max_sequence_length: int = 1000,
@@ -231,15 +232,17 @@ class AttentiveModel2(PyTorchModel):
         super().__init__()
         self.d_model = d_model
 
-        self.embedding_seq = MyEmbedding(num_seq, d_model, max_norm=max_embedding_norm)
+        self.embedding_seq = MyEmbedding(
+            num_seq, d_model, max_norm=max_embedding_norm, std=init_embedding_std
+        )
         self.embedding_item = MyEmbedding(
-            num_item, d_model, max_norm=max_embedding_norm
+            num_item, d_model, max_norm=max_embedding_norm, std=init_embedding_std
         )
         self.embedding_seq_meta = MyEmbedding(
-            num_seq_meta, d_model, max_norm=max_embedding_norm
+            num_seq_meta, d_model, max_norm=max_embedding_norm, std=init_embedding_std
         )
         self.embedding_item_meta = MyEmbedding(
-            num_item_meta, d_model, max_norm=max_embedding_norm
+            num_item_meta, d_model, max_norm=max_embedding_norm, std=init_embedding_std
         )
 
         self.Qk = nn.Linear(d_model, d_model)
@@ -416,6 +419,7 @@ class AttentiveModel(PyTorchModel):
         num_item_meta_types: int,
         d_model: int,
         sequences: List[List[int]],
+        init_embedding_std: float = 1,
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
         max_sequence_length: int = 1000,
@@ -451,15 +455,17 @@ class AttentiveModel(PyTorchModel):
         super().__init__()
         self.d_model = d_model
 
-        self.embedding_seq = MyEmbedding(num_seq, d_model, max_norm=max_embedding_norm)
+        self.embedding_seq = MyEmbedding(
+            num_seq, d_model, max_norm=max_embedding_norm, std=init_embedding_std
+        )
         self.embedding_item = MyEmbedding(
-            num_item, d_model, max_norm=max_embedding_norm
+            num_item, d_model, max_norm=max_embedding_norm, std=init_embedding_std
         )
         self.embedding_seq_meta = MyEmbedding(
-            num_seq_meta, d_model, max_norm=max_embedding_norm
+            num_seq_meta, d_model, max_norm=max_embedding_norm, std=init_embedding_std
         )
         self.embedding_item_meta = MyEmbedding(
-            num_item_meta, d_model, max_norm=max_embedding_norm
+            num_item_meta, d_model, max_norm=max_embedding_norm, std=init_embedding_std
         )
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
@@ -475,6 +481,7 @@ class AttentiveModel(PyTorchModel):
             num_item=num_item,
             sequences=sequences,
             negative_sample_size=negative_sample_size,
+            init_embedding_std=init_embedding_std,
         )
 
     def calc_out(
