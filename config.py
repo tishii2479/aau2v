@@ -32,12 +32,12 @@ class TrainerConfig:
 @dataclass
 class ModelConfig:
     d_model: int = 32
+    init_embedding_std: float = 1
     max_embedding_norm: Optional[float] = None
     window_size: int = 8
     negative_sample_size: int = 5
     lr: float = 0.001
     use_learnable_embedding: bool = True
-    init_embedding_std: float = 1
     dropout: float = 0.1
     add_seq_embedding: bool = False
     add_positional_encoding: bool = False
