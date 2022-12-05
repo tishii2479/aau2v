@@ -31,7 +31,7 @@ def main() -> None:
         model_config=model_config,
     )
 
-    def on_epoch_start() -> None:
+    def on_epoch_start(epoch: int) -> None:
         analyst.similarity_between_seq_meta_and_item_meta(
             "gender", "M", "genre", method="inner-product", num_top_values=30
         )
@@ -40,7 +40,6 @@ def main() -> None:
         )
 
     analyst.fit(on_epoch_start=on_epoch_start, show_fig=False)
-    on_epoch_start()
 
 
 def parse_config() -> Tuple[TrainerConfig, ModelConfig]:

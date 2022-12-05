@@ -44,7 +44,9 @@ class Analyst:
                 assert False
 
     def fit(
-        self, on_epoch_start: Optional[Callable] = None, show_fig: bool = True
+        self,
+        on_epoch_start: Optional[Callable[[int], None]] = None,
+        show_fig: bool = True,
     ) -> None:
         loss_dict = self.trainer.fit(on_epoch_start=on_epoch_start)
         if show_fig:

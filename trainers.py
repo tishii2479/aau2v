@@ -217,14 +217,16 @@ class PyTorchTrainer(Trainer):
 
         self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
 
-    def fit(self, on_epoch_start: Optional[Callable] = None) -> Dict[str, List[float]]:
+    def fit(
+        self, on_epoch_start: Optional[Callable[[int], None]] = None
+    ) -> Dict[str, List[float]]:
         self.model.train()
         loss_dict: Dict[str, List[float]] = {"train": []}
         best_test_loss = 1e10
         print("train start")
         for epoch in range(self.trainer_config.epochs):
             if on_epoch_start is not None:
-                on_epoch_start()
+                on_epoch_start(epoch)
 
             total_loss = 0.0
             for i, data in enumerate(tqdm.tqdm(self.train_data_loader)):
