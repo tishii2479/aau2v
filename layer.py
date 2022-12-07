@@ -215,6 +215,7 @@ class WeightSharedNegativeSampling(nn.Module):
                 neg_out: (batch_size, negative_sample_size),
                 neg_label: (batch_size, negative_sample_size)
         """
+        # TODO: refactor
         batch_size = target_index.size(0)
 
         h = torch.reshape(h, (batch_size, 1, self.d_model))

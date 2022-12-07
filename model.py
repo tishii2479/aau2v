@@ -34,19 +34,6 @@ class Model(metaclass=abc.ABCMeta):
             item_indicies (Tensor):
                 予測に用いる直前の要素のindicies
                 size: (batch_size, window_size, )
-            seq_meta_indicies (Tensor):
-                系列の補助情報のindicies
-                size: (batch_size, seq_meta_kinds, )
-            item_meta_indicies (Tensor):
-                要素の補助情報のindicies
-                size: (batch_size, window_size, max_item_meta_size, )
-            item_meta_weights (Tensor):
-                要素の補助情報の重み
-                一つの補助情報に対して、複数の指定がある場合に、重みをかけて平均を取る
-                例:
-                ["color:blue", "color:dark", "genre:shirt"]
-                [0.5, 0.5, 1]
-                size: (batch_size, window_size, max_item_meta_size, )
             target_index (Tensor):
                 size: (batch_size, )
 
@@ -197,6 +184,7 @@ class AttentiveModel2(PyTorchModel):
         add_positional_encoding: bool = False,
     ) -> None:
         """
+        TODO: 書き直す
         AttentiveModel（提案モデル）のクラスを生成する
 
         Args:

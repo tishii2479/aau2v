@@ -42,6 +42,7 @@ $ inv train-ml
 - 必要なディレクトリを自動で作る
 - モデルの引数にデフォルト値を足す
 - `eval.py`を作る
+- `meta_indicies/weights`のリファクタリング　
 
 ## TODO:
 

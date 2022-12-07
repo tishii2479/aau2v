@@ -92,23 +92,26 @@ class SequenceDatasetManager:
         self.num_item_meta = len(self.item_meta_le.classes_)
         self.num_seq_meta = len(self.seq_meta_le.classes_)
 
-        if len(self.seq_metadata) > 0:
-            # seqのmetadataの個数が全て一緒であると仮定している
-            self.num_seq_meta_types = len(next(iter(self.seq_metadata.values())))
-        else:
-            self.num_seq_meta_types = 0
+        # seqのmetadataの個数が全て一緒であると仮定している
+        self.num_seq_meta_types = (
+            len(next(iter(self.seq_metadata.values())))
+            if len(self.seq_metadata) > 0
+            else 0
+        )
 
-        if len(self.item_metadata) > 0:
-            # itemのmetadataの個数が全て一緒であると仮定している
-            self.num_item_meta_types = len(next(iter(self.item_metadata.values())))
-        else:
-            self.num_item_meta_types = 0
+        # itemのmetadataの個数が全て一緒であると仮定している
+        self.num_item_meta_types = (
+            len(next(iter(self.item_metadata.values())))
+            if len(self.item_metadata) > 0
+            else 0
+        )
 
         print(
             f"num_seq: {self.num_seq}, num_item: {self.num_item}, "
             + f"num_item_meta: {self.num_item_meta}, "
             + f"num_seq_meta: {self.num_seq_meta}, "
             + f"num_item_meta_types: {self.num_item_meta_types}"
+            + f"num_seq_meta_types: {self.num_seq_meta_types}"
         )
 
         self.train_dataset = SequenceDataset(
@@ -162,37 +165,13 @@ class SequenceDataset(Dataset):
                 生のシーケンシャルデータ
                 系列ID : [要素1, 要素2, ..., 要素n]
                 例: "doc_001", [ "私", "は", "猫" ]
-            item_metadata (Dict[str, Dict[str, Any]]):
-                要素の補助情報の辞書
-                要素 : {
-                    補助情報ID: 補助情報の値
-                }
-                例: "私" : {
-                    "品詞": "名詞",
-                    "長さ": 1
-                }
-            seq_metadata (Dict[str, Dict[str, Any]]):
-                系列の補助情報の辞書
-                系列名: {
-                    補助情報ID: 補助情報の値
-                }
-                例: "doc_1" : {
-                    "ジャンル": "スポーツ",
-                }
             seq_le (preprocessing.LabelEncoder):
                 系列の名前とindexを対応づけるLabelEncoder
             item_le (preprocessing.LabelEncoder):
                 要素の名前とindexを対応づけるLabelEncoder
-            seq_meta_le (preprocessing.LabelEncoder):
-                系列の補助情報の値とindexを対応づけるLabelEncoder
-            item_meta_le (preprocessing.LabelEncoder):
-                要素の補助情報の値とindexを対応づけるLabelEncoder
             window_size (int, optional):
                 学習するときに参照する過去の要素の個数.
                 Defaults to 8.
-            exclude_metadata_columns (Optional[List[str]], optional):
-                `item_metadata`の中で補助情報として扱わない列の名前のリスト（例: 単語IDなど）
-                Defaults to None.
         """
         self.raw_sequences = raw_sequences
 
