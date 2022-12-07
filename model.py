@@ -23,8 +23,6 @@ class Model(metaclass=abc.ABCMeta):
         seq_index: Tensor,
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
-        item_meta_indicies: Tensor,
-        item_meta_weights: Tensor,
         target_index: Tensor,
     ) -> Tensor:
         """
@@ -60,8 +58,6 @@ class Model(metaclass=abc.ABCMeta):
             seq_index=seq_index,
             item_indicies=item_indicies,
             seq_meta_indicies=seq_meta_indicies,
-            item_meta_indicies=item_meta_indicies,
-            item_meta_weights=item_meta_weights,
             target_index=target_index,
         )
         loss_pos = F.binary_cross_entropy(pos_out, pos_label)
@@ -78,8 +74,6 @@ class Model(metaclass=abc.ABCMeta):
         seq_index: Tensor,
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
-        item_meta_indicies: Tensor,
-        item_meta_weights: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         """
@@ -106,8 +100,6 @@ class Model(metaclass=abc.ABCMeta):
         seq_index: Tensor,
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
-        item_meta_indicies: Tensor,
-        item_meta_weights: Tensor,
     ) -> Tensor:
         """
         モデルに入力を与えた時の、出力層に入力する前のコンテキストベクトルを返す
@@ -257,6 +249,9 @@ class AttentiveModel2(PyTorchModel):
                 d_model, max_sequence_length, dropout
             )
 
+        self.item_meta_indicies = item_meta_indicies
+        self.item_meta_weights = item_meta_weights
+
         self.output = WeightSharedNegativeSampling(
             d_model=d_model,
             num_item_meta_types=num_item_meta_types,
@@ -273,16 +268,12 @@ class AttentiveModel2(PyTorchModel):
         seq_index: Tensor,
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
-        item_meta_indicies: Tensor,
-        item_meta_weights: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         c = self.calc_context_vector(
             seq_index=seq_index,
             item_indicies=item_indicies,
             seq_meta_indicies=seq_meta_indicies,
-            item_meta_indicies=item_meta_indicies,
-            item_meta_weights=item_meta_weights,
         )
         return self.output.forward(c, target_index)
 
@@ -291,8 +282,6 @@ class AttentiveModel2(PyTorchModel):
         seq_index: Tensor,
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
-        item_meta_indicies: Tensor,
-        item_meta_weights: Tensor,
     ) -> Tensor:
         num_seq_meta_types = seq_meta_indicies.size(1)
         window_size = item_indicies.size(1)
@@ -306,8 +295,10 @@ class AttentiveModel2(PyTorchModel):
 
         h_items = self.embedding_item.forward(item_indicies)
         # add meta embedding
-        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
-        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weights)
+        item_meta_index = self.item_meta_indicies[item_indicies]
+        item_meta_weight = self.item_meta_weights[item_indicies]
+        h_item_meta = self.embedding_item_meta.forward(item_meta_index)
+        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weight)
         h_items += h_item_meta_weighted
         # take mean
         h_items /= self.num_item_meta_types + 1
@@ -329,10 +320,10 @@ class AttentiveModel2(PyTorchModel):
         train_seq = mode == "seq" or mode == "all"
         train_item = mode == "item" or mode == "all"
 
-        self.seq_embedding.requires_grad_(train_seq)
-        self.seq_meta_embedding.requires_grad_(train_seq)
-        self.item_embedding.requires_grad_(train_item)
-        self.item_meta_embedding.requires_grad_(train_item)
+        self.embedding_seq.requires_grad_(train_seq)
+        self.embedding_seq_meta.requires_grad_(train_seq)
+        self.embedding_item.requires_grad_(train_item)
+        self.embedding_item_meta.requires_grad_(train_item)
         self.Qk.requires_grad_(train_item)
 
     @torch.no_grad()  # type: ignore
@@ -407,7 +398,8 @@ class AttentiveModel2(PyTorchModel):
 
     @property
     def item_embedding(self) -> Tensor:
-        return self.embedding_item.weight.data
+        with torch.no_grad():
+            return self.Qk.forward(self.embedding_item.weight.data)
 
     @property
     def seq_meta_embedding(self) -> Tensor:
@@ -415,7 +407,8 @@ class AttentiveModel2(PyTorchModel):
 
     @property
     def item_meta_embedding(self) -> Tensor:
-        return self.embedding_item_meta.weight.data
+        with torch.no_grad():
+            return self.Qk.forward(self.embedding_item_meta.weight.data)
 
 
 class AttentiveModel(PyTorchModel):
@@ -430,6 +423,8 @@ class AttentiveModel(PyTorchModel):
         num_item_meta_types: int,
         d_model: int,
         sequences: List[List[int]],
+        item_meta_indicies: Tensor,
+        item_meta_weights: Tensor,
         init_embedding_std: float = 1,
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
@@ -487,6 +482,9 @@ class AttentiveModel(PyTorchModel):
                 d_model, max_sequence_length, dropout
             )
 
+        self.item_meta_indicies = item_meta_indicies
+        self.item_meta_weights = item_meta_weights
+
         self.output = NegativeSampling(
             d_model=d_model,
             num_item=num_item,
@@ -500,16 +498,12 @@ class AttentiveModel(PyTorchModel):
         seq_index: Tensor,
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
-        item_meta_indicies: Tensor,
-        item_meta_weights: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         c = self.calc_context_vector(
             seq_index=seq_index,
             item_indicies=item_indicies,
             seq_meta_indicies=seq_meta_indicies,
-            item_meta_indicies=item_meta_indicies,
-            item_meta_weights=item_meta_weights,
         )
         return self.output.forward(c, target_index)
 
@@ -518,8 +512,6 @@ class AttentiveModel(PyTorchModel):
         seq_index: Tensor,
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
-        item_meta_indicies: Tensor,
-        item_meta_weights: Tensor,
     ) -> Tensor:
         num_seq_meta_types = seq_meta_indicies.size(1)
         window_size = item_indicies.size(1)
@@ -532,8 +524,10 @@ class AttentiveModel(PyTorchModel):
 
         h_items = self.embedding_item.forward(item_indicies)
         # add meta embedding
-        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
-        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weights)
+        item_meta_index = self.item_meta_indicies[item_indicies]
+        item_meta_weight = self.item_meta_weights[item_indicies]
+        h_item_meta = self.embedding_item_meta.forward(item_meta_index)
+        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weight)
         h_items += h_item_meta_weighted
         # take mean
         h_items /= self.num_item_meta_types + 1
@@ -679,16 +673,12 @@ class Doc2Vec(PyTorchModel):
         seq_index: Tensor,
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
-        item_meta_indicies: Tensor,
-        item_meta_weights: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         c = self.calc_context_vector(
             seq_index=seq_index,
             item_indicies=item_indicies,
             seq_meta_indicies=seq_meta_indicies,
-            item_meta_indicies=item_meta_indicies,
-            item_meta_weights=item_meta_weights,
         )
         return self.output.forward(c, target_index)
 
@@ -697,8 +687,6 @@ class Doc2Vec(PyTorchModel):
         seq_index: Tensor,
         item_indicies: Tensor,
         seq_meta_indicies: Tensor,
-        item_meta_indicies: Tensor,
-        item_meta_weights: Tensor,
     ) -> Tensor:
         window_size = item_indicies.size(1)
 

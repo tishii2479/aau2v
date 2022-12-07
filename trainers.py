@@ -192,6 +192,8 @@ class PyTorchTrainer(Trainer):
                     init_embedding_std=model_config.init_embedding_std,
                     max_embedding_norm=model_config.max_embedding_norm,
                     sequences=self.dataset_manager.sequences,
+                    item_meta_indicies=self.dataset_manager.item_meta_indicies,
+                    item_meta_weights=self.dataset_manager.item_meta_weights,
                     negative_sample_size=model_config.negative_sample_size,
                     add_seq_embedding=model_config.add_seq_embedding,
                     add_positional_encoding=model_config.add_positional_encoding,
@@ -234,8 +236,6 @@ class PyTorchTrainer(Trainer):
                     seq_index,
                     item_indicies,
                     seq_meta_indicies,
-                    item_meta_indicies,
-                    item_meta_weights,
                     target_index,
                 ) = data
 
@@ -243,8 +243,6 @@ class PyTorchTrainer(Trainer):
                     seq_index=seq_index,
                     item_indicies=item_indicies,
                     seq_meta_indicies=seq_meta_indicies,
-                    item_meta_indicies=item_meta_indicies,
-                    item_meta_weights=item_meta_weights,
                     target_index=target_index,
                 )
                 self.optimizer.zero_grad()
@@ -310,8 +308,6 @@ class PyTorchTrainer(Trainer):
                     seq_index,
                     item_indicies,
                     seq_meta_indicies,
-                    item_meta_indicies,
-                    item_meta_weights,
                     target_index,
                 ) = data
 
@@ -319,8 +315,6 @@ class PyTorchTrainer(Trainer):
                     seq_index=seq_index,
                     item_indicies=item_indicies,
                     seq_meta_indicies=seq_meta_indicies,
-                    item_meta_indicies=item_meta_indicies,
-                    item_meta_weights=item_meta_weights,
                     target_index=target_index,
                 )
 
@@ -367,8 +361,6 @@ class PyTorchTrainer(Trainer):
                     seq_index,
                     item_indicies,
                     seq_meta_indicies,
-                    item_meta_indicies,
-                    item_meta_weights,
                     target_index,
                 ) = data
 
@@ -376,8 +368,6 @@ class PyTorchTrainer(Trainer):
                     seq_index=seq_index,
                     item_indicies=item_indicies,
                     seq_meta_indicies=seq_meta_indicies,
-                    item_meta_indicies=item_meta_indicies,
-                    item_meta_weights=item_meta_weights,
                 )
                 c = c.detach().numpy()
                 v = np.dot(c, output_embeddings.T)

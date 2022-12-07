@@ -145,8 +145,12 @@ class SequenceDatasetManager:
             item_metadata=self.item_metadata,
             exclude_item_metadata_columns=exclude_item_metadata_columns,
         )
-        self.item_meta_indicies = torch.tensor(item_meta_indices, dtype=torch.long)
-        self.item_meta_weights = torch.tensor(item_meta_weights, dtype=torch.float)
+        self.item_meta_indicies = torch.tensor(
+            item_meta_indices, dtype=torch.long, requires_grad=False
+        )
+        self.item_meta_weights = torch.tensor(
+            item_meta_weights, dtype=torch.float, requires_grad=False
+        )
 
 
 class SequenceDataset(Dataset):
@@ -207,31 +211,24 @@ class SequenceDataset(Dataset):
 
         self.sequences, self.data = to_sequential_data(
             raw_sequences=self.raw_sequences,
-            item_metadata=item_metadata,
             seq_metadata=seq_metadata,
             seq_le=seq_le,
             item_le=item_le,
             seq_meta_le=seq_meta_le,
-            item_meta_le=item_meta_le,
             window_size=window_size,
             exclude_seq_metadata_columns=exclude_seq_metadata_columns,
-            exclude_item_metadata_columns=exclude_item_metadata_columns,
         )
 
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         """
         Returns:
         (
           seq_index,
           item_indicies,
           seq_meta_indicies,
-          item_meta_indicies,
-          item_meta_weights,
           target_index
         )
         """
@@ -289,6 +286,7 @@ def get_item_meta_indicies(
     exclude_item_metadata_columns: Optional[List[str]] = None,
     max_item_meta_size: int = 10,
 ) -> Tuple[List[List[int]], List[List[float]]]:
+    # TODO: return torch.tensor
     item_names = item_le.inverse_transform(item_ids)
     item_meta_indices: List[List[int]] = []
     item_meta_weights: List[List[float]] = []
@@ -351,18 +349,13 @@ def get_seq_meta_indicies(
 
 def to_sequential_data(
     raw_sequences: Dict[str, List[str]],
-    item_metadata: Dict[str, Dict[str, Any]],
     seq_metadata: Dict[str, Dict[str, Any]],
     seq_le: preprocessing.LabelEncoder,
     item_le: preprocessing.LabelEncoder,
-    item_meta_le: preprocessing.LabelEncoder,
     seq_meta_le: preprocessing.LabelEncoder,
     window_size: int,
     exclude_seq_metadata_columns: Optional[List[str]] = None,
-    exclude_item_metadata_columns: Optional[List[str]] = None,
-) -> Tuple[
-    List[List[int]], List[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]]
-]:
+) -> Tuple[List[List[int]], List[Tuple[Tensor, Tensor, Tensor, Tensor]]]:
     """
     シーケンシャルデータを学習データに変換する
 
@@ -393,15 +386,6 @@ def to_sequential_data(
             item_indicies = torch.tensor(
                 sequence[j : j + window_size], dtype=torch.long
             )
-            item_meta_indices, item_meta_weights = get_item_meta_indicies(
-                item_ids=sequence[j : j + window_size],
-                item_le=item_le,
-                item_meta_le=item_meta_le,
-                item_metadata=item_metadata,
-                exclude_item_metadata_columns=exclude_item_metadata_columns,
-            )
-            item_meta_indices = torch.tensor(item_meta_indices, dtype=torch.long)
-            item_meta_weights = torch.tensor(item_meta_weights, dtype=torch.float)
             target_index = torch.tensor(sequence[j + window_size], dtype=torch.long)
 
             data.append(
@@ -409,8 +393,6 @@ def to_sequential_data(
                     seq_index,
                     item_indicies,
                     seq_meta_indicies,
-                    item_meta_indices,
-                    item_meta_weights,
                     target_index,
                 )
             )

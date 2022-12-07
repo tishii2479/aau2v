@@ -47,9 +47,11 @@ $ inv train-ml
 
 - `dropout`の追加
 - `item_meta_weight/indicies`のリファクタリング
-- `seq_meta_indicies`、`seq_meta_weight`のリファクタリング
+- `seq_meta_indicies/weight`のリファクタリング
 - 補助情報にない分布を作って、それを抽出できるか
 - 学習を別々にやる
     - アイテムが先に学習される
     - 系列は後で学習される
 - 重みの正規化
+- 特徴が分離できているか確かめる
+    - 固有の埋め込み表現からどの程度性別の影響が取り除かれているか
