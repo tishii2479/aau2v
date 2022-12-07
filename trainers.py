@@ -170,11 +170,14 @@ class PyTorchTrainer(Trainer):
                     num_item=self.dataset_manager.num_item,
                     num_seq_meta=dataset_manager.num_seq_meta,
                     num_item_meta=self.dataset_manager.num_item_meta,
+                    num_seq_meta_types=self.dataset_manager.num_seq_meta_types,
                     num_item_meta_types=self.dataset_manager.num_item_meta_types,
                     d_model=model_config.d_model,
                     init_embedding_std=model_config.init_embedding_std,
                     max_embedding_norm=model_config.max_embedding_norm,
                     sequences=self.dataset_manager.sequences,
+                    seq_meta_indicies=self.dataset_manager.seq_meta_indicies,
+                    seq_meta_weights=self.dataset_manager.seq_meta_weights,
                     item_meta_indicies=self.dataset_manager.item_meta_indicies,
                     item_meta_weights=self.dataset_manager.item_meta_weights,
                     negative_sample_size=model_config.negative_sample_size,
@@ -187,11 +190,14 @@ class PyTorchTrainer(Trainer):
                     num_item=self.dataset_manager.num_item,
                     num_seq_meta=dataset_manager.num_seq_meta,
                     num_item_meta=self.dataset_manager.num_item_meta,
+                    num_seq_meta_types=self.dataset_manager.num_seq_meta_types,
                     num_item_meta_types=self.dataset_manager.num_item_meta_types,
                     d_model=model_config.d_model,
                     init_embedding_std=model_config.init_embedding_std,
                     max_embedding_norm=model_config.max_embedding_norm,
                     sequences=self.dataset_manager.sequences,
+                    seq_meta_indicies=self.dataset_manager.seq_meta_indicies,
+                    seq_meta_weights=self.dataset_manager.seq_meta_weights,
                     item_meta_indicies=self.dataset_manager.item_meta_indicies,
                     item_meta_weights=self.dataset_manager.item_meta_weights,
                     negative_sample_size=model_config.negative_sample_size,
@@ -235,14 +241,12 @@ class PyTorchTrainer(Trainer):
                 (
                     seq_index,
                     item_indicies,
-                    seq_meta_indicies,
                     target_index,
                 ) = data
 
                 loss = self.model.forward(
                     seq_index=seq_index,
                     item_indicies=item_indicies,
-                    seq_meta_indicies=seq_meta_indicies,
                     target_index=target_index,
                 )
                 self.optimizer.zero_grad()
@@ -307,14 +311,12 @@ class PyTorchTrainer(Trainer):
                 (
                     seq_index,
                     item_indicies,
-                    seq_meta_indicies,
                     target_index,
                 ) = data
 
                 pos_out, pos_label, neg_out, neg_label = self.model.calc_out(
                     seq_index=seq_index,
                     item_indicies=item_indicies,
-                    seq_meta_indicies=seq_meta_indicies,
                     target_index=target_index,
                 )
 
@@ -360,14 +362,12 @@ class PyTorchTrainer(Trainer):
                 (
                     seq_index,
                     item_indicies,
-                    seq_meta_indicies,
                     target_index,
                 ) = data
 
                 c = self.model.calc_context_vector(
                     seq_index=seq_index,
                     item_indicies=item_indicies,
-                    seq_meta_indicies=seq_meta_indicies,
                 )
                 c = c.detach().numpy()
                 v = np.dot(c, output_embeddings.T)

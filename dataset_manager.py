@@ -92,6 +92,12 @@ class SequenceDatasetManager:
         self.num_item_meta = len(self.item_meta_le.classes_)
         self.num_seq_meta = len(self.seq_meta_le.classes_)
 
+        if len(self.seq_metadata) > 0:
+            # seqのmetadataの個数が全て一緒であると仮定している
+            self.num_seq_meta_types = len(next(iter(self.seq_metadata.values())))
+        else:
+            self.num_seq_meta_types = 0
+
         if len(self.item_metadata) > 0:
             # itemのmetadataの個数が全て一緒であると仮定している
             self.num_item_meta_types = len(next(iter(self.item_metadata.values())))
@@ -107,15 +113,9 @@ class SequenceDatasetManager:
 
         self.train_dataset = SequenceDataset(
             raw_sequences=train_raw_sequences,
-            item_metadata=self.item_metadata,
-            seq_metadata=self.seq_metadata,
             seq_le=self.seq_le,
             item_le=self.item_le,
-            seq_meta_le=self.seq_meta_le,
-            item_meta_le=self.item_meta_le,
             window_size=window_size,
-            exclude_seq_metadata_columns=exclude_seq_metadata_columns,
-            exclude_item_metadata_columns=exclude_item_metadata_columns,
         )
         self.sequences = self.train_dataset.sequences
 
@@ -124,32 +124,25 @@ class SequenceDatasetManager:
             for test_name, test_raw_sequences in test_raw_sequences_dict.items():
                 self.test_dataset[test_name] = SequenceDataset(
                     raw_sequences=test_raw_sequences,
-                    item_metadata=self.item_metadata,
-                    seq_metadata=self.seq_metadata,
                     seq_le=self.seq_le,
                     item_le=self.item_le,
-                    seq_meta_le=self.seq_meta_le,
-                    item_meta_le=self.item_meta_le,
                     window_size=window_size,
-                    exclude_seq_metadata_columns=exclude_seq_metadata_columns,
-                    exclude_item_metadata_columns=exclude_item_metadata_columns,
                 )
                 self.sequences += self.test_dataset[test_name].sequences
         else:
             self.test_dataset = None
 
-        item_meta_indices, item_meta_weights = get_item_meta_indicies(
-            item_ids=list(range(self.num_item)),
-            item_le=self.item_le,
-            item_meta_le=self.item_meta_le,
-            item_metadata=self.item_metadata,
-            exclude_item_metadata_columns=exclude_item_metadata_columns,
+        self.item_meta_indicies, self.item_meta_weights = get_meta_indicies(
+            names=self.item_le.classes_,
+            meta_le=self.item_meta_le,
+            metadata=self.item_metadata,
+            exclude_metadata_columns=exclude_item_metadata_columns,
         )
-        self.item_meta_indicies = torch.tensor(
-            item_meta_indices, dtype=torch.long, requires_grad=False
-        )
-        self.item_meta_weights = torch.tensor(
-            item_meta_weights, dtype=torch.float, requires_grad=False
+        self.seq_meta_indicies, self.seq_meta_weights = get_meta_indicies(
+            names=self.seq_le.classes_,
+            meta_le=self.seq_meta_le,
+            metadata=self.seq_metadata,
+            exclude_metadata_columns=exclude_seq_metadata_columns,
         )
 
 
@@ -157,15 +150,9 @@ class SequenceDataset(Dataset):
     def __init__(
         self,
         raw_sequences: Dict[str, List[str]],
-        item_metadata: Dict[str, Dict[str, Any]],
-        seq_metadata: Dict[str, Dict[str, Any]],
         seq_le: preprocessing.LabelEncoder,
         item_le: preprocessing.LabelEncoder,
-        seq_meta_le: preprocessing.LabelEncoder,
-        item_meta_le: preprocessing.LabelEncoder,
         window_size: int = 8,
-        exclude_seq_metadata_columns: Optional[List[str]] = None,
-        exclude_item_metadata_columns: Optional[List[str]] = None,
     ) -> None:
         """
         補助情報を含んだシーケンシャルのデータを保持するクラス
@@ -211,24 +198,20 @@ class SequenceDataset(Dataset):
 
         self.sequences, self.data = to_sequential_data(
             raw_sequences=self.raw_sequences,
-            seq_metadata=seq_metadata,
             seq_le=seq_le,
             item_le=item_le,
-            seq_meta_le=seq_meta_le,
             window_size=window_size,
-            exclude_seq_metadata_columns=exclude_seq_metadata_columns,
         )
 
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor]:
         """
         Returns:
         (
           seq_index,
           item_indicies,
-          seq_meta_indicies,
           target_index
         )
         """
@@ -278,84 +261,61 @@ def process_metadata(
     return meta_le, meta_dict
 
 
-def get_item_meta_indicies(
-    item_ids: List[int],
-    item_le: preprocessing.LabelEncoder,
-    item_meta_le: preprocessing.LabelEncoder,
-    item_metadata: Dict[str, Dict[str, Any]],
-    exclude_item_metadata_columns: Optional[List[str]] = None,
-    max_item_meta_size: int = 10,
-) -> Tuple[List[List[int]], List[List[float]]]:
-    # TODO: return torch.tensor
-    item_names = item_le.inverse_transform(item_ids)
-    item_meta_indices: List[List[int]] = []
-    item_meta_weights: List[List[float]] = []
-    for item_name in item_names:
-        if item_name not in item_metadata:
-            item_meta_indices.append([])
-            item_meta_weights.append([])
+def get_meta_indicies(
+    names: List[str],
+    meta_le: preprocessing.LabelEncoder,
+    metadata: Dict[str, Dict[str, Any]],
+    exclude_metadata_columns: Optional[List[str]] = None,
+    max_meta_size: int = 10,
+) -> Tuple[Tensor, Tensor]:
+    meta_indicies: List[List[int]] = []
+    meta_weights: List[List[float]] = []
+    for name in names:
+        if name not in metadata:
+            meta_indicies.append([])
+            meta_weights.append([])
             continue
-        item_meta_values: List[str] = []
-        item_meta_weight: List[float] = []
-        for meta_name, meta_value in item_metadata[item_name].items():
+        meta_values: List[str] = []
+        meta_weight: List[float] = []
+        for meta_name, meta_value in metadata[name].items():
             if (
-                exclude_item_metadata_columns is not None
-                and meta_name in exclude_item_metadata_columns
+                exclude_metadata_columns is not None
+                and meta_name in exclude_metadata_columns
             ):
                 continue
             if isinstance(meta_value, list):
                 for e in meta_value:
-                    item_meta_values.append(to_full_meta_value(meta_name, str(e)))
-                    item_meta_weight.append(1 / len(meta_value))
+                    meta_values.append(to_full_meta_value(meta_name, str(e)))
+                    meta_weight.append(1 / len(meta_value))
             else:
-                item_meta_values.append(to_full_meta_value(meta_name, str(meta_value)))
-                item_meta_weight.append(1)
+                meta_values.append(to_full_meta_value(meta_name, str(meta_value)))
+                meta_weight.append(1)
 
-        item_meta_index = list(item_meta_le.transform(item_meta_values))
+        meta_index = list(meta_le.transform(meta_values))
 
-        assert len(item_meta_weight) <= max_item_meta_size
-        assert len(item_meta_weight) == len(item_meta_index)
+        assert len(meta_weight) <= max_meta_size
+        assert len(meta_weight) == len(meta_index)
 
-        # 大きさをmax_item_meta_sizeに合わせる
-        while len(item_meta_weight) < max_item_meta_size:
-            item_meta_index.append(0)
-            item_meta_weight.append(0)
+        # 大きさをmax_meta_sizeに合わせるために、
+        # weightが0であるmeta_indiciesを末尾に加える
+        while len(meta_weight) < max_meta_size:
+            meta_index.append(0)
+            meta_weight.append(0)
 
-        item_meta_indices.append(item_meta_index)
-        item_meta_weights.append(item_meta_weight)
+        meta_indicies.append(meta_index)
+        meta_weights.append(meta_weight)
 
-    return item_meta_indices, item_meta_weights
-
-
-def get_seq_meta_indicies(
-    seq_name: str,
-    seq_meta_le: preprocessing.LabelEncoder,
-    seq_metadata: Dict[str, Dict[str, Any]],
-    exclude_seq_metadata_columns: Optional[List[str]] = None,
-) -> List[int]:
-    seq_meta = []
-    if seq_name not in seq_metadata:
-        return []
-    for meta_name, meta_value in seq_metadata[seq_name].items():
-        if (
-            exclude_seq_metadata_columns is not None
-            and meta_name in exclude_seq_metadata_columns
-        ):
-            continue
-        seq_meta.append(to_full_meta_value(meta_name, meta_value))
-    seq_meta_indicies: List[int] = seq_meta_le.transform(seq_meta)
-    return seq_meta_indicies
+    meta_indicies = torch.tensor(meta_indicies, dtype=torch.long, requires_grad=False)
+    meta_weights = torch.tensor(meta_weights, dtype=torch.float, requires_grad=False)
+    return meta_indicies, meta_weights
 
 
 def to_sequential_data(
     raw_sequences: Dict[str, List[str]],
-    seq_metadata: Dict[str, Dict[str, Any]],
     seq_le: preprocessing.LabelEncoder,
     item_le: preprocessing.LabelEncoder,
-    seq_meta_le: preprocessing.LabelEncoder,
     window_size: int,
-    exclude_seq_metadata_columns: Optional[List[str]] = None,
-) -> Tuple[List[List[int]], List[Tuple[Tensor, Tensor, Tensor, Tensor]]]:
+) -> Tuple[List[List[int]], List[Tuple[Tensor, Tensor, Tensor]]]:
     """
     シーケンシャルデータを学習データに変換する
 
@@ -373,15 +333,6 @@ def to_sequential_data(
         sequences.append(sequence)
 
         seq_index = torch.tensor(seq_le.transform([seq_name])[0], dtype=torch.long)
-        seq_meta_indicies = torch.tensor(
-            get_seq_meta_indicies(
-                seq_name=seq_name,
-                seq_meta_le=seq_meta_le,
-                seq_metadata=seq_metadata,
-                exclude_seq_metadata_columns=exclude_seq_metadata_columns,
-            ),
-            dtype=torch.long,
-        )
         for j in range(len(sequence) - window_size):
             item_indicies = torch.tensor(
                 sequence[j : j + window_size], dtype=torch.long
@@ -392,7 +343,6 @@ def to_sequential_data(
                 (
                     seq_index,
                     item_indicies,
-                    seq_meta_indicies,
                     target_index,
                 )
             )

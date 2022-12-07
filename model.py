@@ -22,7 +22,6 @@ class Model(metaclass=abc.ABCMeta):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        seq_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tensor:
         """
@@ -57,7 +56,6 @@ class Model(metaclass=abc.ABCMeta):
         pos_out, pos_label, neg_out, neg_label = self.calc_out(
             seq_index=seq_index,
             item_indicies=item_indicies,
-            seq_meta_indicies=seq_meta_indicies,
             target_index=target_index,
         )
         loss_pos = F.binary_cross_entropy(pos_out, pos_label)
@@ -73,7 +71,6 @@ class Model(metaclass=abc.ABCMeta):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        seq_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         """
@@ -99,7 +96,6 @@ class Model(metaclass=abc.ABCMeta):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        seq_meta_indicies: Tensor,
     ) -> Tensor:
         """
         モデルに入力を与えた時の、出力層に入力する前のコンテキストベクトルを返す
@@ -184,9 +180,12 @@ class AttentiveModel2(PyTorchModel):
         num_item: int,
         num_seq_meta: int,
         num_item_meta: int,
+        num_seq_meta_types: int,
         num_item_meta_types: int,
         d_model: int,
         sequences: List[List[int]],
+        seq_meta_indicies: Tensor,
+        seq_meta_weights: Tensor,
         item_meta_indicies: Tensor,
         item_meta_weights: Tensor,
         init_embedding_std: float = 1,
@@ -242,6 +241,7 @@ class AttentiveModel2(PyTorchModel):
 
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
+        self.num_seq_meta_types = num_seq_meta_types
         self.num_item_meta_types = num_item_meta_types
 
         if self.add_positional_encoding:
@@ -249,6 +249,8 @@ class AttentiveModel2(PyTorchModel):
                 d_model, max_sequence_length, dropout
             )
 
+        self.seq_meta_indicies = seq_meta_indicies
+        self.seq_meta_weights = seq_meta_weights
         self.item_meta_indicies = item_meta_indicies
         self.item_meta_weights = item_meta_weights
 
@@ -267,13 +269,11 @@ class AttentiveModel2(PyTorchModel):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        seq_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         c = self.calc_context_vector(
             seq_index=seq_index,
             item_indicies=item_indicies,
-            seq_meta_indicies=seq_meta_indicies,
         )
         return self.output.forward(c, target_index)
 
@@ -281,17 +281,19 @@ class AttentiveModel2(PyTorchModel):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        seq_meta_indicies: Tensor,
     ) -> Tensor:
-        num_seq_meta_types = seq_meta_indicies.size(1)
+        # TODO: refactor
         window_size = item_indicies.size(1)
 
         h_seq = self.embedding_seq.forward(seq_index)
         # add meta embedding
-        h_seq_meta = self.embedding_seq_meta.forward(seq_meta_indicies).sum(dim=1)
-        h_seq += h_seq_meta
+        seq_meta_index = self.seq_meta_indicies[seq_index]
+        seq_meta_weight = self.seq_meta_weights[seq_index]
+        h_seq_meta = self.embedding_seq_meta.forward(seq_meta_index)
+        h_seq_meta_weighted = calc_weighted_meta(h_seq_meta, seq_meta_weight)
+        h_seq += h_seq_meta_weighted
         # take mean
-        h_seq /= num_seq_meta_types + 1
+        h_seq /= self.num_seq_meta_types + 1
 
         h_items = self.embedding_item.forward(item_indicies)
         # add meta embedding
@@ -420,9 +422,12 @@ class AttentiveModel(PyTorchModel):
         num_item: int,
         num_seq_meta: int,
         num_item_meta: int,
+        num_seq_meta_types: int,
         num_item_meta_types: int,
         d_model: int,
         sequences: List[List[int]],
+        seq_meta_indicies: Tensor,
+        seq_meta_weights: Tensor,
         item_meta_indicies: Tensor,
         item_meta_weights: Tensor,
         init_embedding_std: float = 1,
@@ -475,6 +480,7 @@ class AttentiveModel(PyTorchModel):
         )
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
+        self.num_seq_meta_types = num_seq_meta_types
         self.num_item_meta_types = num_item_meta_types
 
         if self.add_positional_encoding:
@@ -482,6 +488,8 @@ class AttentiveModel(PyTorchModel):
                 d_model, max_sequence_length, dropout
             )
 
+        self.seq_meta_indicies = seq_meta_indicies
+        self.seq_meta_weights = seq_meta_weights
         self.item_meta_indicies = item_meta_indicies
         self.item_meta_weights = item_meta_weights
 
@@ -497,13 +505,11 @@ class AttentiveModel(PyTorchModel):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        seq_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         c = self.calc_context_vector(
             seq_index=seq_index,
             item_indicies=item_indicies,
-            seq_meta_indicies=seq_meta_indicies,
         )
         return self.output.forward(c, target_index)
 
@@ -511,16 +517,19 @@ class AttentiveModel(PyTorchModel):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        seq_meta_indicies: Tensor,
     ) -> Tensor:
-        num_seq_meta_types = seq_meta_indicies.size(1)
+        # TODO: refactor
         window_size = item_indicies.size(1)
 
         h_seq = self.embedding_seq.forward(seq_index)
         # add meta embedding
-        h_seq += self.embedding_seq_meta.forward(seq_meta_indicies).sum(dim=1)
+        seq_meta_index = self.seq_meta_indicies[seq_index]
+        seq_meta_weight = self.seq_meta_weights[seq_index]
+        h_seq_meta = self.embedding_seq_meta.forward(seq_meta_index)
+        h_seq_meta_weighted = calc_weighted_meta(h_seq_meta, seq_meta_weight)
+        h_seq += h_seq_meta_weighted
         # take mean
-        h_seq /= num_seq_meta_types + 1
+        h_seq /= self.num_seq_meta_types + 1
 
         h_items = self.embedding_item.forward(item_indicies)
         # add meta embedding
@@ -672,13 +681,11 @@ class Doc2Vec(PyTorchModel):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        seq_meta_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         c = self.calc_context_vector(
             seq_index=seq_index,
             item_indicies=item_indicies,
-            seq_meta_indicies=seq_meta_indicies,
         )
         return self.output.forward(c, target_index)
 
@@ -686,7 +693,6 @@ class Doc2Vec(PyTorchModel):
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
-        seq_meta_indicies: Tensor,
     ) -> Tensor:
         window_size = item_indicies.size(1)
 
