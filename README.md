@@ -46,8 +46,6 @@ $ inv train-ml
 ## TODO:
 
 - `dropout`の追加
-- `item_meta_weight/indicies`のリファクタリング
-- `seq_meta_indicies/weight`のリファクタリング
 - 補助情報にない分布を作って、それを抽出できるか
 - 学習を別々にやる
     - アイテムが先に学習される
