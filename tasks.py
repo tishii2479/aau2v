@@ -2,49 +2,6 @@ import invoke
 
 
 @invoke.task
-def train_ml(c):  # type: ignore
-    params = [
-        "--epochs=10",
-        "--model_name=attentive",
-        "--cache_dir=cache/ml/",
-    ]
-    invoke.run("python3 train.py " + " ".join(params))
-
-
-@invoke.task
-def run_ml(c):  # type: ignore
-    params = [
-        "--load_model",
-        "--epochs=0",
-        "--model_name=attentive",
-        "--cache_dir=cache/ml/",
-    ]
-    invoke.run("python3 train.py " + " ".join(params))
-
-
-@invoke.task
-def run_ml_debug(c):  # type: ignore
-    params = [
-        "--load_model",
-        "--epochs=0",
-        "--model_name=attentive",
-        "--cache_dir=cache/ml-debug/",
-    ]
-    invoke.run("python3 train.py " + " ".join(params))
-
-
-@invoke.task
-def run_doc2vec(c):  # type: ignore
-    params = [
-        "--load_model",
-        "--epochs=0",
-        "--model_name=doc2vec",
-        "--cache_dir=cache/ml-doc2vec/",
-    ]
-    invoke.run("python3 train.py " + " ".join(params))
-
-
-@invoke.task
 def test(c):  # type: ignore
     invoke.run("poetry run python3 -m unittest discover tests")
 

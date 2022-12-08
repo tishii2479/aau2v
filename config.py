@@ -15,17 +15,17 @@ class TrainerConfig:
     save_model: bool = True
     load_dataset: bool = True
     save_dataset: bool = True
-    cache_dir: str = "cache/"
+    model_dir: str = "cache/model/"
     dataset_dir: str = "cache/dataset/"
 
     @property
     def model_path(self) -> str:
-        return str(Path(self.cache_dir, f"{self.dataset_name}-{self.model_name}.pt"))
+        return str(Path(self.model_dir, self.dataset_name, f"{self.model_name}.pt"))
 
     @property
     def best_model_path(self) -> str:
         return str(
-            Path(self.cache_dir, f"best-{self.dataset_name}-{self.model_name}.pt")
+            Path(self.model_dir, self.dataset_name, f"best-{self.model_name}.pt")
         )
 
 

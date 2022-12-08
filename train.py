@@ -84,18 +84,18 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
     )
     parser.add_argument("--verbose", action="store_true", help="ログを詳細に出すかどうか")
     parser.add_argument(
-        "--load-model", action="store_true", help="`cache_dir`からモデルのパラメータを読み込むかどうか"
+        "--load-model", action="store_true", help="`model_dir`からモデルのパラメータを読み込むかどうか"
     )
     parser.add_argument(
         "--ignore-saved-model",
         action="store_true",
-        help="`cache_dir`にあるモデルのパラメータを無視するかどうか",
+        help="`model_dir`にあるモデルのパラメータを無視するかどうか",
     )
     parser.add_argument(
-        "--no-save-model", action="store_true", help="`cache_dir`にモデルを保存するかどうか"
+        "--no-save-model", action="store_true", help="`model_dir`にモデルを保存するかどうか"
     )
     parser.add_argument(
-        "--no-load-dataset", action="store_true", help="`cache_dir`からデータセットを読み込むかどうか"
+        "--no-load-dataset", action="store_true", help="`datset_dir`からデータセットを読み込むかどうか"
     )
     parser.add_argument(
         "--no-save-dataset", action="store_true", help="`dataset_dir`にデータセットを保存するかどうか"
@@ -120,7 +120,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         load_dataset=(args.no_load_dataset is False),
         save_dataset=(args.no_save_dataset is False),
         verbose=args.verbose,
-        cache_dir=args.cache_dir,
+        model_dir=args.model_dir,
         dataset_dir=args.dataset_dir,
     )
     model_config = ModelConfig(

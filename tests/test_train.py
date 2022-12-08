@@ -13,7 +13,7 @@ class TestTrain(unittest.TestCase):
             save_model=False,
             load_dataset=False,
             save_dataset=False,
-            cache_dir="tmp/",
+            model_dir="tmp/",
             dataset_dir="tmp/",
         )
         model_config = ModelConfig()
