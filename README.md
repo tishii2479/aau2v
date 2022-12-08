@@ -35,23 +35,19 @@ $ inv train-ml
     - `Analyst`の各関数にドキュメントを書く
     - Tensorの引数にサイズを書く
 - `analyst`のリファクタリング
+    - `similarity_*`の整理
     - `runner`と`analyst`に分離する
     - `onTrainStart`、`onEpochEnd`などのコールバックを受け入れる
 - 不要なオプションを消す
     - `add_positional_encoding`、`use_learnable_embedding`など
     - `set_train_mode`も
-- 必要なディレクトリを自動で作る
 - モデルの引数にデフォルト値を足す
 - `eval.py`を作る
-- `meta_indicies/weights`のリファクタリング　
 
 ## TODO:
 
 - `dropout`の追加
 - 補助情報にない分布を作って、それを抽出できるか
-- 学習を別々にやる
-    - アイテムが先に学習される
-    - 系列は後で学習される
 - 重みの正規化
 - `scale_grad_by_freq`の調査
 - 特徴が分離できているか確かめる
