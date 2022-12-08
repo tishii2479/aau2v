@@ -39,6 +39,7 @@ $ inv train-ml
     - `onTrainStart`、`onEpochEnd`などのコールバックを受け入れる
 - 不要なオプションを消す
     - `add_positional_encoding`、`use_learnable_embedding`など
+    - `set_train_mode`も
 - 必要なディレクトリを自動で作る
 - モデルの引数にデフォルト値を足す
 - `eval.py`を作る
@@ -55,8 +56,3 @@ $ inv train-ml
 - `scale_grad_by_freq`の調査
 - 特徴が分離できているか確かめる
     - 固有の埋め込み表現からどの程度性別の影響が取り除かれているか
-
-## MEMO:
-
-- 学習率が高い時に上手くいかないのは、学習量が各要素間で偏っている状態で正規化してしまうから
-- movielensはlr=0.005だと上手くいく

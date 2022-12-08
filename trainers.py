@@ -251,7 +251,7 @@ class PyTorchTrainer(Trainer):
                     item_indicies=item_indicies,
                     target_index=target_index,
                 )
-                # ISSUE: lossをbatch_sizeで割る
+                # ISSUE: lossをbatch_sizeで割った方がいいかも
                 # loss /= self.trainer_config.batch_size
                 self.optimizer.zero_grad()
                 loss.backward()  # type: ignore
