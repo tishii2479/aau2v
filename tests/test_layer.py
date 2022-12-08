@@ -4,12 +4,12 @@ import torch
 
 from layer import (
     EmbeddingDot,
-    MyEmbedding,
+    MetaEmbeddingLayer,
     NegativeSampling,
     PositionalEncoding,
     WeightSharedNegativeSampling,
+    calc_weighted_meta,
 )
-from model import calc_weighted_meta
 
 
 class TestLayer(unittest.TestCase):
@@ -95,8 +95,14 @@ class TestLayer(unittest.TestCase):
                 [1, 1, 0, 0],
             ]
         )
-        embedding_item = MyEmbedding(num_item, d_model)
-        embedding_item_meta = MyEmbedding(num_item_meta, d_model)
+        embedding_item = MetaEmbeddingLayer(
+            num_item,
+            num_item_meta,
+            num_item_meta_types,
+            d_model,
+            item_meta_indicies,
+            item_meta_weights,
+        )
         layer = WeightSharedNegativeSampling(
             d_model=d_model,
             num_item_meta_types=num_item_meta_types,
@@ -104,7 +110,6 @@ class TestLayer(unittest.TestCase):
             item_meta_indicies=item_meta_indicies,
             item_meta_weights=item_meta_weights,
             embedding_item=embedding_item,
-            embedding_item_meta=embedding_item_meta,
         )
         target_index = torch.LongTensor([0, 0, 1])
         h = torch.rand(batch_size, d_model)
