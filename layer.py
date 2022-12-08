@@ -172,6 +172,10 @@ class MyEmbedding(nn.Embedding):
         # ISSUE: 補助情報ごとに正規化してみても良さそう
         if self.normalize_weight and torch.is_grad_enabled():
             self.forward_count += 1
+            # 毎回重みを正規化すると以下の問題があるため、1024回forwardが呼ばれるたびに正規化する
+            # - 学習時間が長くなる
+            # - 学習率が高いと、学習量が各要素間で偏っている状態で正規化してしまうためうまくいかない
+            # ISSUE: self.forward_countが本当に必要か確認する
             if self.forward_count % 1024 == 0:
                 with torch.no_grad():
                     # 埋め込み表現の各次元の大きさの最大値を1にする
