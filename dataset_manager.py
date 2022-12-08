@@ -110,7 +110,7 @@ class SequenceDatasetManager:
             f"num_seq: {self.num_seq}, num_item: {self.num_item}, "
             + f"num_item_meta: {self.num_item_meta}, "
             + f"num_seq_meta: {self.num_seq_meta}, "
-            + f"num_item_meta_types: {self.num_item_meta_types}"
+            + f"num_item_meta_types: {self.num_item_meta_types}, "
             + f"num_seq_meta_types: {self.num_seq_meta_types}"
         )
 

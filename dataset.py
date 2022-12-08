@@ -96,6 +96,19 @@ def load_dataset_manager(
                 user_columns=["gender"],
                 movie_columns=["genre"],
             )
+        case "movielens-equal-gender":
+            dataset = create_movielens_data(
+                train_path="data/ml-1m/equal-gender-train.csv",
+                test_paths={
+                    "train-size=10": "data/ml-1m/test-10.csv",
+                    "train-size=20": "data/ml-1m/test-20.csv",
+                    "train-size=30": "data/ml-1m/test-30.csv",
+                    "train-size=40": "data/ml-1m/test-40.csv",
+                    "train-size=50": "data/ml-1m/test-50.csv",
+                },
+                user_path="data/ml-1m/users.csv",
+                movie_path="data/ml-1m/movies.csv",
+            )
         case "20newsgroup":
             dataset = create_20newsgroup_data(
                 max_data_size=1000,

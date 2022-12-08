@@ -168,14 +168,12 @@ class MyEmbedding(nn.Embedding):
 
     def forward(self, x: Tensor) -> Tensor:
         # ISSUE: 本当は補助情報ごとに正規化したい...
-        # if torch.is_grad_enabled():
-        #     self.forward_count += 1
-        #     if self.forward_count % 64 == 0:
-        #         with torch.no_grad():
-        #             # 埋め込み表現の正規化
-        #             w = self.weight.data
-        #             mean, std = torch.mean(w), torch.std(w) + 1e-8
-        #             self.weight.data = (w - mean) / std
+        if torch.is_grad_enabled():
+            self.forward_count += 1
+            if self.forward_count % 64 == 0:
+                with torch.no_grad():
+                    # 埋め込み表現の各次元の大きさの最大値を1にする
+                    self.weight.data /= self.weight.abs().max()
         return super().forward(x)
 
 

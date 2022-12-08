@@ -234,8 +234,6 @@ class AttentiveModel2(PyTorchModel):
             init_embedding_std=init_embedding_std,
         )
 
-        # self.Qk = nn.utils.weight_norm(nn.Linear(d_model, d_model))
-
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
 
@@ -290,12 +288,13 @@ class AttentiveModel2(PyTorchModel):
         return c
 
     def set_train_mode(self, mode: str) -> None:
+        if mode not in ["all", "seq", "item"]:
+            raise ValueError(f"Invalid train_mode: {mode}")
         train_seq = mode == "seq" or mode == "all"
         train_item = mode == "item" or mode == "all"
 
         self.embedding_seq.requires_grad_(train_seq)
-        self.embedding_item.requires_grad_(train_seq)
-        self.Qk.requires_grad_(train_item)
+        self.embedding_item.requires_grad_(train_item)
 
     @torch.no_grad()  # type: ignore
     def similarity_between_seq_and_item_meta(
@@ -305,7 +304,6 @@ class AttentiveModel2(PyTorchModel):
         item_meta_indicies = torch.LongTensor(item_meta_indicies)
         h_seq = self.embedding_seq.embedding_element.forward(seq_index)
         h_item_meta = self.embedding_item.embedding_meta.forward(item_meta_indicies)
-        # h_item_meta = self.Qk.forward(h_item_meta)
 
         match method:
             case "attention":
@@ -326,7 +324,6 @@ class AttentiveModel2(PyTorchModel):
         item_indicies = torch.LongTensor(item_indicies)
         h_seq = self.embedding_seq.embedding_element.forward(seq_index)
         h_item = self.embedding_item.embedding_element.forward(item_indicies)
-        # h_item = self.Qk.forward(h_item)
 
         match method:
             case "attention":
@@ -350,7 +347,6 @@ class AttentiveModel2(PyTorchModel):
         item_meta_indicies = torch.LongTensor(item_meta_indicies)
         h_seq_meta = self.embedding_seq.embedding_meta.forward(seq_meta_index)
         h_item_meta = self.embedding_item.embedding_meta.forward(item_meta_indicies)
-        # h_item_meta = self.Qk.forward(h_item_meta)
 
         match method:
             case "attention":
@@ -369,10 +365,7 @@ class AttentiveModel2(PyTorchModel):
 
     @property
     def item_embedding(self) -> Tensor:
-        # TODO: 綺麗にする
         return self.embedding_item.embedding_element.weight.data
-        # with torch.no_grad():
-        #     return self.Qk.forward(self.embedding_item.embedding_element.weight.data)
 
     @property
     def seq_meta_embedding(self) -> Tensor:
@@ -380,10 +373,7 @@ class AttentiveModel2(PyTorchModel):
 
     @property
     def item_meta_embedding(self) -> Tensor:
-        # TODO: 綺麗にする
         return self.embedding_item.embedding_meta.weight.data
-        # with torch.no_grad():
-        #     return self.Qk.forward(self.embedding_item.embedding_meta.weight.data)
 
 
 class AttentiveModel(PyTorchModel):
