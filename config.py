@@ -43,5 +43,6 @@ class ModelConfig:
     lr: float = 0.001
     use_learnable_embedding: bool = True
     dropout: float = 0.1
+    normalize_embedding_weight: bool = False
     add_seq_embedding: bool = False
     add_positional_encoding: bool = False

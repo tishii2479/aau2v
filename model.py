@@ -177,6 +177,7 @@ class AttentiveModel2(PyTorchModel):
         item_meta_indicies: Tensor,
         item_meta_weights: Tensor,
         init_embedding_std: float = 1,
+        normalize_embedding_dim: bool = False,
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
         max_sequence_length: int = 1000,
@@ -220,6 +221,7 @@ class AttentiveModel2(PyTorchModel):
             d_model=d_model,
             meta_indicies=seq_meta_indicies,
             meta_weights=seq_meta_weights,
+            normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
             init_embedding_std=init_embedding_std,
         )
@@ -230,6 +232,7 @@ class AttentiveModel2(PyTorchModel):
             d_model=d_model,
             meta_indicies=item_meta_indicies,
             meta_weights=item_meta_weights,
+            normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
             init_embedding_std=init_embedding_std,
         )
@@ -394,6 +397,7 @@ class AttentiveModel(PyTorchModel):
         item_meta_indicies: Tensor,
         item_meta_weights: Tensor,
         init_embedding_std: float = 1,
+        normalize_embedding_dim: bool = False,
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
         max_sequence_length: int = 1000,
@@ -436,6 +440,7 @@ class AttentiveModel(PyTorchModel):
             d_model=d_model,
             meta_indicies=seq_meta_indicies,
             meta_weights=seq_meta_weights,
+            normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
             init_embedding_std=init_embedding_std,
         )
@@ -446,6 +451,7 @@ class AttentiveModel(PyTorchModel):
             d_model=d_model,
             meta_indicies=item_meta_indicies,
             meta_weights=item_meta_weights,
+            normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
             init_embedding_std=init_embedding_std,
         )

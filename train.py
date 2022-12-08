@@ -70,6 +70,9 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         "--dropout", type=float, default=0.1, help="位置エンコーディング時にドロップアウトする割合"
     )
     parser.add_argument(
+        "--normalize-weight", type=bool, default=False, help="埋め込み表現のノルムを正規化するかどうか"
+    )
+    parser.add_argument(
         "--add-seq-embedding", action="store_true", help="予測ベクトルに系列の埋め込み表現を足すかどうか"
     )
     parser.add_argument(

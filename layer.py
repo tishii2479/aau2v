@@ -154,6 +154,7 @@ class MyEmbedding(nn.Embedding):
         self,
         num_embeddings: int,
         embedding_dim: int,
+        normalize_weight: bool = True,
         max_norm: Optional[float] = None,
         mean: float = 0,
         std: float = 1,
@@ -164,16 +165,14 @@ class MyEmbedding(nn.Embedding):
             max_norm=max_norm,
         )
         nn.init.normal_(self.weight, mean=mean, std=std)
-        self.forward_count = 0
+        self.normalize_weight = normalize_weight
 
     def forward(self, x: Tensor) -> Tensor:
-        # ISSUE: 本当は補助情報ごとに正規化したい...
-        if torch.is_grad_enabled():
-            self.forward_count += 1
-            if self.forward_count % 64 == 0:
-                with torch.no_grad():
-                    # 埋め込み表現の各次元の大きさの最大値を1にする
-                    self.weight.data /= self.weight.abs().max()
+        # ISSUE: 補助情報ごとに正規化してみても良さそう
+        if self.normalize_weight and torch.is_grad_enabled():
+            with torch.no_grad():
+                # 埋め込み表現の各次元の大きさの最大値を1にする
+                self.weight.data /= self.weight.abs().max()
         return super().forward(x)
 
 
@@ -186,15 +185,24 @@ class MetaEmbeddingLayer(nn.Module):
         d_model: int,
         meta_indicies: Tensor,
         meta_weights: Tensor,
+        normalize_embedding_dim: bool = True,
         max_embedding_norm: Optional[float] = None,
         init_embedding_std: float = 1,
     ):
         super().__init__()
         self.embedding_element = MyEmbedding(
-            num_element, d_model, max_norm=max_embedding_norm, std=init_embedding_std
+            num_element,
+            d_model,
+            max_norm=max_embedding_norm,
+            std=init_embedding_std,
+            normalize_weight=normalize_embedding_dim,
         )
         self.embedding_meta = MyEmbedding(
-            num_meta, d_model, max_norm=max_embedding_norm, std=init_embedding_std
+            num_meta,
+            d_model,
+            max_norm=max_embedding_norm,
+            std=init_embedding_std,
+            normalize_weight=normalize_embedding_dim,
         )
         self.num_meta_types = num_meta_types
         self.meta_indicies = meta_indicies
