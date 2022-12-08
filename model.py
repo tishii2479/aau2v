@@ -7,8 +7,8 @@ from torch import Tensor, nn
 
 from layer import (
     MetaEmbeddingLayer,
-    MyEmbedding,
     NegativeSampling,
+    NormalizedEmbeddingLayer,
     PositionalEncoding,
     WeightSharedNegativeSampling,
     attention,
@@ -617,8 +617,10 @@ class Doc2Vec(PyTorchModel):
         """
         super().__init__()
 
-        self.embedding_seq = MyEmbedding(num_seq, d_model, max_norm=max_embedding_norm)
-        self.embedding_item = MyEmbedding(
+        self.embedding_seq = NormalizedEmbeddingLayer(
+            num_seq, d_model, max_norm=max_embedding_norm
+        )
+        self.embedding_item = NormalizedEmbeddingLayer(
             num_item, d_model, max_norm=max_embedding_norm
         )
 

@@ -69,7 +69,7 @@ class EmbeddingDot(nn.Module):
     ):
         super().__init__()
         self.d_model = d_model
-        self.embedding = MyEmbedding(
+        self.embedding = NormalizedEmbeddingLayer(
             num_item, d_model, max_norm=max_embedding_norm, std=init_embedding_std
         )
 
@@ -145,7 +145,7 @@ class NegativeSampling(nn.Module):
         return pos_out, pos_label, neg_out, neg_label
 
 
-class MyEmbedding(nn.Embedding):
+class NormalizedEmbeddingLayer(nn.Embedding):
     """
     nn.Embeddingのラッパークラス
     """
@@ -198,14 +198,14 @@ class MetaEmbeddingLayer(nn.Module):
         init_embedding_std: float = 1,
     ):
         super().__init__()
-        self.embedding_element = MyEmbedding(
+        self.embedding_element = NormalizedEmbeddingLayer(
             num_element,
             d_model,
             max_norm=max_embedding_norm,
             std=init_embedding_std,
             normalize_weight=normalize_embedding_dim,
         )
-        self.embedding_meta = MyEmbedding(
+        self.embedding_meta = NormalizedEmbeddingLayer(
             num_meta,
             d_model,
             max_norm=max_embedding_norm,
