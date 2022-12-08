@@ -166,13 +166,17 @@ class MyEmbedding(nn.Embedding):
         )
         nn.init.normal_(self.weight, mean=mean, std=std)
         self.normalize_weight = normalize_weight
+        self.forward_count = 0
 
     def forward(self, x: Tensor) -> Tensor:
         # ISSUE: 補助情報ごとに正規化してみても良さそう
         if self.normalize_weight and torch.is_grad_enabled():
-            with torch.no_grad():
-                # 埋め込み表現の各次元の大きさの最大値を1にする
-                self.weight.data /= self.weight.abs().max()
+            self.forward_count += 1
+            if self.forward_count % 1024 == 0:
+                with torch.no_grad():
+                    # 埋め込み表現の各次元の大きさの最大値を1にする
+                    # TODO: 最大値を注入できるようにする
+                    self.weight.data /= self.weight.abs().max()
         return super().forward(x)
 
 
