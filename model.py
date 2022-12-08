@@ -100,6 +100,7 @@ class Model(metaclass=abc.ABCMeta):
     def similarity_between_seq_and_item_meta(
         self, seq_index: int, meta_indicies: List[int], method: str = "attention"
     ) -> Tensor:
+        # TODO: analystに吸収させる
         raise NotImplementedError(
             "similarity_between_seq_and_item_meta is not supported for "
             + f"{self.__class__.__name__}"
@@ -302,7 +303,7 @@ class AttentiveModel2(PyTorchModel):
     ) -> Tensor:
         seq_index = torch.LongTensor([seq_index])
         item_meta_indicies = torch.LongTensor(item_meta_indicies)
-        h_seq = self.embedding_seq.forward(seq_index)
+        h_seq = self.embedding_seq.embedding_element.forward(seq_index)
         h_item_meta = self.embedding_item.embedding_meta.forward(item_meta_indicies)
         # h_item_meta = self.Qk.forward(h_item_meta)
 
@@ -323,8 +324,8 @@ class AttentiveModel2(PyTorchModel):
     ) -> Tensor:
         seq_index = torch.LongTensor([seq_index])
         item_indicies = torch.LongTensor(item_indicies)
-        h_seq = self.embedding_seq.forward(seq_index)
-        h_item = self.embedding_item.forward(item_indicies)
+        h_seq = self.embedding_seq.embedding_element.forward(seq_index)
+        h_item = self.embedding_item.embedding_element.forward(item_indicies)
         # h_item = self.Qk.forward(h_item)
 
         match method:

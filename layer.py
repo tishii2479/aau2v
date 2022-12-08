@@ -145,7 +145,7 @@ class NegativeSampling(nn.Module):
         return pos_out, pos_label, neg_out, neg_label
 
 
-class MyEmbedding(nn.Module):
+class MyEmbedding(nn.Embedding):
     """
     nn.Embeddingのラッパークラス
     """
@@ -158,20 +158,25 @@ class MyEmbedding(nn.Module):
         mean: float = 0,
         std: float = 1,
     ):
-        super().__init__()
-        self.embedding = nn.Embedding(
+        super().__init__(
             num_embeddings=num_embeddings,
             embedding_dim=embedding_dim,
             max_norm=max_norm,
         )
-        nn.init.normal_(self.embedding.weight, mean=mean, std=std)
+        nn.init.normal_(self.weight, mean=mean, std=std)
+        self.forward_count = 0
 
     def forward(self, x: Tensor) -> Tensor:
-        return self.embedding.forward(x)
-
-    @property
-    def weight(self) -> Tensor:
-        return self.embedding.weight
+        # ISSUE: 本当は補助情報ごとに正規化したい...
+        # if torch.is_grad_enabled():
+        #     self.forward_count += 1
+        #     if self.forward_count % 64 == 0:
+        #         with torch.no_grad():
+        #             # 埋め込み表現の正規化
+        #             w = self.weight.data
+        #             mean, std = torch.mean(w), torch.std(w) + 1e-8
+        #             self.weight.data = (w - mean) / std
+        return super().forward(x)
 
 
 class MetaEmbeddingLayer(nn.Module):

@@ -35,7 +35,7 @@ $ inv train-ml
     - `Analyst`の各関数にドキュメントを書く
     - Tensorの引数にサイズを書く
 - `analyst`のリファクタリング
-    - `runner`に名前を変える
+    - `runner`と`analyst`に分離する
     - `onTrainStart`、`onEpochEnd`などのコールバックを受け入れる
 - 不要なオプションを消す
     - `add_positional_encoding`、`use_learnable_embedding`など

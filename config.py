@@ -20,13 +20,17 @@ class TrainerConfig:
 
     @property
     def model_path(self) -> str:
-        return str(Path(self.model_dir, self.dataset_name, f"{self.model_name}.pt"))
+        # create directory if model_dir does not exist
+        model_dir = Path(self.model_dir, self.dataset_name)
+        model_dir.mkdir(exist_ok=True, parents=True)
+        return str(model_dir.joinpath(f"{self.model_name}.pt"))
 
     @property
     def best_model_path(self) -> str:
-        return str(
-            Path(self.model_dir, self.dataset_name, f"best-{self.model_name}.pt")
-        )
+        # create directory if model_dir does not exist
+        model_dir = Path(self.model_dir, self.dataset_name)
+        model_dir.mkdir(exist_ok=True, parents=True)
+        return str(model_dir.joinpath(f"best-{self.model_name}.pt"))
 
 
 @dataclass
