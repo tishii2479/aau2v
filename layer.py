@@ -174,6 +174,42 @@ class MyEmbedding(nn.Module):
         return self.embedding.weight
 
 
+class MetaEmbeddingLayer(nn.Module):
+    def __init__(
+        self,
+        num_element: int,
+        num_meta: int,
+        num_meta_types: int,
+        d_model: int,
+        meta_indicies: Tensor,
+        meta_weights: Tensor,
+        max_embedding_norm: Optional[float] = None,
+        init_embedding_std: float = 1,
+    ):
+        super().__init__()
+        self.embedding_element = MyEmbedding(
+            num_element, d_model, max_norm=max_embedding_norm, std=init_embedding_std
+        )
+        self.embedding_meta = MyEmbedding(
+            num_meta, d_model, max_norm=max_embedding_norm, std=init_embedding_std
+        )
+        self.num_meta_types = num_meta_types
+        self.meta_indicies = meta_indicies
+        self.meta_weights = meta_weights
+
+    def forward(self, element_indicies: Tensor) -> Tensor:
+        h_element = self.embedding_element.forward(element_indicies)
+        # add meta embedding
+        meta_index = self.meta_indicies[element_indicies]
+        meta_weight = self.meta_weights[element_indicies]
+        h_meta = self.embedding_meta.forward(meta_index)
+        h_meta_weighted = calc_weighted_meta(h_meta, meta_weight)
+        h_element += h_meta_weighted
+        # take mean
+        h_element /= self.num_meta_types + 1
+        return h_element
+
+
 class WeightSharedNegativeSampling(nn.Module):
     def __init__(
         self,
@@ -182,8 +218,7 @@ class WeightSharedNegativeSampling(nn.Module):
         sequences: List[List[int]],
         item_meta_indicies: Tensor,
         item_meta_weights: Tensor,
-        embedding_item: MyEmbedding,
-        embedding_item_meta: MyEmbedding,
+        embedding_item: nn.Module,
         power: float = 0.75,
         negative_sample_size: int = 5,
     ) -> None:
@@ -195,7 +230,6 @@ class WeightSharedNegativeSampling(nn.Module):
         self.item_meta_indicies = item_meta_indicies
         self.item_meta_weights = item_meta_weights
         self.embedding_item = embedding_item
-        self.embedding_item_meta = embedding_item_meta
         self.sampler = UnigramSampler(sequences, power)
 
     def forward(
@@ -215,24 +249,14 @@ class WeightSharedNegativeSampling(nn.Module):
                 neg_out: (batch_size, negative_sample_size),
                 neg_label: (batch_size, negative_sample_size)
         """
-        # TODO: refactor
         batch_size = target_index.size(0)
 
         h = torch.reshape(h, (batch_size, 1, self.d_model))
 
-        item_meta_index = self.item_meta_indicies[target_index]
-        item_meta_weight = self.item_meta_weights[target_index]
-
         # positive
-        h_items = self.embedding_item.forward(target_index)
-        # add meta embedding
-        h_item_meta = self.embedding_item_meta.forward(item_meta_index)
-        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weight)
-        h_items += h_item_meta_weighted
-        # take mean
-        h_items /= self.num_item_meta_types + 1
-        h_items = torch.reshape(h_items, (-1, 1, self.d_model))
-        pos_out = torch.sigmoid(torch.matmul(h, h_items.mT))
+        h_pos_items = self.embedding_item.forward(target_index)
+        h_pos_items = torch.reshape(h_pos_items, (-1, 1, self.d_model))
+        pos_out = torch.sigmoid(torch.matmul(h, h_pos_items.mT))
         pos_out = torch.reshape(pos_out, (batch_size, 1))
         pos_label = torch.ones(batch_size, 1)
 
@@ -242,17 +266,11 @@ class WeightSharedNegativeSampling(nn.Module):
             self.sampler.get_negative_sample(batch_size, self.negative_sample_size),
             dtype=torch.long,
         )
-        item_meta_index = self.item_meta_indicies[negative_sample]
-        item_meta_weight = self.item_meta_weights[negative_sample]
-        h_items = self.embedding_item.forward(negative_sample)
-        # add meta embedding
-        h_item_meta = self.embedding_item_meta.forward(item_meta_index)
-        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weight)
-        h_items += h_item_meta_weighted
-        # take mean
-        h_items /= self.num_item_meta_types + 1
-        h_items = torch.reshape(h_items, (-1, self.negative_sample_size, self.d_model))
-        neg_out = torch.sigmoid(torch.matmul(h, h_items.mT))
+        h_neg_items = self.embedding_item.forward(negative_sample)
+        h_neg_items = torch.reshape(
+            h_neg_items, (-1, self.negative_sample_size, self.d_model)
+        )
+        neg_out = torch.sigmoid(torch.matmul(h, h_neg_items.mT))
         neg_out = torch.reshape(neg_out, (batch_size, self.negative_sample_size))
         neg_label = torch.zeros(batch_size, self.negative_sample_size)
 

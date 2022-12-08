@@ -6,13 +6,13 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from layer import (
+    MetaEmbeddingLayer,
     MyEmbedding,
     NegativeSampling,
     PositionalEncoding,
     WeightSharedNegativeSampling,
     attention,
     attention_weight,
-    calc_weighted_meta,
     cosine_similarity,
 )
 
@@ -212,35 +212,36 @@ class AttentiveModel2(PyTorchModel):
         super().__init__()
         self.d_model = d_model
 
-        self.embedding_seq = MyEmbedding(
-            num_seq, d_model, max_norm=max_embedding_norm, std=init_embedding_std
+        self.embedding_seq = MetaEmbeddingLayer(
+            num_element=num_seq,
+            num_meta=num_seq_meta,
+            num_meta_types=num_seq_meta_types,
+            d_model=d_model,
+            meta_indicies=seq_meta_indicies,
+            meta_weights=seq_meta_weights,
+            max_embedding_norm=max_embedding_norm,
+            init_embedding_std=init_embedding_std,
         )
-        self.embedding_item = MyEmbedding(
-            num_item, d_model, max_norm=max_embedding_norm, std=init_embedding_std
-        )
-        self.embedding_seq_meta = MyEmbedding(
-            num_seq_meta, d_model, max_norm=max_embedding_norm, std=init_embedding_std
-        )
-        self.embedding_item_meta = MyEmbedding(
-            num_item_meta, d_model, max_norm=max_embedding_norm, std=init_embedding_std
+        self.embedding_item = MetaEmbeddingLayer(
+            num_element=num_item,
+            num_meta=num_item_meta,
+            num_meta_types=num_item_meta_types,
+            d_model=d_model,
+            meta_indicies=item_meta_indicies,
+            meta_weights=item_meta_weights,
+            max_embedding_norm=max_embedding_norm,
+            init_embedding_std=init_embedding_std,
         )
 
         self.Qk = nn.Linear(d_model, d_model)
 
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
-        self.num_seq_meta_types = num_seq_meta_types
-        self.num_item_meta_types = num_item_meta_types
 
         if self.add_positional_encoding:
             self.positional_encoding = PositionalEncoding(
                 d_model, max_sequence_length, dropout
             )
-
-        self.seq_meta_indicies = seq_meta_indicies
-        self.seq_meta_weights = seq_meta_weights
-        self.item_meta_indicies = item_meta_indicies
-        self.item_meta_weights = item_meta_weights
 
         self.output = WeightSharedNegativeSampling(
             d_model=d_model,
@@ -250,7 +251,6 @@ class AttentiveModel2(PyTorchModel):
             item_meta_indicies=item_meta_indicies,
             item_meta_weights=item_meta_weights,
             embedding_item=self.embedding_item,
-            embedding_item_meta=self.embedding_item_meta,
         )
 
     def calc_out(
@@ -270,28 +270,10 @@ class AttentiveModel2(PyTorchModel):
         seq_index: Tensor,
         item_indicies: Tensor,
     ) -> Tensor:
-        # TODO: refactor
         window_size = item_indicies.size(1)
 
         h_seq = self.embedding_seq.forward(seq_index)
-        # add meta embedding
-        seq_meta_index = self.seq_meta_indicies[seq_index]
-        seq_meta_weight = self.seq_meta_weights[seq_index]
-        h_seq_meta = self.embedding_seq_meta.forward(seq_meta_index)
-        h_seq_meta_weighted = calc_weighted_meta(h_seq_meta, seq_meta_weight)
-        h_seq += h_seq_meta_weighted
-        # take mean
-        h_seq /= self.num_seq_meta_types + 1
-
         h_items = self.embedding_item.forward(item_indicies)
-        # add meta embedding
-        item_meta_index = self.item_meta_indicies[item_indicies]
-        item_meta_weight = self.item_meta_weights[item_indicies]
-        h_item_meta = self.embedding_item_meta.forward(item_meta_index)
-        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weight)
-        h_items += h_item_meta_weighted
-        # take mean
-        h_items /= self.num_item_meta_types + 1
 
         if self.add_positional_encoding:
             h_items = self.positional_encoding.forward(h_items)
@@ -311,9 +293,7 @@ class AttentiveModel2(PyTorchModel):
         train_item = mode == "item" or mode == "all"
 
         self.embedding_seq.requires_grad_(train_seq)
-        self.embedding_seq_meta.requires_grad_(train_seq)
-        self.embedding_item.requires_grad_(train_item)
-        self.embedding_item_meta.requires_grad_(train_item)
+        self.embedding_item.requires_grad_(train_seq)
         self.Qk.requires_grad_(train_item)
 
     @torch.no_grad()  # type: ignore
@@ -323,7 +303,7 @@ class AttentiveModel2(PyTorchModel):
         seq_index = torch.LongTensor([seq_index])
         item_meta_indicies = torch.LongTensor(item_meta_indicies)
         h_seq = self.embedding_seq.forward(seq_index)
-        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+        h_item_meta = self.embedding_item.embedding_meta.forward(item_meta_indicies)
         h_item_meta = self.Qk.forward(h_item_meta)
 
         match method:
@@ -367,8 +347,8 @@ class AttentiveModel2(PyTorchModel):
     ) -> Tensor:
         seq_meta_index = torch.LongTensor(seq_meta_index)
         item_meta_indicies = torch.LongTensor(item_meta_indicies)
-        h_seq_meta = self.embedding_seq_meta.forward(seq_meta_index)
-        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+        h_seq_meta = self.embedding_seq.embedding_meta.forward(seq_meta_index)
+        h_item_meta = self.embedding_item.embedding_meta.forward(item_meta_indicies)
         h_item_meta = self.Qk.forward(h_item_meta)
 
         match method:
@@ -384,21 +364,23 @@ class AttentiveModel2(PyTorchModel):
 
     @property
     def seq_embedding(self) -> Tensor:
-        return self.embedding_seq.weight.data
+        return self.embedding_seq.embedding_element.weight.data
 
     @property
     def item_embedding(self) -> Tensor:
+        # TODO: 綺麗にする
         with torch.no_grad():
-            return self.Qk.forward(self.embedding_item.weight.data)
+            return self.Qk.forward(self.embedding_item.embedding_element.weight.data)
 
     @property
     def seq_meta_embedding(self) -> Tensor:
-        return self.embedding_seq_meta.weight.data
+        return self.embedding_seq.embedding_meta.weight.data
 
     @property
     def item_meta_embedding(self) -> Tensor:
+        # TODO: 綺麗にする
         with torch.no_grad():
-            return self.Qk.forward(self.embedding_item_meta.weight.data)
+            return self.Qk.forward(self.embedding_item.embedding_meta.weight.data)
 
 
 class AttentiveModel(PyTorchModel):
@@ -454,32 +436,33 @@ class AttentiveModel(PyTorchModel):
         super().__init__()
         self.d_model = d_model
 
-        self.embedding_seq = MyEmbedding(
-            num_seq, d_model, max_norm=max_embedding_norm, std=init_embedding_std
+        self.embedding_seq = MetaEmbeddingLayer(
+            num_element=num_seq,
+            num_meta=num_seq_meta,
+            num_meta_types=num_seq_meta_types,
+            d_model=d_model,
+            meta_indicies=seq_meta_indicies,
+            meta_weights=seq_meta_weights,
+            max_embedding_norm=max_embedding_norm,
+            init_embedding_std=init_embedding_std,
         )
-        self.embedding_item = MyEmbedding(
-            num_item, d_model, max_norm=max_embedding_norm, std=init_embedding_std
-        )
-        self.embedding_seq_meta = MyEmbedding(
-            num_seq_meta, d_model, max_norm=max_embedding_norm, std=init_embedding_std
-        )
-        self.embedding_item_meta = MyEmbedding(
-            num_item_meta, d_model, max_norm=max_embedding_norm, std=init_embedding_std
+        self.embedding_item = MetaEmbeddingLayer(
+            num_element=num_item,
+            num_meta=num_item_meta,
+            num_meta_types=num_item_meta_types,
+            d_model=d_model,
+            meta_indicies=item_meta_indicies,
+            meta_weights=item_meta_weights,
+            max_embedding_norm=max_embedding_norm,
+            init_embedding_std=init_embedding_std,
         )
         self.add_seq_embedding = add_seq_embedding
         self.add_positional_encoding = add_positional_encoding
-        self.num_seq_meta_types = num_seq_meta_types
-        self.num_item_meta_types = num_item_meta_types
 
         if self.add_positional_encoding:
             self.positional_encoding = PositionalEncoding(
                 d_model, max_sequence_length, dropout
             )
-
-        self.seq_meta_indicies = seq_meta_indicies
-        self.seq_meta_weights = seq_meta_weights
-        self.item_meta_indicies = item_meta_indicies
-        self.item_meta_weights = item_meta_weights
 
         self.output = NegativeSampling(
             d_model=d_model,
@@ -506,28 +489,10 @@ class AttentiveModel(PyTorchModel):
         seq_index: Tensor,
         item_indicies: Tensor,
     ) -> Tensor:
-        # TODO: refactor
         window_size = item_indicies.size(1)
 
         h_seq = self.embedding_seq.forward(seq_index)
-        # add meta embedding
-        seq_meta_index = self.seq_meta_indicies[seq_index]
-        seq_meta_weight = self.seq_meta_weights[seq_index]
-        h_seq_meta = self.embedding_seq_meta.forward(seq_meta_index)
-        h_seq_meta_weighted = calc_weighted_meta(h_seq_meta, seq_meta_weight)
-        h_seq += h_seq_meta_weighted
-        # take mean
-        h_seq /= self.num_seq_meta_types + 1
-
         h_items = self.embedding_item.forward(item_indicies)
-        # add meta embedding
-        item_meta_index = self.item_meta_indicies[item_indicies]
-        item_meta_weight = self.item_meta_weights[item_indicies]
-        h_item_meta = self.embedding_item_meta.forward(item_meta_index)
-        h_item_meta_weighted = calc_weighted_meta(h_item_meta, item_meta_weight)
-        h_items += h_item_meta_weighted
-        # take mean
-        h_items /= self.num_item_meta_types + 1
 
         if self.add_positional_encoding:
             h_items = self.positional_encoding.forward(h_items)
@@ -549,7 +514,7 @@ class AttentiveModel(PyTorchModel):
         seq_index = torch.LongTensor([seq_index])
         item_meta_indicies = torch.LongTensor(item_meta_indicies)
         h_seq = self.embedding_seq.forward(seq_index)
-        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+        h_item_meta = self.embedding_item.embedding_meta.forward(item_meta_indicies)
         match method:
             case "attention":
                 weight = attention_weight(h_seq, h_item_meta)
@@ -589,8 +554,8 @@ class AttentiveModel(PyTorchModel):
     ) -> Tensor:
         seq_meta_index = torch.LongTensor(seq_meta_index)
         item_meta_indicies = torch.LongTensor(item_meta_indicies)
-        h_seq_meta = self.embedding_seq_meta.forward(seq_meta_index)
-        h_item_meta = self.embedding_item_meta.forward(item_meta_indicies)
+        h_seq_meta = self.embedding_seq.embedding_meta.forward(seq_meta_index)
+        h_item_meta = self.embedding_item.embedding_meta.forward(item_meta_indicies)
 
         match method:
             case "attention":
@@ -605,19 +570,19 @@ class AttentiveModel(PyTorchModel):
 
     @property
     def seq_embedding(self) -> Tensor:
-        return self.embedding_seq.weight.data
+        return self.embedding_seq.embedding_element.weight.data
 
     @property
     def item_embedding(self) -> Tensor:
-        return self.embedding_item.weight.data
+        return self.embedding_item.embedding_element.weight.data
 
     @property
     def seq_meta_embedding(self) -> Tensor:
-        return self.embedding_seq_meta.weight.data
+        return self.embedding_seq.embedding_meta.weight.data
 
     @property
     def item_meta_embedding(self) -> Tensor:
-        return self.embedding_item_meta.weight.data
+        return self.embedding_item.embedding_meta.weight.data
 
     @property
     def output_item_embedding(self) -> Tensor:
