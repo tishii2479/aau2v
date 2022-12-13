@@ -43,12 +43,19 @@ $ inv train-ml
     - `set_train_mode`も
 - モデルの引数にデフォルト値を足す
 - `eval.py`を作る
+- `ArgumentParser`のenum系の引数に`choices`を追加する
+- pytorchのGPUを試す
+    - https://zenn.dev/hidetoshi/articles/20220731_pytorch-m1-macbook-gpu
 
 ## TODO:
 
 - `dropout`の追加
-- 補助情報にない分布を作って、それを抽出できるか
-- 重みの正規化
 - `scale_grad_by_freq`の調査
 - 特徴が分離できているか確かめる
     - 固有の埋め込み表現からどの程度性別の影響が取り除かれているか
+    - 性別を反転させたときにどうなるか
+    - 男性の中で、好きな男性向けジャンルが異なるグループを作って、それをクラスタとして分けられるか
+- 各要素の内積の大きさの比較
+- `NormalizedEmbeddingLayer`に補助情報のグループのインデックスを与えて、グループごとに正規化する
+    - その時は正規化はこまめにやる必要がありそう
+- `init_embedding_dim`の値を0.3にする
