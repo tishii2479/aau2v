@@ -1,6 +1,7 @@
 import copy
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+import numpy as np
 import torch
 import tqdm
 from sklearn import preprocessing
@@ -312,11 +313,21 @@ def to_sequential_data(
         sequences.append(sequence)
 
         seq_index = torch.tensor(seq_le.transform([seq_name])[0], dtype=torch.long)
-        for j in range(len(sequence) - window_size):
+        left = window_size
+        right = len(sequence) - 1 - window_size
+        if left >= right:
+            continue
+        for j in range(left, right):
             item_indicies = torch.tensor(
-                sequence[j : j + window_size], dtype=torch.long
+                np.concatenate(
+                    [
+                        sequence[j - window_size : j],
+                        sequence[j + 1 : j + window_size + 1],
+                    ]
+                ),
+                dtype=torch.long,
             )
-            target_index = torch.tensor(sequence[j + window_size], dtype=torch.long)
+            target_index = torch.tensor(sequence[j], dtype=torch.long)
 
             data.append(
                 (
