@@ -28,6 +28,7 @@ def load_dataset_manager(
     load_dataset: bool,
     save_dataset: bool,
     window_size: int = 8,
+    data_dir: str = "data/",
 ) -> SequenceDatasetManager:
     pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")
     if load_dataset and os.path.exists(pickle_path):
@@ -41,87 +42,87 @@ def load_dataset_manager(
     match dataset_name:
         case "toydata":
             dataset = create_toydata(
-                train_path="data/toydata/train.csv",
-                test_path="data/toydata/test.csv",
-                user_path="data/toydata/users.csv",
-                item_path="data/toydata/items.csv",
+                train_path=f"{data_dir}/toydata/train.csv",
+                test_path=f"{data_dir}/toydata/test.csv",
+                user_path=f"{data_dir}/toydata/users.csv",
+                item_path=f"{data_dir}/toydata/items.csv",
             )
         case "toydata-simple":
             dataset = create_toydata(
-                train_path="data/toydata-simple/train.csv",
-                test_path="data/toydata-simple/test.csv",
-                user_path="data/toydata-simple/users.csv",
-                item_path="data/toydata-simple/items.csv",
+                train_path=f"{data_dir}/toydata-simple/train.csv",
+                test_path=f"{data_dir}/toydata-simple/test.csv",
+                user_path=f"{data_dir}/toydata-simple/users.csv",
+                item_path=f"{data_dir}/toydata-simple/items.csv",
             )
         case "toydata-simple-mf":
             dataset = create_toydata(
-                train_path="data/toydata-simple-mf/train.csv",
-                test_path="data/toydata-simple-mf/test.csv",
-                user_path="data/toydata-simple-mf/users.csv",
-                item_path="data/toydata-simple-mf/items.csv",
+                train_path=f"{data_dir}/toydata-simple-mf/train.csv",
+                test_path=f"{data_dir}/toydata-simple-mf/test.csv",
+                user_path=f"{data_dir}/toydata-simple-mf/users.csv",
+                item_path=f"{data_dir}/toydata-simple-mf/items.csv",
             )
         case "toydata-hard":
             dataset = create_toydata(
-                train_path="data/toydata-hard/train.csv",
-                test_path="data/toydata-hard/test.csv",
-                user_path="data/toydata-hard/users.csv",
-                item_path="data/toydata-hard/items.csv",
+                train_path=f"{data_dir}/toydata-hard/train.csv",
+                test_path=f"{data_dir}/toydata-hard/test.csv",
+                user_path=f"{data_dir}/toydata-hard/users.csv",
+                item_path=f"{data_dir}/toydata-hard/items.csv",
             )
         case "toydata-paper":
             dataset = create_toydata(
-                train_path="data/toydata-paper/train.csv",
-                test_path="data/toydata-paper/test.csv",
-                user_path="data/toydata-paper/users.csv",
-                item_path="data/toydata-paper/items.csv",
+                train_path=f"{data_dir}/toydata-paper/train.csv",
+                test_path=f"{data_dir}/toydata-paper/test.csv",
+                user_path=f"{data_dir}/toydata-paper/users.csv",
+                item_path=f"{data_dir}/toydata-paper/items.csv",
             )
         case "hm":
             dataset = create_hm_data(
-                purchase_history_path="data/hm/filtered_purchase_history.csv",
-                item_path="data/hm/items.csv",
-                customer_path="data/hm/customers.csv",
+                purchase_history_path=f"{data_dir}/hm/filtered_purchase_history.csv",
+                item_path=f"{data_dir}/hm/items.csv",
+                customer_path=f"{data_dir}/hm/customers.csv",
                 max_data_size=1000,
                 test_data_size=500,
             )
         case "movielens":
             dataset = create_movielens_data(
-                train_path="data/ml-1m/train.csv",
+                train_path=f"{data_dir}/ml-1m/train.csv",
                 test_paths={
-                    "train-size=10": "data/ml-1m/test-10.csv",
-                    "train-size=20": "data/ml-1m/test-20.csv",
-                    "train-size=30": "data/ml-1m/test-30.csv",
-                    "train-size=40": "data/ml-1m/test-40.csv",
-                    "train-size=50": "data/ml-1m/test-50.csv",
+                    "train-size=10": f"{data_dir}/ml-1m/test-10.csv",
+                    "train-size=20": f"{data_dir}/ml-1m/test-20.csv",
+                    "train-size=30": f"{data_dir}/ml-1m/test-30.csv",
+                    "train-size=40": f"{data_dir}/ml-1m/test-40.csv",
+                    "train-size=50": f"{data_dir}/ml-1m/test-50.csv",
                 },
-                user_path="data/ml-1m/users.csv",
-                movie_path="data/ml-1m/movies.csv",
+                user_path=f"{data_dir}/ml-1m/users.csv",
+                movie_path=f"{data_dir}/ml-1m/movies.csv",
             )
         case "movielens-simple":
             dataset = create_movielens_data(
-                train_path="data/ml-1m/train.csv",
+                train_path=f"{data_dir}/ml-1m/train.csv",
                 test_paths={
-                    "train-size=10": "data/ml-1m/test-10.csv",
-                    "train-size=20": "data/ml-1m/test-20.csv",
-                    "train-size=30": "data/ml-1m/test-30.csv",
-                    "train-size=40": "data/ml-1m/test-40.csv",
-                    "train-size=50": "data/ml-1m/test-50.csv",
+                    "train-size=10": f"{data_dir}/ml-1m/test-10.csv",
+                    "train-size=20": f"{data_dir}/ml-1m/test-20.csv",
+                    "train-size=30": f"{data_dir}/ml-1m/test-30.csv",
+                    "train-size=40": f"{data_dir}/ml-1m/test-40.csv",
+                    "train-size=50": f"{data_dir}/ml-1m/test-50.csv",
                 },
-                user_path="data/ml-1m/users.csv",
-                movie_path="data/ml-1m/movies.csv",
+                user_path=f"{data_dir}/ml-1m/users.csv",
+                movie_path=f"{data_dir}/ml-1m/movies.csv",
                 user_columns=["gender"],
                 movie_columns=["genre"],
             )
         case "movielens-equal-gender":
             dataset = create_movielens_data(
-                train_path="data/ml-1m/equal-gender-train.csv",
+                train_path=f"{data_dir}/ml-1m/equal-gender-train.csv",
                 test_paths={
-                    "train-size=10": "data/ml-1m/test-10.csv",
-                    "train-size=20": "data/ml-1m/test-20.csv",
-                    "train-size=30": "data/ml-1m/test-30.csv",
-                    "train-size=40": "data/ml-1m/test-40.csv",
-                    "train-size=50": "data/ml-1m/test-50.csv",
+                    "train-size=10": f"{data_dir}/ml-1m/test-10.csv",
+                    "train-size=20": f"{data_dir}/ml-1m/test-20.csv",
+                    "train-size=30": f"{data_dir}/ml-1m/test-30.csv",
+                    "train-size=40": f"{data_dir}/ml-1m/test-40.csv",
+                    "train-size=50": f"{data_dir}/ml-1m/test-50.csv",
                 },
-                user_path="data/ml-1m/users.csv",
-                movie_path="data/ml-1m/movies.csv",
+                user_path=f"{data_dir}/ml-1m/users.csv",
+                movie_path=f"{data_dir}/ml-1m/movies.csv",
             )
         case "20newsgroup":
             dataset = create_20newsgroup_data(
