@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from config import ModelConfig, TrainerConfig
 from dataset_manager import SequenceDatasetManager
 from model import AttentiveModel, AttentiveModel2, Doc2Vec, PyTorchModel
-from util import check_model_path
+from util import check_model_path, visualize_loss
 
 
 class Trainer(metaclass=abc.ABCMeta):
@@ -83,58 +83,6 @@ class Trainer(metaclass=abc.ABCMeta):
         item_meta_indicies: List[int],
         method: str = "attention",
     ) -> Tensor:
-        raise NotImplementedError()
-
-    @abc.abstractproperty
-    def seq_embedding(self) -> Dict[str, np.ndarray]:
-        """
-        Sequence embedding
-
-        Raises:
-            NotImplementedError: if not implemented
-
-        Returns:
-            Dict[str, np.ndarray]: (sequence id, embedding)
-        """
-        raise NotImplementedError()
-
-    @abc.abstractproperty
-    def item_embedding(self) -> Dict[str, np.ndarray]:
-        """
-        Item embedding
-
-        Raises:
-            NotImplementedError: if not implemented
-
-        Returns:
-            Dict[str, np.ndarray]: (item id, embedding)
-        """
-        raise NotImplementedError()
-
-    @abc.abstractproperty
-    def item_meta_embedding(self) -> Dict[str, np.ndarray]:
-        """
-        Item Metadata embedding
-
-        Raises:
-            NotImplementedError: if not implemented
-
-        Returns:
-            Dict[str, Dict[str, np.ndarray]]: (meta_name, (meta_value, embedding))
-        """
-        raise NotImplementedError()
-
-    @abc.abstractproperty
-    def seq_meta_embedding(self) -> Dict[str, np.ndarray]:
-        """
-        Sequence Metadata embedding
-
-        Raises:
-            NotImplementedError: if not implemented
-
-        Returns:
-            Dict[str, Dict[str, np.ndarray]]: (meta_name, (meta_value, embedding))
-        """
         raise NotImplementedError()
 
 
@@ -228,7 +176,9 @@ class PyTorchTrainer(Trainer):
         self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
 
     def fit(
-        self, on_epoch_start: Optional[Callable[[int], None]] = None
+        self,
+        on_epoch_start: Optional[Callable[[int], None]] = None,
+        show_fig: bool = False,
     ) -> Dict[str, List[float]]:
         self.model.train()
         loss_dict: Dict[str, List[float]] = {"train": []}
@@ -297,6 +247,9 @@ class PyTorchTrainer(Trainer):
         if self.trainer_config.save_model:
             torch.save(self.model.state_dict(), self.trainer_config.model_path)
             print(f"saved model to {self.trainer_config.model_path}")
+
+        if show_fig:
+            visualize_loss(loss_dict)
 
         return loss_dict
 
@@ -409,41 +362,3 @@ class PyTorchTrainer(Trainer):
         return self.model.similarity_between_seq_meta_and_item_meta(
             seq_meta_index, item_meta_indicies, method
         )
-
-    @property
-    def seq_embedding(self) -> Dict[str, np.ndarray]:
-        return {
-            seq_name: h_seq.detach().numpy()
-            for seq_name, h_seq in zip(
-                self.dataset_manager.seq_le.classes_, self.model.seq_embedding
-            )
-        }
-
-    @property
-    def item_embedding(self) -> Dict[str, np.ndarray]:
-        return {
-            item_name: h_item.detach().numpy()
-            for item_name, h_item in zip(
-                self.dataset_manager.item_le.classes_, self.model.item_embedding
-            )
-        }
-
-    @property
-    def seq_meta_embedding(self) -> Dict[str, np.ndarray]:
-        return {
-            seq_meta_name: h_seq_meta.detach().numpy()
-            for seq_meta_name, h_seq_meta in zip(
-                self.dataset_manager.seq_meta_le.classes_,
-                self.model.seq_meta_embedding,
-            )
-        }
-
-    @property
-    def item_meta_embedding(self) -> Dict[str, np.ndarray]:
-        return {
-            item_meta_name: h_item_meta.detach().numpy()
-            for item_meta_name, h_item_meta in zip(
-                self.dataset_manager.item_meta_le.classes_,
-                self.model.item_meta_embedding,
-            )
-        }

@@ -75,6 +75,13 @@ def load_dataset_manager(
                 user_path=f"{data_dir}/toydata-paper/users.csv",
                 item_path=f"{data_dir}/toydata-paper/items.csv",
             )
+        case "toydata-small":
+            dataset = create_toydata(
+                train_path=f"{data_dir}/toydata-small/train.csv",
+                test_path=f"{data_dir}/toydata-small/test.csv",
+                user_path=f"{data_dir}/toydata-small/users.csv",
+                item_path=f"{data_dir}/toydata-small/items.csv",
+            )
         case "hm":
             dataset = create_hm_data(
                 purchase_history_path=f"{data_dir}/hm/filtered_purchase_history.csv",

@@ -1,13 +1,13 @@
 import collections
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from sklearn.cluster import KMeans
 from torch import Tensor
 
-from config import ModelConfig, TrainerConfig
 from dataset_manager import SequenceDatasetManager
-from trainers import PyTorchTrainer, Trainer
+from layer import attention_weight, cosine_similarity
+from model import Model
 from util import (
     calc_cluster_occurence_array,
     calc_coherence,
@@ -15,43 +15,29 @@ from util import (
     to_full_meta_value,
     top_cluster_items,
     visualize_cluster,
-    visualize_loss,
     visualize_vectors,
 )
 
 
-class Analyst:
-    trainer: Trainer
+def calc_similarity(a: Tensor, b: Tensor, method: str = "inner-product") -> Tensor:
+    match method:
+        case "attention":
+            sim = attention_weight(a, b)
+        case "cos":
+            sim = cosine_similarity(a, b)
+        case "inner-product":
+            sim = np.matmul(a, b.T)
+    return sim.squeeze()
 
+
+class Analyst:
     def __init__(
         self,
+        model: Model,
         dataset_manager: SequenceDatasetManager,
-        trainer_config: TrainerConfig,
-        model_config: ModelConfig,
     ):
+        self.model = model
         self.dataset_manager = dataset_manager
-        self.trainer_config = trainer_config
-        self.model_config = model_config
-
-        match self.trainer_config.model_name:
-            case "attentive" | "attentive2" | "doc2vec":
-                self.trainer = PyTorchTrainer(
-                    dataset_manager=self.dataset_manager,
-                    trainer_config=trainer_config,
-                    model_config=model_config,
-                )
-            case _:
-                print(f"invalid model_name: {trainer_config.model_name}")
-                assert False
-
-    def fit(
-        self,
-        on_epoch_start: Optional[Callable[[int], None]] = None,
-        show_fig: bool = True,
-    ) -> None:
-        loss_dict = self.trainer.fit(on_epoch_start=on_epoch_start)
-        if show_fig:
-            visualize_loss(loss_dict)
 
     def cluster_embeddings(
         self, num_cluster: int, show_fig: bool = True, target: str = "sequence"
@@ -68,9 +54,9 @@ class Analyst:
         kmeans = KMeans(n_clusters=num_cluster)
         match target:
             case "sequence":
-                embeddings = self.trainer.seq_embedding.values()
+                embeddings = self.model.seq_embedding.values()
             case "item":
-                embeddings = self.trainer.item_embedding.values()
+                embeddings = self.model.item_embedding.values()
             case _:
                 print(f"Invalid target: {target}")
                 assert False
@@ -165,21 +151,25 @@ class Analyst:
     def similarity_between_seq_and_item_meta(
         self,
         seq_index: int,
-        item_meta_name: str,
+        item_meta_name: str,  # TODO: accept List[str]
         num_top_values: int = 5,
         method: str = "attention",
         verbose: bool = True,
     ) -> List[Tuple[Tensor, str]]:
-        meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
-        meta_names = [
-            to_full_meta_value(item_meta_name, value) for value in meta_values
+        item_meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
+        item_meta_names = [
+            to_full_meta_value(item_meta_name, value) for value in item_meta_values
         ]
-        meta_indicies = self.dataset_manager.item_meta_le.transform(meta_names)
-        weight = self.trainer.similarity_between_seq_and_item_meta(
-            seq_index, meta_indicies, method
+        item_meta_indicies = self.dataset_manager.item_meta_le.transform(
+            item_meta_names
         )
-        meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
-        result = sorted(meta_weights)[::-1][:num_top_values]
+        e_seq = self.model.seq_embedding[seq_index]
+        e_item_meta = self.model.item_meta_embedding[item_meta_indicies]
+        weight = calc_similarity(e_seq, e_item_meta, method)
+        item_meta_weights = [
+            (weight[i], item_meta_values[i]) for i in range(len(item_meta_values))
+        ]
+        result = sorted(item_meta_weights)[::-1][:num_top_values]
         if verbose:
             print(f"similarity of seq: {seq_index} for meta: {item_meta_name}")
             for weight, name in result:
@@ -197,7 +187,7 @@ class Analyst:
             -num_recent_items:
         ]
         item_names = self.dataset_manager.item_le.inverse_transform(item_indicies)
-        weight = self.trainer.similarity_between_seq_and_item(
+        weight = self.model.similarity_between_seq_and_item(
             seq_index, item_indicies, method
         )
         item_weights = [(weight[i], item_names[i]) for i in range(num_recent_items)]
@@ -224,7 +214,7 @@ class Analyst:
             to_full_meta_value(item_meta_name, value) for value in meta_values
         ]
         meta_indicies = self.dataset_manager.item_meta_le.transform(meta_names)
-        weight = self.trainer.similarity_between_seq_meta_and_item_meta(
+        weight = self.model.similarity_between_seq_meta_and_item_meta(
             seq_meta_index, meta_indicies, method
         )
         meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
@@ -235,22 +225,12 @@ class Analyst:
                 print(f"{weight.item():.4f}", name)
         return result
 
-    def eval_prediction_loss(
-        self,
-    ) -> Tuple[float, Dict[str, float]]:
-        return self.trainer.eval_loss(show_fig=True)
-
-    def eval_prediction_accuracy(
-        self,
-    ) -> None:
-        self.trainer.eval_pred()
-
     def similar_items(
         self, item_index: int, num_items: int = 10
     ) -> List[Tuple[float, str]]:
         item_name = self.dataset_manager.item_le.inverse_transform([item_index])[0]
 
-        item_embedding = self.trainer.item_embedding
+        item_embedding = self.model.item_embedding
         similar_items: List[Tuple[float, str]] = []
 
         h = item_embedding[item_name]
@@ -278,7 +258,7 @@ class Analyst:
         self, seq_index: int, num_seqs: int = 5
     ) -> List[Tuple[float, str]]:
         seq_name = self.dataset_manager.seq_le.inverse_transform([seq_index])[0]
-        seq_embedding = self.trainer.seq_embedding
+        seq_embedding = self.model.seq_embedding
 
         similar_customers: List[Tuple[float, str]] = []
 
@@ -310,18 +290,59 @@ class Analyst:
 
         return similar_customers[:num_seqs]
 
+    def analyze_seq(self, seq_index: int) -> None:
+        pass
+
     def visualize_meta_embedding(
         self, seq_meta_name: str, item_meta_name: str, method: str = "pca"
     ) -> None:
         embeddings: Dict[str, np.ndarray] = {}
         for seq_meta_value in self.dataset_manager.seq_meta_dict[seq_meta_name]:
             full_seq_meta_value = to_full_meta_value(seq_meta_name, seq_meta_value)
-            embeddings[full_seq_meta_value] = self.trainer.seq_meta_embedding[
+            embeddings[full_seq_meta_value] = self.seq_meta_embedding[
                 full_seq_meta_value
             ]
         for item_meta_value in self.dataset_manager.item_meta_dict[item_meta_name]:
             full_item_meta_value = to_full_meta_value(item_meta_name, item_meta_value)
-            embeddings[full_item_meta_value] = self.trainer.item_meta_embedding[
+            embeddings[full_item_meta_value] = self.item_meta_embedding[
                 full_item_meta_value
             ]
         visualize_vectors(embeddings, method=method)
+
+    @property
+    def seq_embedding(self) -> Dict[str, np.ndarray]:
+        return {
+            seq_name: h_seq.detach().numpy()
+            for seq_name, h_seq in zip(
+                self.dataset_manager.seq_le.classes_, self.model.seq_embedding
+            )
+        }
+
+    @property
+    def item_embedding(self) -> Dict[str, np.ndarray]:
+        return {
+            item_name: h_item.detach().numpy()
+            for item_name, h_item in zip(
+                self.dataset_manager.item_le.classes_, self.model.item_embedding
+            )
+        }
+
+    @property
+    def seq_meta_embedding(self) -> Dict[str, np.ndarray]:
+        return {
+            seq_meta_name: h_seq_meta.detach().numpy()
+            for seq_meta_name, h_seq_meta in zip(
+                self.dataset_manager.seq_meta_le.classes_,
+                self.model.seq_meta_embedding,
+            )
+        }
+
+    @property
+    def item_meta_embedding(self) -> Dict[str, np.ndarray]:
+        return {
+            item_meta_name: h_item_meta.detach().numpy()
+            for item_meta_name, h_item_meta in zip(
+                self.dataset_manager.item_meta_le.classes_,
+                self.model.item_meta_embedding,
+            )
+        }

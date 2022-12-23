@@ -7,6 +7,7 @@ import torch
 from analyst import Analyst
 from config import ModelConfig, TrainerConfig
 from dataset import load_dataset_manager
+from trainers import PyTorchTrainer
 
 
 def main() -> None:
@@ -25,11 +26,12 @@ def main() -> None:
         window_size=model_config.window_size,
     )
 
-    analyst = Analyst(
+    trainer = PyTorchTrainer(
         dataset_manager=dataset_manager,
         trainer_config=trainer_config,
         model_config=model_config,
     )
+    analyst = Analyst(trainer.model, dataset_manager)
 
     def on_epoch_start(epoch: int) -> None:
         analyst.similarity_between_seq_meta_and_item_meta(
@@ -39,7 +41,7 @@ def main() -> None:
             "gender", "F", "genre", method="inner-product", num_top_values=30
         )
 
-    analyst.fit(on_epoch_start=on_epoch_start, show_fig=False)
+    trainer.fit(on_epoch_start=on_epoch_start, show_fig=False)
 
 
 def parse_config() -> Tuple[TrainerConfig, ModelConfig]:

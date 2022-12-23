@@ -3,12 +3,14 @@ import unittest
 from analyst import Analyst
 from config import ModelConfig, TrainerConfig
 from dataset import load_dataset_manager
+from trainers import PyTorchTrainer
 
 
 class TestTrain(unittest.TestCase):
     def test_train(self) -> None:
         trainer_config = TrainerConfig(
             epochs=2,
+            dataset_name="toydata-small",
             load_model=False,
             save_model=False,
             load_dataset=False,
@@ -23,13 +25,15 @@ class TestTrain(unittest.TestCase):
             load_dataset=trainer_config.load_dataset,
             save_dataset=trainer_config.save_dataset,
         )
-        analyst = Analyst(
+        trainer = PyTorchTrainer(
             dataset_manager=dataset_manager,
             trainer_config=trainer_config,
             model_config=model_config,
         )
+        analyst = Analyst(trainer.model, dataset_manager)
 
-        analyst.fit(show_fig=False)
+        trainer.fit(show_fig=False)
+        analyst.similarity_between_seq_and_item_meta(0, "genre")
 
 
 if __name__ == "__main__":
