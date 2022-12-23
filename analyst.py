@@ -152,8 +152,8 @@ class Analyst:
         self,
         seq_index: int,
         item_meta_name: str,  # TODO: accept List[str]
-        num_top_values: int = 5,
-        method: str = "attention",
+        num_top_values: int = 10,
+        method: str = "inner-product",
         verbose: bool = True,
     ) -> List[Tuple[Tensor, str]]:
         item_meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
@@ -164,8 +164,8 @@ class Analyst:
             item_meta_names
         )
         e_seq = self.model.seq_embedding[seq_index]
-        e_item_meta = self.model.item_meta_embedding[item_meta_indicies]
-        weight = calc_similarity(e_seq, e_item_meta, method)
+        e_item_metas = self.model.item_meta_embedding[item_meta_indicies]
+        weight = calc_similarity(e_seq, e_item_metas, method)
         item_meta_weights = [
             (weight[i], item_meta_values[i]) for i in range(len(item_meta_values))
         ]
@@ -179,17 +179,17 @@ class Analyst:
     def similarity_between_seq_and_item(
         self,
         seq_index: int,
-        num_recent_items: int = 100,
-        method: str = "attention",
+        num_recent_items: int = 10,
+        method: str = "inner-product",
         verbose: bool = True,
     ) -> List[Tuple[Tensor, str]]:
         item_indicies = self.dataset_manager.train_dataset.sequences[seq_index][
             -num_recent_items:
         ]
+        e_seq = self.model.seq_embedding[seq_index]
+        e_items = self.model.item_embedding[item_indicies]
+        weight = calc_similarity(e_seq, e_items, method)
         item_names = self.dataset_manager.item_le.inverse_transform(item_indicies)
-        weight = self.model.similarity_between_seq_and_item(
-            seq_index, item_indicies, method
-        )
         item_weights = [(weight[i], item_names[i]) for i in range(num_recent_items)]
         result = sorted(item_weights)[::-1]
         if verbose:
@@ -204,20 +204,24 @@ class Analyst:
         seq_meta_value: str,
         item_meta_name: str,
         num_top_values: int = 10,
-        method: str = "attention",
+        method: str = "inner-product",
         verbose: bool = True,
     ) -> List[Tuple[Tensor, str]]:
         seq_meta = to_full_meta_value(seq_meta_name, seq_meta_value)
         seq_meta_index = self.dataset_manager.seq_meta_le.transform([seq_meta])
-        meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
-        meta_names = [
-            to_full_meta_value(item_meta_name, value) for value in meta_values
+        item_meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
+        item_meta_names = [
+            to_full_meta_value(item_meta_name, value) for value in item_meta_values
         ]
-        meta_indicies = self.dataset_manager.item_meta_le.transform(meta_names)
-        weight = self.model.similarity_between_seq_meta_and_item_meta(
-            seq_meta_index, meta_indicies, method
+        item_meta_indicies = self.dataset_manager.item_meta_le.transform(
+            item_meta_names
         )
-        meta_weights = [(weight[i], meta_values[i]) for i in range(len(meta_values))]
+        e_seq_meta = self.model.seq_meta_embedding[seq_meta_index]
+        e_item_metas = self.model.item_meta_embedding[item_meta_indicies]
+        weight = calc_similarity(e_seq_meta, e_item_metas, method)
+        meta_weights = [
+            (weight[i], item_meta_values[i]) for i in range(len(item_meta_values))
+        ]
         result = sorted(meta_weights)[::-1][:num_top_values]
         if verbose:
             print(f"similarity of seq meta: {seq_meta} for meta: {item_meta_name}")

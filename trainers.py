@@ -6,7 +6,6 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import tqdm
-from torch import Tensor
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
@@ -59,30 +58,6 @@ class Trainer(metaclass=abc.ABCMeta):
         """
         予測精度を評価する
         """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    @torch.no_grad()  # type: ignore
-    def similarity_between_seq_and_item_meta(
-        self, seq_index: int, item_meta_indicies: List[int], method: str = "attention"
-    ) -> Tensor:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    @torch.no_grad()  # type: ignore
-    def similarity_between_seq_and_item(
-        self, seq_index: int, item_indicies: List[int], method: str = "attention"
-    ) -> Tensor:
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    @torch.no_grad()  # type: ignore
-    def similarity_between_seq_meta_and_item_meta(
-        self,
-        seq_meta_index: int,
-        item_meta_indicies: List[int],
-        method: str = "attention",
-    ) -> Tensor:
         raise NotImplementedError()
 
 
@@ -338,27 +313,3 @@ class PyTorchTrainer(Trainer):
                     total_count += 1
 
         print(f"accuracy: {correct_count / total_count}")
-
-    def similarity_between_seq_and_item(
-        self, seq_index: int, item_indicies: List[int], method: str = "attention"
-    ) -> Tensor:
-        return self.model.similarity_between_seq_and_item(
-            seq_index, item_indicies, method
-        )
-
-    def similarity_between_seq_and_item_meta(
-        self, seq_index: int, item_meta_indicies: List[int], method: str = "attention"
-    ) -> Tensor:
-        return self.model.similarity_between_seq_and_item_meta(
-            seq_index, item_meta_indicies, method
-        )
-
-    def similarity_between_seq_meta_and_item_meta(
-        self,
-        seq_meta_index: int,
-        item_meta_indicies: List[int],
-        method: str = "attention",
-    ) -> Tensor:
-        return self.model.similarity_between_seq_meta_and_item_meta(
-            seq_meta_index, item_meta_indicies, method
-        )
