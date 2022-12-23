@@ -155,7 +155,7 @@ class Analyst:
         num_top_values: int = 10,  # ISSUE: なくす?
         method: str = "inner-product",
         verbose: bool = True,
-    ) -> List[Tuple[Tensor, str]]:
+    ) -> List[Tuple[float, str]]:
         # TODO: 戻り値をfloatにする
         item_meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
         item_meta_names = [
@@ -168,13 +168,13 @@ class Analyst:
         e_item_metas = self.model.item_meta_embedding[item_meta_indicies]
         weights = calc_similarity(e_seq, e_item_metas, method)
         item_meta_weights = [
-            (weight, name) for weight, name in zip(weights, item_meta_names)
+            (weight.item(), name) for weight, name in zip(weights, item_meta_names)
         ]
         result = sorted(item_meta_weights)[::-1][:num_top_values]
         if verbose:
             print(f"similarity of seq: {seq_index} for meta: {item_meta_name}")
             for weight, name in result:
-                print(f"{weight.item():.4f}", name)
+                print(f"{weight:.4f}", name)
         return result
 
     def similarity_between_seq_and_item(
@@ -183,7 +183,7 @@ class Analyst:
         num_recent_items: int = 10,
         method: str = "inner-product",
         verbose: bool = True,
-    ) -> List[Tuple[Tensor, str]]:
+    ) -> List[Tuple[float, str]]:
         item_indicies = self.dataset_manager.train_dataset.sequences[seq_index][
             -num_recent_items:
         ]
@@ -191,15 +191,15 @@ class Analyst:
         e_items = self.model.item_embedding[item_indicies]
         weights = calc_similarity(e_seq, e_items, method)
         item_names = self.dataset_manager.item_le.inverse_transform(item_indicies)
-        item_weights = [(weight, name) for weight, name in zip(weights, item_names)][
-            :num_recent_items
+        item_weights = [
+            (weight.item(), name) for weight, name in zip(weights, item_names)
         ]
         result = sorted(item_weights)[::-1]
         if verbose:
             print(f"item weights of seq: {seq_index}")
             for weight, name in result:
                 print(
-                    f"{weight.item():.4f}",
+                    f"{weight:.4f}",
                     name,
                     self.dataset_manager.item_metadata[name],
                 )
@@ -213,7 +213,7 @@ class Analyst:
         num_top_values: int = 10,
         method: str = "inner-product",
         verbose: bool = True,
-    ) -> List[Tuple[Tensor, str]]:
+    ) -> List[Tuple[float, str]]:
         seq_meta = to_full_meta_value(seq_meta_name, seq_meta_value)
         seq_meta_index = self.dataset_manager.seq_meta_le.transform([seq_meta])
         item_meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
@@ -227,13 +227,13 @@ class Analyst:
         e_item_metas = self.model.item_meta_embedding[item_meta_indicies]
         weights = calc_similarity(e_seq_meta, e_item_metas, method)
         meta_weights = [
-            (weight, name) for weight, name in zip(weights, item_meta_names)
+            (weight.item(), name) for weight, name in zip(weights, item_meta_names)
         ]
         result = sorted(meta_weights)[::-1][:num_top_values]
         if verbose:
             print(f"similarity of seq meta: {seq_meta} for meta: {item_meta_name}")
             for weight, name in result:
-                print(f"{weight.item():.4f}", name)
+                print(f"{weight:.4f}", name)
         return result
 
     def similar_items(
