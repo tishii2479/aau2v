@@ -240,7 +240,7 @@ class Analyst:
         e_seq = self.model.seq_embedding[seq_index]
         e_item_metas = self.model.item_meta_embedding[item_meta_indicies]
 
-        item_meta_names = self.dataset_manager.item_le.classes_
+        item_meta_names = self.dataset_manager.item_meta_le.classes_
 
         result = []
 
