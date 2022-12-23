@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
 from dataset_manager import SequenceDatasetManager
-from model import AttentiveModel, AttentiveModel2, Doc2Vec, PyTorchModel
+from model import AttentiveModel, Doc2Vec, OldAttentiveModel, PyTorchModel
 from util import check_model_path, visualize_loss
 
 
@@ -94,8 +94,8 @@ class PyTorchTrainer(Trainer):
         self.trainer_config = trainer_config
 
         match trainer_config.model_name:
-            case "attentive2":
-                self.model = AttentiveModel2(
+            case "attentive":
+                self.model = AttentiveModel(
                     num_seq=self.dataset_manager.num_seq,
                     num_item=self.dataset_manager.num_item,
                     num_seq_meta=dataset_manager.num_seq_meta,
@@ -113,8 +113,8 @@ class PyTorchTrainer(Trainer):
                     item_meta_weights=self.dataset_manager.item_meta_weights,
                     negative_sample_size=model_config.negative_sample_size,
                 )
-            case "attentive":
-                self.model = AttentiveModel(
+            case "old-attentive":
+                self.model = OldAttentiveModel(
                     num_seq=self.dataset_manager.num_seq,
                     num_item=self.dataset_manager.num_item,
                     num_seq_meta=dataset_manager.num_seq_meta,

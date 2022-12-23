@@ -5,7 +5,7 @@ from typing import Optional
 
 @dataclass
 class TrainerConfig:
-    model_name: str = "attentive2"
+    model_name: str = "attentive"
     dataset_name: str = "toydata-small"
     epochs: int = 5
     batch_size: int = 64

@@ -124,7 +124,7 @@ class PyTorchModel(Model, nn.Module):
     pass
 
 
-class AttentiveModel2(PyTorchModel):
+class AttentiveModel(PyTorchModel):
     """AttentiveModel（提案モデル）のクラス"""
 
     def __init__(
@@ -244,8 +244,8 @@ class AttentiveModel2(PyTorchModel):
         return self.embedding_item.embedding_meta.weight.data
 
 
-class AttentiveModel(PyTorchModel):
-    """AttentiveModel（提案モデル）のクラス"""
+class OldAttentiveModel(PyTorchModel):
+    """OldAttentiveModel（古い提案モデル）のクラス"""
 
     def __init__(
         self,
@@ -267,7 +267,7 @@ class AttentiveModel(PyTorchModel):
         negative_sample_size: int = 30,
     ) -> None:
         """
-        AttentiveModel（提案モデル）のクラスを生成する
+        OldAttentiveModel（古い提案モデル）のクラスを生成する
 
         Args:
             num_seq (int):

@@ -20,7 +20,7 @@ class TestTrain(unittest.TestCase):
         self.model_config = ModelConfig()
 
     def test_train(self) -> None:
-        models = ["attentive2", "attentive", "doc2vec"]
+        models = ["attentive", "old-attentive", "doc2vec"]
         dataset_manager = load_dataset_manager(
             dataset_name=self.trainer_config.dataset_name,
             dataset_dir=self.trainer_config.dataset_dir,
