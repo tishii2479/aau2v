@@ -39,8 +39,7 @@ $ inv train-ml
 - `trainer`の拡張
     - `onTrainStart`、`onEpochEnd`などのコールバックを受け入れる
 - 不要なオプションを消す
-    - `add_positional_encoding`、`use_learnable_embedding`など
-    - `set_train_mode`も
+    - `set_train_mode`
 - モデルの引数にデフォルト値を足す
 - `eval.py`を作る
 - `ArgumentParser`のenum系の引数に`choices`を追加する
@@ -49,7 +48,6 @@ $ inv train-ml
 
 ## TODO:
 
-- `dropout`の追加
 - `scale_grad_by_freq`の調査
 - 特徴が分離できているか確かめる
     - 固有の埋め込み表現からどの程度性別の影響が取り除かれているか

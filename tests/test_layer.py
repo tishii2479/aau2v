@@ -6,7 +6,6 @@ from layer import (
     EmbeddingDot,
     MetaEmbeddingLayer,
     NegativeSampling,
-    PositionalEncoding,
     WeightSharedNegativeSampling,
     calc_weighted_meta,
 )
@@ -42,16 +41,6 @@ class TestLayer(unittest.TestCase):
         self.assertAlmostEqual(out[0][0][1], embedding_weight[1][1])
         self.assertAlmostEqual(out[1][0][0], embedding_weight[1][0])
         self.assertAlmostEqual(out[1][0][1], embedding_weight[2][0])
-
-    def test_positional_encoding(self) -> None:
-        batch_size = 2
-        d_model = 4
-        seq_length = 3
-        layer = PositionalEncoding(
-            d_model=d_model, max_sequence_length=seq_length, dropout=0.1
-        )
-        hs = torch.rand(batch_size, seq_length, d_model)
-        _ = layer.forward(hs)
 
     def test_weighted_meta(self) -> None:
         batch_size = 3

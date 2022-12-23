@@ -69,23 +69,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
     parser.add_argument("--epochs", type=int, default=3, help="エポック数")
     parser.add_argument("--lr", type=float, default=0.001, help="学習率")
     parser.add_argument(
-        "--dropout", type=float, default=0.1, help="位置エンコーディング時にドロップアウトする割合"
-    )
-    parser.add_argument(
         "--normalize-weight", type=bool, default=False, help="埋め込み表現のノルムを正規化するかどうか"
-    )
-    parser.add_argument(
-        "--add-seq-embedding", action="store_true", help="予測ベクトルに系列の埋め込み表現を足すかどうか"
-    )
-    parser.add_argument(
-        "--add-positional-encoding",
-        action="store_true",
-        help="位置エンコーディングを要素の埋め込み表現に足すかどうか",
-    )
-    parser.add_argument(
-        "--use-learnable-embedding",
-        action="store_true",
-        help="要素の埋め込み表現を学習可能にするかどうか（experimental）",
     )
     parser.add_argument("--verbose", action="store_true", help="ログを詳細に出すかどうか")
     parser.add_argument(
@@ -135,10 +119,6 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         window_size=args.window_size,
         negative_sample_size=args.negative_sample_size,
         lr=args.lr,
-        use_learnable_embedding=args.use_learnable_embedding,
-        dropout=args.dropout,
-        add_seq_embedding=args.add_seq_embedding,
-        add_positional_encoding=args.add_positional_encoding,
     )
     return trainer_config, model_config
 

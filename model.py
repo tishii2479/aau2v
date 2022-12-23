@@ -9,7 +9,6 @@ from layer import (
     MetaEmbeddingLayer,
     NegativeSampling,
     NormalizedEmbeddingLayer,
-    PositionalEncoding,
     WeightSharedNegativeSampling,
     attention,
 )
@@ -147,10 +146,6 @@ class AttentiveModel2(PyTorchModel):
         normalize_embedding_dim: bool = True,
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
-        max_sequence_length: int = 1000,
-        dropout: float = 0.1,
-        add_seq_embedding: bool = False,
-        add_positional_encoding: bool = False,
     ) -> None:
         """
         TODO: 書き直す
@@ -169,14 +164,6 @@ class AttentiveModel2(PyTorchModel):
                 変換後の系列データ
             negative_sample_size (int, optional):
                 ネガティブサンプリングのサンプリング数. Defaults to 30.
-            max_sequence_length (int, optional):
-                系列の最大長. Defaults to 1000.
-            dropout (float, optional):
-                位置エンコーディング時にドロップアウトする比率. Defaults to 0.1.
-            add_seq_embedding (bool, optional):
-                系列の埋め込み表現を予測ベクトルに足すかどうか. Defaults to True.
-            add_positional_encoding (bool, optional):
-                位置エンコーディングを行うかどうか. Defaults to False.
         """
         super().__init__()
         self.d_model = d_model
@@ -203,14 +190,6 @@ class AttentiveModel2(PyTorchModel):
             max_embedding_norm=max_embedding_norm,
             init_embedding_std=init_embedding_std,
         )
-
-        self.add_seq_embedding = add_seq_embedding
-        self.add_positional_encoding = add_positional_encoding
-
-        if self.add_positional_encoding:
-            self.positional_encoding = PositionalEncoding(
-                d_model, max_sequence_length, dropout
-            )
 
         self.output = WeightSharedNegativeSampling(
             d_model=d_model,
@@ -239,21 +218,13 @@ class AttentiveModel2(PyTorchModel):
         seq_index: Tensor,
         item_indicies: Tensor,
     ) -> Tensor:
-        window_size = item_indicies.size(1)
-
         u = self.embedding_seq.forward(seq_index)
         V = self.embedding_item.forward(item_indicies)
-
-        if self.add_positional_encoding:
-            V = self.positional_encoding.forward(V)
 
         Q = torch.reshape(u, (-1, 1, self.d_model))
         K = V
         V = V
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
-
-        if self.add_seq_embedding:
-            c = (c * window_size + u) / (window_size + 1)
 
         return c
 
@@ -304,10 +275,6 @@ class AttentiveModel(PyTorchModel):
         normalize_embedding_dim: bool = True,
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
-        max_sequence_length: int = 1000,
-        dropout: float = 0.1,
-        add_seq_embedding: bool = False,
-        add_positional_encoding: bool = False,
     ) -> None:
         """
         AttentiveModel（提案モデル）のクラスを生成する
@@ -327,12 +294,6 @@ class AttentiveModel(PyTorchModel):
                 ネガティブサンプリングのサンプリング数. Defaults to 30.
             max_sequence_length (int, optional):
                 系列の最大長. Defaults to 1000.
-            dropout (float, optional):
-                位置エンコーディング時にドロップアウトする比率. Defaults to 0.1.
-            add_seq_embedding (bool, optional):
-                系列の埋め込み表現を予測ベクトルに足すかどうか. Defaults to True.
-            add_positional_encoding (bool, optional):
-                位置エンコーディングを行うかどうか. Defaults to False.
         """
         super().__init__()
         self.d_model = d_model
@@ -359,13 +320,6 @@ class AttentiveModel(PyTorchModel):
             max_embedding_norm=max_embedding_norm,
             init_embedding_std=init_embedding_std,
         )
-        self.add_seq_embedding = add_seq_embedding
-        self.add_positional_encoding = add_positional_encoding
-
-        if self.add_positional_encoding:
-            self.positional_encoding = PositionalEncoding(
-                d_model, max_sequence_length, dropout
-            )
 
         self.output = NegativeSampling(
             d_model=d_model,
@@ -392,21 +346,13 @@ class AttentiveModel(PyTorchModel):
         seq_index: Tensor,
         item_indicies: Tensor,
     ) -> Tensor:
-        window_size = item_indicies.size(1)
-
         u = self.embedding_seq.forward(seq_index)
         V = self.embedding_item.forward(item_indicies)
-
-        if self.add_positional_encoding:
-            V = self.positional_encoding.forward(V)
 
         Q = torch.reshape(u, (-1, 1, self.d_model))
         K = V
         V = V
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
-
-        if self.add_seq_embedding:
-            c = (c * window_size + u) / (window_size + 1)
 
         return c
 

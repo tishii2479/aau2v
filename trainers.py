@@ -105,8 +105,6 @@ class PyTorchTrainer(Trainer):
                     item_meta_indicies=self.dataset_manager.item_meta_indicies,
                     item_meta_weights=self.dataset_manager.item_meta_weights,
                     negative_sample_size=model_config.negative_sample_size,
-                    add_seq_embedding=model_config.add_seq_embedding,
-                    add_positional_encoding=model_config.add_positional_encoding,
                 )
             case "attentive":
                 self.model = AttentiveModel(
@@ -126,8 +124,6 @@ class PyTorchTrainer(Trainer):
                     item_meta_indicies=self.dataset_manager.item_meta_indicies,
                     item_meta_weights=self.dataset_manager.item_meta_weights,
                     negative_sample_size=model_config.negative_sample_size,
-                    add_seq_embedding=model_config.add_seq_embedding,
-                    add_positional_encoding=model_config.add_positional_encoding,
                 )
             case "doc2vec":
                 self.model = Doc2Vec(
