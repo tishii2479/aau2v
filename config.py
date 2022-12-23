@@ -7,7 +7,7 @@ from typing import Optional
 class TrainerConfig:
     model_name: str = "attentive"
     dataset_name: str = "toydata-small"
-    epochs: int = 5
+    epochs: int = 3
     batch_size: int = 64
     verbose: bool = False
     ignore_saved_model: bool = False
@@ -35,10 +35,9 @@ class TrainerConfig:
 
 @dataclass
 class ModelConfig:
-    d_model: int = 32
-    init_embedding_std: float = 1
+    d_model: int = 128
+    init_embedding_std: float = 0.2
     max_embedding_norm: Optional[float] = None
-    window_size: int = 8
+    window_size: int = 5
     negative_sample_size: int = 5
-    lr: float = 0.001
-    normalize_embedding_weight: bool = False
+    lr: float = 0.0001

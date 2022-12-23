@@ -142,7 +142,6 @@ class AttentiveModel(PyTorchModel):
         item_meta_weights: Tensor,
         d_model: int = 128,
         init_embedding_std: float = 1,
-        normalize_embedding_dim: bool = True,
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 5,
     ) -> None:
@@ -174,7 +173,6 @@ class AttentiveModel(PyTorchModel):
             d_model=d_model,
             meta_indices=seq_meta_indices,
             meta_weights=seq_meta_weights,
-            normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
             init_embedding_std=init_embedding_std,
         )
@@ -185,7 +183,6 @@ class AttentiveModel(PyTorchModel):
             d_model=d_model,
             meta_indices=item_meta_indices,
             meta_weights=item_meta_weights,
-            normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
             init_embedding_std=init_embedding_std,
         )
@@ -262,7 +259,6 @@ class OldAttentiveModel(PyTorchModel):
         item_meta_weights: Tensor,
         d_model: int = 128,
         init_embedding_std: float = 1,
-        normalize_embedding_dim: bool = True,
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
     ) -> None:
@@ -295,7 +291,6 @@ class OldAttentiveModel(PyTorchModel):
             d_model=d_model,
             meta_indices=seq_meta_indices,
             meta_weights=seq_meta_weights,
-            normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
             init_embedding_std=init_embedding_std,
         )
@@ -306,7 +301,6 @@ class OldAttentiveModel(PyTorchModel):
             d_model=d_model,
             meta_indices=item_meta_indices,
             meta_weights=item_meta_weights,
-            normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
             init_embedding_std=init_embedding_std,
         )

@@ -51,7 +51,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         "--dataset-name", type=str, default="toydata-paper", help="使用するデータセット"
     )
     parser.add_argument("--num-cluster", type=int, default=10, help="クラスタリングの際に使うクラスタ数")
-    parser.add_argument("--d-model", type=int, default=32, help="埋め込み表現の次元数")
+    parser.add_argument("--d-model", type=int, default=128, help="埋め込み表現の次元数")
     parser.add_argument(
         "--max-embedding-norm",
         type=float,
@@ -59,18 +59,18 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         help="埋め込み表現のノルムの最大値",
     )
     parser.add_argument(
-        "--init-embedding-std", type=float, default=1, help="埋め込み表現を初期化する時に用いる正規分布の標準偏差"
+        "--init-embedding-std",
+        type=float,
+        default=0.2,
+        help="埋め込み表現を初期化する時に用いる正規分布の標準偏差",
     )
-    parser.add_argument("--window-size", type=int, default=8, help="学習する際に参照する過去の要素の個数")
+    parser.add_argument("--window-size", type=int, default=5, help="学習する際に参照する過去の要素の個数")
     parser.add_argument(
         "--negative_sample_size", type=int, default=5, help="ネガティブサンプリングのサンプル数"
     )
     parser.add_argument("--batch-size", type=int, default=64, help="バッチサイズ")
     parser.add_argument("--epochs", type=int, default=3, help="エポック数")
-    parser.add_argument("--lr", type=float, default=0.001, help="学習率")
-    parser.add_argument(
-        "--normalize-weight", type=bool, default=False, help="埋め込み表現のノルムを正規化するかどうか"
-    )
+    parser.add_argument("--lr", type=float, default=0.0001, help="学習率")
     parser.add_argument("--verbose", action="store_true", help="ログを詳細に出すかどうか")
     parser.add_argument(
         "--load-model", action="store_true", help="`model_dir`からモデルのパラメータを読み込むかどうか"

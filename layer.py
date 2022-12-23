@@ -153,7 +153,6 @@ class NormalizedEmbeddingLayer(nn.Embedding):
         self,
         num_embeddings: int,
         embedding_dim: int,
-        normalize_weight: bool = True,
         max_norm: Optional[float] = None,
         mean: float = 0,
         std: float = 1,
@@ -164,12 +163,11 @@ class NormalizedEmbeddingLayer(nn.Embedding):
             max_norm=max_norm,
         )
         nn.init.normal_(self.weight, mean=mean, std=std)
-        self.normalize_weight = normalize_weight
         self.forward_count = 0
 
     def forward(self, x: Tensor) -> Tensor:
         # ISSUE: 補助情報ごとに正規化してみても良さそう
-        if self.normalize_weight and torch.is_grad_enabled():
+        if torch.is_grad_enabled():
             self.forward_count += 1
             # 毎回重みを正規化すると以下の問題があるため、1024回forwardが呼ばれるたびに正規化する
             # - 学習時間が長くなる
@@ -192,7 +190,6 @@ class MetaEmbeddingLayer(nn.Module):
         d_model: int,
         meta_indices: Tensor,
         meta_weights: Tensor,
-        normalize_embedding_dim: bool = True,
         max_embedding_norm: Optional[float] = None,
         init_embedding_std: float = 1,
     ):
@@ -202,14 +199,12 @@ class MetaEmbeddingLayer(nn.Module):
             d_model,
             max_norm=max_embedding_norm,
             std=init_embedding_std,
-            normalize_weight=normalize_embedding_dim,
         )
         self.embedding_meta = NormalizedEmbeddingLayer(
             num_meta,
             d_model,
             max_norm=max_embedding_norm,
             std=init_embedding_std,
-            normalize_weight=normalize_embedding_dim,
         )
         self.num_meta_types = num_meta_types
         self.meta_indices = meta_indices
