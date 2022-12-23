@@ -121,8 +121,7 @@ class Model(metaclass=abc.ABCMeta):
 
 
 class PyTorchModel(Model, nn.Module):
-    def set_train_mode(self, mode: str) -> None:
-        pass
+    pass
 
 
 class AttentiveModel2(PyTorchModel):
@@ -227,15 +226,6 @@ class AttentiveModel2(PyTorchModel):
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
 
         return c
-
-    def set_train_mode(self, mode: str) -> None:
-        if mode not in ["all", "seq", "item"]:
-            raise ValueError(f"Invalid train_mode: {mode}")
-        train_seq = mode == "seq" or mode == "all"
-        train_item = mode == "item" or mode == "all"
-
-        self.embedding_seq.requires_grad_(train_seq)
-        self.embedding_item.requires_grad_(train_item)
 
     @property
     def seq_embedding(self) -> Tensor:
