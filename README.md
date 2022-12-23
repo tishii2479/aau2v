@@ -36,8 +36,6 @@ $ inv train-ml
     - Tensorの引数にサイズを書く
 - `analyst`のリファクタリング
     - `similarity_*`の整理
-- `trainer`の拡張
-    - `onTrainStart`、`onEpochEnd`などのコールバックを受け入れる
 - `eval.py`を作る
 - `ArgumentParser`のenum系の引数に`choices`を追加する
 - pytorchのGPUを試す

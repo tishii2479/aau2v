@@ -30,7 +30,14 @@ class Trainer(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def fit(self, on_epoch_start: Optional[Callable]) -> Dict[str, List[float]]:
+    def fit(
+        self,
+        on_train_start: Optional[Callable] = None,
+        on_train_end: Optional[Callable] = None,
+        on_epoch_start: Optional[Callable[[int], None]] = None,
+        on_epoch_end: Optional[Callable[[int], None]] = None,
+        show_fig: bool = False,
+    ) -> Dict[str, List[float]]:
         """
         Called to fit to data
 
@@ -148,13 +155,20 @@ class PyTorchTrainer(Trainer):
 
     def fit(
         self,
+        on_train_start: Optional[Callable] = None,
+        on_train_end: Optional[Callable] = None,
         on_epoch_start: Optional[Callable[[int], None]] = None,
+        on_epoch_end: Optional[Callable[[int], None]] = None,
         show_fig: bool = False,
     ) -> Dict[str, List[float]]:
         self.model.train()
         loss_dict: Dict[str, List[float]] = {"train": []}
         best_test_loss = 1e10
         print("train start")
+
+        if on_train_start is not None:
+            on_train_start()
+
         for epoch in range(self.trainer_config.epochs):
             if on_epoch_start is not None:
                 on_epoch_start(epoch)
@@ -213,7 +227,12 @@ class PyTorchTrainer(Trainer):
                     )
                     print(f"saved best model to {self.trainer_config.best_model_path}")
 
+            if on_epoch_end is not None:
+                on_epoch_end(epoch)
         print("train end")
+
+        if on_train_end is not None:
+            on_train_end()
 
         if self.trainer_config.save_model:
             torch.save(self.model.state_dict(), self.trainer_config.model_path)
