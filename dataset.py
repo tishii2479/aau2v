@@ -31,7 +31,7 @@ def load_dataset_manager(
     dataset_dir: str,
     load_dataset: bool,
     save_dataset: bool,
-    window_size: int = 8,
+    window_size: int = 5,
     data_dir: str = "data/",
 ) -> SequenceDatasetManager:
     pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")

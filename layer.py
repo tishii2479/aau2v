@@ -155,7 +155,7 @@ class NormalizedEmbeddingLayer(nn.Embedding):
         embedding_dim: int,
         max_norm: Optional[float] = None,
         mean: float = 0,
-        std: float = 1,
+        std: float = 0.2,
     ):
         super().__init__(
             num_embeddings=num_embeddings,
@@ -191,7 +191,7 @@ class MetaEmbeddingLayer(nn.Module):
         meta_indices: Tensor,
         meta_weights: Tensor,
         max_embedding_norm: Optional[float] = None,
-        init_embedding_std: float = 1,
+        init_embedding_std: float = 0.2,
     ):
         super().__init__()
         self.embedding_element = NormalizedEmbeddingLayer(
