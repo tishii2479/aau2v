@@ -90,7 +90,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         "--no-save-dataset", action="store_true", help="`dataset_dir`にデータセットを保存するかどうか"
     )
     parser.add_argument(
-        "--cache-dir", type=str, default="cache/", help="モデルを保存するディレクトリ"
+        "--model-dir", type=str, default="cache/model/", help="モデルを保存するディレクトリ"
     )
     parser.add_argument(
         "--dataset-dir", type=str, default="cache/dataset/", help="データセットを保存するディレクトリ"
