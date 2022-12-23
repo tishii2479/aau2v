@@ -107,9 +107,9 @@ class PyTorchTrainer(Trainer):
                     normalize_embedding_dim=model_config.normalize_embedding_weight,
                     max_embedding_norm=model_config.max_embedding_norm,
                     sequences=self.dataset_manager.sequences,
-                    seq_meta_indicies=self.dataset_manager.seq_meta_indicies,
+                    seq_meta_indices=self.dataset_manager.seq_meta_indices,
                     seq_meta_weights=self.dataset_manager.seq_meta_weights,
-                    item_meta_indicies=self.dataset_manager.item_meta_indicies,
+                    item_meta_indices=self.dataset_manager.item_meta_indices,
                     item_meta_weights=self.dataset_manager.item_meta_weights,
                     negative_sample_size=model_config.negative_sample_size,
                 )
@@ -126,9 +126,9 @@ class PyTorchTrainer(Trainer):
                     normalize_embedding_dim=model_config.normalize_embedding_weight,
                     max_embedding_norm=model_config.max_embedding_norm,
                     sequences=self.dataset_manager.sequences,
-                    seq_meta_indicies=self.dataset_manager.seq_meta_indicies,
+                    seq_meta_indices=self.dataset_manager.seq_meta_indices,
                     seq_meta_weights=self.dataset_manager.seq_meta_weights,
-                    item_meta_indicies=self.dataset_manager.item_meta_indicies,
+                    item_meta_indices=self.dataset_manager.item_meta_indices,
                     item_meta_weights=self.dataset_manager.item_meta_weights,
                     negative_sample_size=model_config.negative_sample_size,
                 )
@@ -177,13 +177,13 @@ class PyTorchTrainer(Trainer):
             for i, data in enumerate(tqdm.tqdm(self.train_data_loader)):
                 (
                     seq_index,
-                    item_indicies,
+                    item_indices,
                     target_index,
                 ) = data
 
                 loss = self.model.forward(
                     seq_index=seq_index,
-                    item_indicies=item_indicies,
+                    item_indices=item_indices,
                     target_index=target_index,
                 )
                 # ISSUE: lossをbatch_sizeで割った方がいいかも
@@ -257,13 +257,13 @@ class PyTorchTrainer(Trainer):
             for i, data in enumerate(tqdm.tqdm(data_loader)):
                 (
                     seq_index,
-                    item_indicies,
+                    item_indices,
                     target_index,
                 ) = data
 
                 pos_out, pos_label, neg_out, neg_label = self.model.calc_out(
                     seq_index=seq_index,
-                    item_indicies=item_indicies,
+                    item_indices=item_indices,
                     target_index=target_index,
                 )
 
@@ -308,13 +308,13 @@ class PyTorchTrainer(Trainer):
             for i, data in enumerate(tqdm.tqdm(data_loader)):
                 (
                     seq_index,
-                    item_indicies,
+                    item_indices,
                     target_index,
                 ) = data
 
                 p = self.model.calc_prediction_vector(
                     seq_index=seq_index,
-                    item_indicies=item_indicies,
+                    item_indices=item_indices,
                 )
                 p = p.detach().numpy()
                 v = np.dot(p, output_embeddings.T)

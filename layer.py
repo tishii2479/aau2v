@@ -72,19 +72,19 @@ class EmbeddingDot(nn.Module):
             num_item, d_model, max_norm=max_embedding_norm, std=init_embedding_std
         )
 
-    def forward(self, h: Tensor, indicies: Tensor) -> Tensor:
+    def forward(self, h: Tensor, indices: Tensor) -> Tensor:
         """Forward Embedding Dot
 
         Args:
             h (Tensor): input, size of (batch_size, 1, d_model)
-            indicies (Tensor): indicies selected to get embedding,
+            indices (Tensor): indices selected to get embedding,
                 size of (batch_size, 1 or sample_size)
 
         Returns:
             Tensor: output
         """
-        w = self.embedding.forward(indicies)
-        w = torch.reshape(w, (-1, indicies.size(1), self.d_model))
+        w = self.embedding.forward(indices)
+        w = torch.reshape(w, (-1, indices.size(1), self.d_model))
         out = torch.matmul(h, w.mT)
         return out
 
@@ -190,7 +190,7 @@ class MetaEmbeddingLayer(nn.Module):
         num_meta: int,
         num_meta_types: int,
         d_model: int,
-        meta_indicies: Tensor,
+        meta_indices: Tensor,
         meta_weights: Tensor,
         normalize_embedding_dim: bool = True,
         max_embedding_norm: Optional[float] = None,
@@ -212,14 +212,14 @@ class MetaEmbeddingLayer(nn.Module):
             normalize_weight=normalize_embedding_dim,
         )
         self.num_meta_types = num_meta_types
-        self.meta_indicies = meta_indicies
+        self.meta_indices = meta_indices
         self.meta_weights = meta_weights
 
-    def forward(self, element_indicies: Tensor) -> Tensor:
-        e_element = self.embedding_element.forward(element_indicies)
+    def forward(self, element_indices: Tensor) -> Tensor:
+        e_element = self.embedding_element.forward(element_indices)
         # add meta embedding
-        meta_index = self.meta_indicies[element_indicies]
-        meta_weight = self.meta_weights[element_indicies]
+        meta_index = self.meta_indices[element_indices]
+        meta_weight = self.meta_weights[element_indices]
         e_meta = self.embedding_meta.forward(meta_index)
         e_meta_weighted = calc_weighted_meta(e_meta, meta_weight)
         e_element += e_meta_weighted
@@ -234,7 +234,7 @@ class WeightSharedNegativeSampling(nn.Module):
         d_model: int,
         num_item_meta_types: int,
         sequences: List[List[int]],
-        item_meta_indicies: Tensor,
+        item_meta_indices: Tensor,
         item_meta_weights: Tensor,
         embedding_item: nn.Module,
         power: float = 0.75,
@@ -245,7 +245,7 @@ class WeightSharedNegativeSampling(nn.Module):
         self.d_model = d_model
         self.num_item_meta_types = num_item_meta_types
         self.negative_sample_size = negative_sample_size
-        self.item_meta_indicies = item_meta_indicies
+        self.item_meta_indices = item_meta_indices
         self.item_meta_weights = item_meta_weights
         self.embedding_item = embedding_item
         self.sampler = UnigramSampler(sequences, power)

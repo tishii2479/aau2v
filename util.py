@@ -109,8 +109,8 @@ def top_cluster_items(
     r"""
     Args:
         num_cluster: number of clusters
-        topic_indicies: list of sequence indicies for each topic
-            shape: (num_topic, len(sequence_indicies))
+        topic_indices: list of sequence indices for each topic
+            shape: (num_topic, len(sequence_indices))
         sequences: all sequence data
         num_top_item: number of item to list
         num_item: number of items in data

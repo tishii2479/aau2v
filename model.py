@@ -18,7 +18,7 @@ class Model(metaclass=abc.ABCMeta):
     def forward(
         self,
         seq_index: Tensor,
-        item_indicies: Tensor,
+        item_indices: Tensor,
         target_index: Tensor,
     ) -> Tensor:
         """
@@ -28,8 +28,8 @@ class Model(metaclass=abc.ABCMeta):
             seq_index (Tensor):
                 学習対象である系列のindex
                 size: (batch_size, )
-            item_indicies (Tensor):
-                予測に用いる直前の要素のindicies
+            item_indices (Tensor):
+                予測に用いる直前の要素のindices
                 size: (batch_size, window_size, )
             target_index (Tensor):
                 size: (batch_size, )
@@ -39,7 +39,7 @@ class Model(metaclass=abc.ABCMeta):
         """
         pos_out, pos_label, neg_out, neg_label = self.calc_out(
             seq_index=seq_index,
-            item_indicies=item_indicies,
+            item_indices=item_indices,
             target_index=target_index,
         )
         loss_pos = F.binary_cross_entropy(pos_out, pos_label)
@@ -54,7 +54,7 @@ class Model(metaclass=abc.ABCMeta):
     def calc_out(
         self,
         seq_index: Tensor,
-        item_indicies: Tensor,
+        item_indices: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         """
@@ -79,7 +79,7 @@ class Model(metaclass=abc.ABCMeta):
     def calc_prediction_vector(
         self,
         seq_index: Tensor,
-        item_indicies: Tensor,
+        item_indices: Tensor,
     ) -> Tensor:
         """
         モデルに入力を与えた時の、出力層に入力する前の予測ベクトルを返す
@@ -136,9 +136,9 @@ class AttentiveModel2(PyTorchModel):
         num_seq_meta_types: int,
         num_item_meta_types: int,
         sequences: List[List[int]],
-        seq_meta_indicies: Tensor,
+        seq_meta_indices: Tensor,
         seq_meta_weights: Tensor,
-        item_meta_indicies: Tensor,
+        item_meta_indices: Tensor,
         item_meta_weights: Tensor,
         d_model: int = 128,
         init_embedding_std: float = 1,
@@ -172,7 +172,7 @@ class AttentiveModel2(PyTorchModel):
             num_meta=num_seq_meta,
             num_meta_types=num_seq_meta_types,
             d_model=d_model,
-            meta_indicies=seq_meta_indicies,
+            meta_indices=seq_meta_indices,
             meta_weights=seq_meta_weights,
             normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
@@ -183,7 +183,7 @@ class AttentiveModel2(PyTorchModel):
             num_meta=num_item_meta,
             num_meta_types=num_item_meta_types,
             d_model=d_model,
-            meta_indicies=item_meta_indicies,
+            meta_indices=item_meta_indices,
             meta_weights=item_meta_weights,
             normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
@@ -195,7 +195,7 @@ class AttentiveModel2(PyTorchModel):
             num_item_meta_types=num_item_meta_types,
             sequences=sequences,
             negative_sample_size=negative_sample_size,
-            item_meta_indicies=item_meta_indicies,
+            item_meta_indices=item_meta_indices,
             item_meta_weights=item_meta_weights,
             embedding_item=self.embedding_item,
         )
@@ -203,22 +203,22 @@ class AttentiveModel2(PyTorchModel):
     def calc_out(
         self,
         seq_index: Tensor,
-        item_indicies: Tensor,
+        item_indices: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         c = self.calc_prediction_vector(
             seq_index=seq_index,
-            item_indicies=item_indicies,
+            item_indices=item_indices,
         )
         return self.output.forward(c, target_index)
 
     def calc_prediction_vector(
         self,
         seq_index: Tensor,
-        item_indicies: Tensor,
+        item_indices: Tensor,
     ) -> Tensor:
         u = self.embedding_seq.forward(seq_index)
-        V = self.embedding_item.forward(item_indicies)
+        V = self.embedding_item.forward(item_indices)
 
         Q = torch.reshape(u, (-1, 1, self.d_model))
         K = V
@@ -256,9 +256,9 @@ class AttentiveModel(PyTorchModel):
         num_seq_meta_types: int,
         num_item_meta_types: int,
         sequences: List[List[int]],
-        seq_meta_indicies: Tensor,
+        seq_meta_indices: Tensor,
         seq_meta_weights: Tensor,
-        item_meta_indicies: Tensor,
+        item_meta_indices: Tensor,
         item_meta_weights: Tensor,
         d_model: int = 128,
         init_embedding_std: float = 1,
@@ -293,7 +293,7 @@ class AttentiveModel(PyTorchModel):
             num_meta=num_seq_meta,
             num_meta_types=num_seq_meta_types,
             d_model=d_model,
-            meta_indicies=seq_meta_indicies,
+            meta_indices=seq_meta_indices,
             meta_weights=seq_meta_weights,
             normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
@@ -304,7 +304,7 @@ class AttentiveModel(PyTorchModel):
             num_meta=num_item_meta,
             num_meta_types=num_item_meta_types,
             d_model=d_model,
-            meta_indicies=item_meta_indicies,
+            meta_indices=item_meta_indices,
             meta_weights=item_meta_weights,
             normalize_embedding_dim=normalize_embedding_dim,
             max_embedding_norm=max_embedding_norm,
@@ -322,22 +322,22 @@ class AttentiveModel(PyTorchModel):
     def calc_out(
         self,
         seq_index: Tensor,
-        item_indicies: Tensor,
+        item_indices: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         c = self.calc_prediction_vector(
             seq_index=seq_index,
-            item_indicies=item_indicies,
+            item_indices=item_indices,
         )
         return self.output.forward(c, target_index)
 
     def calc_prediction_vector(
         self,
         seq_index: Tensor,
-        item_indicies: Tensor,
+        item_indices: Tensor,
     ) -> Tensor:
         u = self.embedding_seq.forward(seq_index)
-        V = self.embedding_item.forward(item_indicies)
+        V = self.embedding_item.forward(item_indices)
 
         Q = torch.reshape(u, (-1, 1, self.d_model))
         K = V
@@ -413,24 +413,24 @@ class Doc2Vec(PyTorchModel):
     def calc_out(
         self,
         seq_index: Tensor,
-        item_indicies: Tensor,
+        item_indices: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         c = self.calc_prediction_vector(
             seq_index=seq_index,
-            item_indicies=item_indicies,
+            item_indices=item_indices,
         )
         return self.output.forward(c, target_index)
 
     def calc_prediction_vector(
         self,
         seq_index: Tensor,
-        item_indicies: Tensor,
+        item_indices: Tensor,
     ) -> Tensor:
-        window_size = item_indicies.size(1)
+        window_size = item_indices.size(1)
 
         u = self.embedding_seq.forward(seq_index)
-        V = self.embedding_item.forward(item_indicies)
+        V = self.embedding_item.forward(item_indices)
 
         p = (u + V.sum(dim=1)) / (window_size + 1)
         return p

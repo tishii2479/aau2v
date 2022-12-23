@@ -30,13 +30,13 @@ class TestLayer(unittest.TestCase):
         layer = EmbeddingDot(d_model=3, num_item=4)
         embedding_weight = layer.embedding.weight
         h = torch.Tensor([[[0, 1, 0]], [[1, 0, 0]]])
-        indicies = torch.tensor([[1], [2]], dtype=torch.long)
-        out = layer.forward(h, indicies)
+        indices = torch.tensor([[1], [2]], dtype=torch.long)
+        out = layer.forward(h, indices)
         self.assertAlmostEqual(out[0][0][0], embedding_weight[1][1])
         self.assertAlmostEqual(out[1][0][0], embedding_weight[2][0])
 
-        indicies = torch.tensor([[0, 1], [1, 2]], dtype=torch.long)
-        out = layer.forward(h, indicies)
+        indices = torch.tensor([[0, 1], [1, 2]], dtype=torch.long)
+        out = layer.forward(h, indices)
         self.assertAlmostEqual(out[0][0][0], embedding_weight[0][1])
         self.assertAlmostEqual(out[0][0][1], embedding_weight[1][1])
         self.assertAlmostEqual(out[1][0][0], embedding_weight[1][0])
@@ -68,7 +68,7 @@ class TestLayer(unittest.TestCase):
             [1, 3, 2],
             [0, 2, 1],
         ]
-        item_meta_indicies = torch.LongTensor(
+        item_meta_indices = torch.LongTensor(
             [
                 [0, 2, 4, 0],
                 [1, 3, 0, 0],
@@ -89,14 +89,14 @@ class TestLayer(unittest.TestCase):
             num_item_meta,
             num_item_meta_types,
             d_model,
-            item_meta_indicies,
+            item_meta_indices,
             item_meta_weights,
         )
         layer = WeightSharedNegativeSampling(
             d_model=d_model,
             num_item_meta_types=num_item_meta_types,
             sequences=sequences,
-            item_meta_indicies=item_meta_indicies,
+            item_meta_indices=item_meta_indices,
             item_meta_weights=item_meta_weights,
             embedding_item=embedding_item,
         )

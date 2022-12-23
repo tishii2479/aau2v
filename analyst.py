@@ -159,11 +159,9 @@ class Analyst:
         item_meta_names = [
             to_full_meta_value(item_meta_name, value) for value in item_meta_values
         ]
-        item_meta_indicies = self.dataset_manager.item_meta_le.transform(
-            item_meta_names
-        )
+        item_meta_indices = self.dataset_manager.item_meta_le.transform(item_meta_names)
         e_seq = self.model.seq_embedding[seq_index]
-        e_item_metas = self.model.item_meta_embedding[item_meta_indicies]
+        e_item_metas = self.model.item_meta_embedding[item_meta_indices]
         weights = calc_similarity(e_seq, e_item_metas, method)
         item_meta_weights = [
             (weight.item(), name) for weight, name in zip(weights, item_meta_names)
@@ -177,13 +175,13 @@ class Analyst:
         num_recent_items: int = 10,
         method: str = "inner-product",
     ) -> pd.DataFrame:
-        item_indicies = self.dataset_manager.train_dataset.sequences[seq_index][
+        item_indices = self.dataset_manager.train_dataset.sequences[seq_index][
             -num_recent_items:
         ]
         e_seq = self.model.seq_embedding[seq_index]
-        e_items = self.model.item_embedding[item_indicies]
+        e_items = self.model.item_embedding[item_indices]
         weights = calc_similarity(e_seq, e_items, method)
-        item_names = self.dataset_manager.item_le.inverse_transform(item_indicies)
+        item_names = self.dataset_manager.item_le.inverse_transform(item_indices)
         item_weights = [
             (weight.item(), name) for weight, name in zip(weights, item_names)
         ]
@@ -203,11 +201,9 @@ class Analyst:
         item_meta_names = [
             to_full_meta_value(item_meta_name, value) for value in item_meta_values
         ]
-        item_meta_indicies = self.dataset_manager.item_meta_le.transform(
-            item_meta_names
-        )
+        item_meta_indices = self.dataset_manager.item_meta_le.transform(item_meta_names)
         e_seq_meta = self.model.seq_meta_embedding[seq_meta_index]
-        e_item_metas = self.model.item_meta_embedding[item_meta_indicies]
+        e_item_metas = self.model.item_meta_embedding[item_meta_indices]
         weights = calc_similarity(e_seq_meta, e_item_metas, method)
         meta_weights = [
             (weight.item(), name) for weight, name in zip(weights, item_meta_names)
@@ -229,16 +225,16 @@ class Analyst:
             num_top_values (int): 使用する項目の数  Defaults to 5
             verbose (bool): 詳細を表示するかどうか  Defaults to True
         """
-        item_meta_indicies = list(range(self.dataset_manager.num_item_meta))
+        item_meta_indices = list(range(self.dataset_manager.num_item_meta))
         seq_id = self.dataset_manager.seq_le.inverse_transform([seq_index])[0]
         seq_meta_dict = self.dataset_manager.seq_metadata[seq_id]
         seq_meta_names = [
             to_full_meta_value(name, value) for name, value in seq_meta_dict.items()
         ]
-        seq_meta_indicies = self.dataset_manager.seq_meta_le.transform(seq_meta_names)
+        seq_meta_indices = self.dataset_manager.seq_meta_le.transform(seq_meta_names)
 
         e_seq = self.model.seq_embedding[seq_index]
-        e_item_metas = self.model.item_meta_embedding[item_meta_indicies]
+        e_item_metas = self.model.item_meta_embedding[item_meta_indices]
 
         item_meta_names = self.dataset_manager.item_meta_le.classes_
 
@@ -250,7 +246,7 @@ class Analyst:
             for weight, item_meta_name in zip(weights, item_meta_names)
         ]
 
-        for seq_meta_index, seq_meta_name in zip(seq_meta_indicies, seq_meta_names):
+        for seq_meta_index, seq_meta_name in zip(seq_meta_indices, seq_meta_names):
             e_seq_meta = self.model.seq_meta_embedding[seq_meta_index]
             weights = calc_similarity(e_seq_meta, e_item_metas, method)
             result += [

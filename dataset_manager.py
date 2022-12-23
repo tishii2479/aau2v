@@ -136,13 +136,13 @@ class SequenceDatasetManager:
         else:
             self.test_dataset = None
 
-        self.item_meta_indicies, self.item_meta_weights = get_meta_indicies(
+        self.item_meta_indices, self.item_meta_weights = get_meta_indices(
             names=self.item_le.classes_,
             meta_le=self.item_meta_le,
             metadata=self.item_metadata,
             exclude_metadata_columns=exclude_item_metadata_columns,
         )
-        self.seq_meta_indicies, self.seq_meta_weights = get_meta_indicies(
+        self.seq_meta_indices, self.seq_meta_weights = get_meta_indices(
             names=self.seq_le.classes_,
             meta_le=self.seq_meta_le,
             metadata=self.seq_metadata,
@@ -191,7 +191,7 @@ class SequenceDataset(Dataset):
         Returns:
         (
           seq_index,
-          item_indicies,
+          item_indices,
           target_index
         )
         """
@@ -241,18 +241,18 @@ def process_metadata(
     return meta_le, meta_dict
 
 
-def get_meta_indicies(
+def get_meta_indices(
     names: List[str],
     meta_le: preprocessing.LabelEncoder,
     metadata: Dict[str, Dict[str, Any]],
     exclude_metadata_columns: Optional[List[str]] = None,
     max_meta_size: int = 10,
 ) -> Tuple[Tensor, Tensor]:
-    meta_indicies: List[List[int]] = []
+    meta_indices: List[List[int]] = []
     meta_weights: List[List[float]] = []
     for name in names:
         if name not in metadata:
-            meta_indicies.append([])
+            meta_indices.append([])
             meta_weights.append([])
             continue
         meta_values: List[str] = []
@@ -277,17 +277,17 @@ def get_meta_indicies(
         assert len(meta_weight) == len(meta_index)
 
         # 大きさをmax_meta_sizeに合わせるために、
-        # weightが0であるmeta_indiciesを末尾に加える
+        # weightが0であるmeta_indicesを末尾に加える
         while len(meta_weight) < max_meta_size:
             meta_index.append(0)
             meta_weight.append(0)
 
-        meta_indicies.append(meta_index)
+        meta_indices.append(meta_index)
         meta_weights.append(meta_weight)
 
-    meta_indicies = torch.tensor(meta_indicies, dtype=torch.long, requires_grad=False)
+    meta_indices = torch.tensor(meta_indices, dtype=torch.long, requires_grad=False)
     meta_weights = torch.tensor(meta_weights, dtype=torch.float, requires_grad=False)
-    return meta_indicies, meta_weights
+    return meta_indices, meta_weights
 
 
 def to_sequential_data(
@@ -318,7 +318,7 @@ def to_sequential_data(
         if left >= right:
             continue
         for j in range(left, right):
-            item_indicies = torch.tensor(
+            item_indices = torch.tensor(
                 np.concatenate(
                     [
                         sequence[j - window_size : j],
@@ -332,7 +332,7 @@ def to_sequential_data(
             data.append(
                 (
                     seq_index,
-                    item_indicies,
+                    item_indices,
                     target_index,
                 )
             )
