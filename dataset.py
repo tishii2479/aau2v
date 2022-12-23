@@ -1,8 +1,9 @@
 import os
 import pickle
 from collections import ChainMap
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import gensim
 import pandas as pd
@@ -12,14 +13,16 @@ from torchtext.data import get_tokenizer
 from dataset_manager import SequenceDatasetManager
 from util import get_all_items
 
-DatasetTuple = Tuple[
-    Dict[str, List[str]],
-    Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, Dict[str, Any]]],
-    Optional[Dict[str, Dict[str, List[str]]]],
-    Optional[List[str]],
-    Optional[List[str]],
-]
+
+@dataclass
+class RawDataset:
+    # TODO: write doc
+    train_raw_sequences: Dict[str, List[str]]
+    item_metadata: Optional[Dict[str, Dict[str, Any]]] = None
+    seq_metadata: Optional[Dict[str, Dict[str, Any]]] = None
+    test_raw_sequences_dict: Optional[Dict[str, Dict[str, List[str]]]] = None
+    exclude_seq_metadata_columns: Optional[List[str]] = None
+    exclude_item_metadata_columns: Optional[List[str]] = None
 
 
 def load_dataset_manager(
@@ -147,21 +150,13 @@ def load_dataset_manager(
         case _:
             raise ValueError(f"invalid dataset-name: {dataset_name}")
 
-    (
-        train_raw_sequences,
-        item_metadata,
-        seq_metadata,
-        test_raw_sequences_dict,
-        exclude_seq_metadata_columns,
-        exclude_item_metadata_columns,
-    ) = dataset
     dataset_manager = SequenceDatasetManager(
-        train_raw_sequences=train_raw_sequences,
-        test_raw_sequences_dict=test_raw_sequences_dict,
-        item_metadata=item_metadata,
-        seq_metadata=seq_metadata,
-        exclude_seq_metadata_columns=exclude_seq_metadata_columns,
-        exclude_item_metadata_columns=exclude_item_metadata_columns,
+        train_raw_sequences=dataset.train_raw_sequences,
+        test_raw_sequences_dict=dataset.test_raw_sequences_dict,
+        item_metadata=dataset.item_metadata,
+        seq_metadata=dataset.seq_metadata,
+        exclude_seq_metadata_columns=dataset.exclude_seq_metadata_columns,
+        exclude_item_metadata_columns=dataset.exclude_item_metadata_columns,
         window_size=window_size,
     )
 
@@ -180,7 +175,7 @@ def create_hm_data(
     customer_path: str,
     max_data_size: int,
     test_data_size: int,
-) -> DatasetTuple:
+) -> RawDataset:
     sequences_df = pd.read_csv(
         purchase_history_path, dtype={"customer_id": str}, index_col="customer_id"
     )
@@ -217,13 +212,12 @@ def create_hm_data(
 
     test_raw_sequences_dict = {"test": test_raw_sequences}
 
-    return (
-        raw_sequences,
-        item_metadata,
-        customer_metadata,
-        test_raw_sequences_dict,
-        None,
-        ["prod_name"],
+    return RawDataset(
+        train_raw_sequences=raw_sequences,
+        item_metadata=item_metadata,
+        seq_metadata=customer_metadata,
+        test_raw_sequences_dict=test_raw_sequences_dict,
+        exclude_item_metadata_columns=["prod_name"],
     )
 
 
@@ -232,7 +226,7 @@ def create_toydata(
     test_path: str,
     user_path: str,
     item_path: str,
-) -> DatasetTuple:
+) -> RawDataset:
     train_df = pd.read_csv(train_path, dtype={"user_id": str}, index_col="user_id")
     test_df = pd.read_csv(test_path, dtype={"user_id": str}, index_col="user_id")
     user_df = pd.read_csv(user_path, dtype={"user_id": str}, index_col="user_id")
@@ -255,13 +249,11 @@ def create_toydata(
     user_metadata = user_df.to_dict("index")
     item_metadata = item_df.to_dict("index")
 
-    return (
-        train_raw_sequences,
-        item_metadata,
-        user_metadata,
-        test_raw_sequences_dict,
-        None,
-        None,
+    return RawDataset(
+        train_raw_sequences=train_raw_sequences,
+        item_metadata=item_metadata,
+        seq_metadata=user_metadata,
+        test_raw_sequences_dict=test_raw_sequences_dict,
     )
 
 
@@ -272,7 +264,7 @@ def create_movielens_data(
     movie_path: str,
     user_columns: Optional[List[str]] = None,
     movie_columns: Optional[List[str]] = None,
-) -> DatasetTuple:
+) -> RawDataset:
     train_df = pd.read_csv(train_path, dtype={"user_id": str}, index_col="user_id")
     user_df = pd.read_csv(user_path, dtype={"user_id": str}, index_col="user_id")
     movie_df = pd.read_csv(movie_path, dtype={"movie_id": str}, index_col="movie_id")
@@ -302,13 +294,12 @@ def create_movielens_data(
             )
         }
 
-    return (
-        train_raw_sequences,
-        movie_metadata,
-        user_metadata,
-        test_raw_sequences_dict,
-        None,
-        ["title"],
+    return RawDataset(
+        train_raw_sequences=train_raw_sequences,
+        item_metadata=movie_metadata,
+        seq_metadata=user_metadata,
+        test_raw_sequences_dict=test_raw_sequences_dict,
+        exclude_item_metadata_columns=["title"],
     )
 
 
@@ -316,7 +307,7 @@ def create_20newsgroup_data(
     max_data_size: int = 1000,
     min_seq_length: int = 50,
     test_data_size: int = 500,
-) -> DatasetTuple:
+) -> RawDataset:
     newsgroups_train = datasets.fetch_20newsgroups(
         data_home="data",
         subset="train",
@@ -364,4 +355,8 @@ def create_20newsgroup_data(
         "test": test_raw_sequences
     }
 
-    return train_raw_sequences, None, seq_metadata, test_raw_sequences_dict, None, None
+    return RawDataset(
+        train_raw_sequences=train_raw_sequences,
+        seq_metadata=seq_metadata,
+        test_raw_sequences_dict=test_raw_sequences_dict,
+    )
