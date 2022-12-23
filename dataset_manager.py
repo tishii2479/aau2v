@@ -121,7 +121,7 @@ class SequenceDatasetManager:
             item_le=self.item_le,
             window_size=window_size,
         )
-        self.sequences = self.train_dataset.sequences
+        self.sequences = copy.deepcopy(self.train_dataset.sequences)
 
         if test_raw_sequences_dict is not None:
             self.test_dataset: Optional[Dict[str, SequenceDataset]] = {}
