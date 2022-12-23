@@ -293,12 +293,12 @@ class PyTorchTrainer(Trainer):
                     target_index,
                 ) = data
 
-                c = self.model.calc_prediction_vector(
+                p = self.model.calc_prediction_vector(
                     seq_index=seq_index,
                     item_indicies=item_indicies,
                 )
-                c = c.detach().numpy()
-                v = np.dot(c, output_embeddings.T)
+                p = p.detach().numpy()
+                v = np.dot(p, output_embeddings.T)
                 rank = v.argsort()
                 pred = rank[:, 0:100]
                 target = target_index.detach().numpy()

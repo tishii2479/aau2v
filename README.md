@@ -38,7 +38,6 @@ $ inv train-ml
     - `similarity_*`の整理
 - `trainer`の拡張
     - `onTrainStart`、`onEpochEnd`などのコールバックを受け入れる
-- モデルの引数にデフォルト値を足す
 - `eval.py`を作る
 - `ArgumentParser`のenum系の引数に`choices`を追加する
 - pytorchのGPUを試す
