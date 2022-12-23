@@ -42,6 +42,7 @@ $ inv train-ml
 - `ArgumentParser`のenum系の引数に`choices`を追加する
 - pytorchのGPUを試す
     - https://zenn.dev/hidetoshi/articles/20220731_pytorch-m1-macbook-gpu
+- `toydata`を関数に切り分ける
 
 ## TODO:
 
@@ -50,7 +51,6 @@ $ inv train-ml
     - 固有の埋め込み表現からどの程度性別の影響が取り除かれているか
     - 性別を反転させたときにどうなるか
     - 男性の中で、好きな男性向けジャンルが異なるグループを作って、それをクラスタとして分けられるか
-- 各要素の内積の大きさの比較
 - `NormalizedEmbeddingLayer`に補助情報のグループのインデックスを与えて、グループごとに正規化する
     - その時は正規化はこまめにやる必要がありそう
 - `init_embedding_dim`の値を0.3にする

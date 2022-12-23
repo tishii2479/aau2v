@@ -135,7 +135,7 @@ class PyTorchTrainer(Trainer):
                     negative_sample_size=model_config.negative_sample_size,
                 )
             case _:
-                print(f"invalid model_name: {trainer_config.model_name}")
+                raise ValueError(f"invalid model_name: {trainer_config.model_name}")
 
         if self.trainer_config.load_model:
             print(f"load_state_dict from: {self.trainer_config.model_path}")

@@ -35,10 +35,10 @@ def main() -> None:
 
     def on_epoch_start(epoch: int) -> None:
         analyst.similarity_between_seq_meta_and_item_meta(
-            "gender", "M", "genre", method="inner-product", num_top_values=30
+            "gender", "M", "genre", method="inner-product"
         )
         analyst.similarity_between_seq_meta_and_item_meta(
-            "gender", "F", "genre", method="inner-product", num_top_values=30
+            "gender", "F", "genre", method="inner-product"
         )
 
     trainer.fit(on_epoch_start=on_epoch_start, show_fig=False)
