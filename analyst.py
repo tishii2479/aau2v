@@ -55,21 +55,21 @@ class Analyst:
         kmeans = KMeans(n_clusters=num_cluster)
         match target:
             case "sequence":
-                embeddings = self.model.seq_embedding.values()
+                e = self.model.seq_embedding.values()
             case "item":
-                embeddings = self.model.item_embedding.values()
+                e = self.model.item_embedding.values()
             case _:
                 print(f"Invalid target: {target}")
                 assert False
 
-        h_seq = np.array(list(embeddings))
-        print(f"Start k-means: {h_seq.shape}")
-        kmeans.fit(h_seq)
+        embeddings = np.array(list(e))
+        print(f"Start k-means: {embeddings.shape}")
+        kmeans.fit(embeddings)
         print("End k-means")
         cluster_labels: List[int] = kmeans.labels_
 
         if show_fig:
-            visualize_cluster(list(h_seq), num_cluster, cluster_labels)
+            visualize_cluster(list(embeddings), num_cluster, cluster_labels)
 
         return cluster_labels
 
@@ -269,15 +269,15 @@ class Analyst:
         item_embedding = self.model.item_embedding
         similar_items: List[Tuple[float, str]] = []
 
-        h = item_embedding[item_name]
+        e_target_item = item_embedding[item_name]
 
         item_names = self.dataset_manager.item_le.classes_
 
         for i, name in enumerate(item_names):
             if i == item_index:
                 continue
-            h_item = item_embedding[name]
-            distance = np.sum((h - h_item) ** 2)
+            e_item = item_embedding[name]
+            distance = np.sum((e_target_item - e_item) ** 2)
             similar_items.append((distance, name))
 
         similar_items.sort()
@@ -298,15 +298,15 @@ class Analyst:
 
         similar_customers: List[Tuple[float, str]] = []
 
-        h = seq_embedding[seq_name]
+        e_target_seq = seq_embedding[seq_name]
 
         seq_names = self.dataset_manager.seq_le.classes_
 
         for i, name in enumerate(seq_names):
             if i == seq_index:
                 continue
-            h_seq = seq_embedding[name]
-            distance = np.sum((h - h_seq) ** 2)
+            e_seq = seq_embedding[name]
+            distance = np.sum((e_target_seq - e_seq) ** 2)
             similar_customers.append((distance, name))
 
         similar_customers.sort()
@@ -345,8 +345,8 @@ class Analyst:
     @property
     def seq_embedding(self) -> Dict[str, Tensor]:
         return {
-            seq_name: h_seq
-            for seq_name, h_seq in zip(
+            seq_name: e_seq
+            for seq_name, e_seq in zip(
                 self.dataset_manager.seq_le.classes_, self.model.seq_embedding
             )
         }
@@ -354,8 +354,8 @@ class Analyst:
     @property
     def item_embedding(self) -> Dict[str, Tensor]:
         return {
-            item_name: h_item
-            for item_name, h_item in zip(
+            item_name: e_item
+            for item_name, e_item in zip(
                 self.dataset_manager.item_le.classes_, self.model.item_embedding
             )
         }
@@ -363,8 +363,8 @@ class Analyst:
     @property
     def seq_meta_embedding(self) -> Dict[str, Tensor]:
         return {
-            seq_meta_name: h_seq_meta
-            for seq_meta_name, h_seq_meta in zip(
+            seq_meta_name: e_seq_meta
+            for seq_meta_name, e_seq_meta in zip(
                 self.dataset_manager.seq_meta_le.classes_,
                 self.model.seq_meta_embedding,
             )
@@ -373,8 +373,8 @@ class Analyst:
     @property
     def item_meta_embedding(self) -> Dict[str, Tensor]:
         return {
-            item_meta_name: h_item_meta
-            for item_meta_name, h_item_meta in zip(
+            item_meta_name: e_item_meta
+            for item_meta_name, e_item_meta in zip(
                 self.dataset_manager.item_meta_le.classes_,
                 self.model.item_meta_embedding,
             )

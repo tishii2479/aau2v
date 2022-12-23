@@ -46,8 +46,6 @@ $ inv train-ml
 - `ArgumentParser`のenum系の引数に`choices`を追加する
 - pytorchのGPUを試す
     - https://zenn.dev/hidetoshi/articles/20220731_pytorch-m1-macbook-gpu
-- analystは`pd.DataFrame`を返す?
-- 埋め込み表現の変数は`e`を使用する
 
 ## TODO:
 

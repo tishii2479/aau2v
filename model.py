@@ -241,19 +241,19 @@ class AttentiveModel2(PyTorchModel):
     ) -> Tensor:
         window_size = item_indicies.size(1)
 
-        h_seq = self.embedding_seq.forward(seq_index)
-        h_items = self.embedding_item.forward(item_indicies)
+        u = self.embedding_seq.forward(seq_index)
+        V = self.embedding_item.forward(item_indicies)
 
         if self.add_positional_encoding:
-            h_items = self.positional_encoding.forward(h_items)
+            V = self.positional_encoding.forward(V)
 
-        Q = torch.reshape(h_seq, (-1, 1, self.d_model))
-        K = h_items
-        V = h_items
+        Q = torch.reshape(u, (-1, 1, self.d_model))
+        K = V
+        V = V
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
 
         if self.add_seq_embedding:
-            c = (c * window_size + h_seq) / (window_size + 1)
+            c = (c * window_size + u) / (window_size + 1)
 
         return c
 
@@ -394,19 +394,19 @@ class AttentiveModel(PyTorchModel):
     ) -> Tensor:
         window_size = item_indicies.size(1)
 
-        h_seq = self.embedding_seq.forward(seq_index)
-        h_items = self.embedding_item.forward(item_indicies)
+        u = self.embedding_seq.forward(seq_index)
+        V = self.embedding_item.forward(item_indicies)
 
         if self.add_positional_encoding:
-            h_items = self.positional_encoding.forward(h_items)
+            V = self.positional_encoding.forward(V)
 
-        Q = torch.reshape(h_seq, (-1, 1, self.d_model))
-        K = h_items
-        V = h_items
+        Q = torch.reshape(u, (-1, 1, self.d_model))
+        K = V
+        V = V
         c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
 
         if self.add_seq_embedding:
-            c = (c * window_size + h_seq) / (window_size + 1)
+            c = (c * window_size + u) / (window_size + 1)
 
         return c
 
@@ -493,10 +493,10 @@ class Doc2Vec(PyTorchModel):
     ) -> Tensor:
         window_size = item_indicies.size(1)
 
-        h_seq = self.embedding_seq.forward(seq_index)
-        h_items = self.embedding_item.forward(item_indicies)
+        u = self.embedding_seq.forward(seq_index)
+        V = self.embedding_item.forward(item_indicies)
 
-        c = (h_seq + h_items.sum(dim=1)) / (window_size + 1)
+        c = (u + V.sum(dim=1)) / (window_size + 1)
         return c
 
     @property

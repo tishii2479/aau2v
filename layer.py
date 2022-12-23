@@ -23,10 +23,10 @@ def attention(Q: Tensor, K: Tensor, V: Tensor) -> Tensor:
     return torch.matmul(a, V)
 
 
-def calc_weighted_meta(h_meta: Tensor, meta_weights: Tensor) -> Tensor:
+def calc_weighted_meta(e_meta: Tensor, meta_weights: Tensor) -> Tensor:
     return torch.matmul(
-        h_meta.mT,
-        meta_weights.view((*h_meta.shape[:-1], 1)),
+        e_meta.mT,
+        meta_weights.view((*e_meta.shape[:-1], 1)),
     ).squeeze()
 
 
@@ -217,16 +217,16 @@ class MetaEmbeddingLayer(nn.Module):
         self.meta_weights = meta_weights
 
     def forward(self, element_indicies: Tensor) -> Tensor:
-        h_element = self.embedding_element.forward(element_indicies)
+        e_element = self.embedding_element.forward(element_indicies)
         # add meta embedding
         meta_index = self.meta_indicies[element_indicies]
         meta_weight = self.meta_weights[element_indicies]
-        h_meta = self.embedding_meta.forward(meta_index)
-        h_meta_weighted = calc_weighted_meta(h_meta, meta_weight)
-        h_element += h_meta_weighted
+        e_meta = self.embedding_meta.forward(meta_index)
+        e_meta_weighted = calc_weighted_meta(e_meta, meta_weight)
+        e_element += e_meta_weighted
         # take mean
-        h_element /= self.num_meta_types + 1
-        return h_element
+        e_element /= self.num_meta_types + 1
+        return e_element
 
 
 class WeightSharedNegativeSampling(nn.Module):
@@ -273,9 +273,9 @@ class WeightSharedNegativeSampling(nn.Module):
         h = torch.reshape(h, (batch_size, 1, self.d_model))
 
         # positive
-        h_pos_items = self.embedding_item.forward(target_index)
-        h_pos_items = torch.reshape(h_pos_items, (-1, 1, self.d_model))
-        pos_out = torch.sigmoid(torch.matmul(h, h_pos_items.mT))
+        e_pos_items = self.embedding_item.forward(target_index)
+        e_pos_items = torch.reshape(e_pos_items, (-1, 1, self.d_model))
+        pos_out = torch.sigmoid(torch.matmul(h, e_pos_items.mT))
         pos_out = torch.reshape(pos_out, (batch_size, 1))
         pos_label = torch.ones(batch_size, 1)
 
@@ -285,11 +285,11 @@ class WeightSharedNegativeSampling(nn.Module):
             self.sampler.get_negative_sample(batch_size, self.negative_sample_size),
             dtype=torch.long,
         )
-        h_neg_items = self.embedding_item.forward(negative_sample)
-        h_neg_items = torch.reshape(
-            h_neg_items, (-1, self.negative_sample_size, self.d_model)
+        e_neg_items = self.embedding_item.forward(negative_sample)
+        e_neg_items = torch.reshape(
+            e_neg_items, (-1, self.negative_sample_size, self.d_model)
         )
-        neg_out = torch.sigmoid(torch.matmul(h, h_neg_items.mT))
+        neg_out = torch.sigmoid(torch.matmul(h, e_neg_items.mT))
         neg_out = torch.reshape(neg_out, (batch_size, self.negative_sample_size))
         neg_label = torch.zeros(batch_size, self.negative_sample_size)
 
