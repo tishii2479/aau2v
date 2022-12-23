@@ -152,11 +152,9 @@ class Analyst:
         self,
         seq_index: int,  # TODO: accept str as seq_id
         item_meta_name: str,  # TODO: accept List[str]
-        num_top_values: int = 10,  # ISSUE: なくす?
         method: str = "inner-product",
         verbose: bool = True,
     ) -> List[Tuple[float, str]]:
-        # TODO: 戻り値をfloatにする
         item_meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
         item_meta_names = [
             to_full_meta_value(item_meta_name, value) for value in item_meta_values
@@ -170,7 +168,7 @@ class Analyst:
         item_meta_weights = [
             (weight.item(), name) for weight, name in zip(weights, item_meta_names)
         ]
-        result = sorted(item_meta_weights)[::-1][:num_top_values]
+        result = sorted(item_meta_weights)[::-1]
         if verbose:
             print(f"similarity of seq: {seq_index} for meta: {item_meta_name}")
             for weight, name in result:
@@ -210,7 +208,6 @@ class Analyst:
         seq_meta_name: str,
         seq_meta_value: str,
         item_meta_name: str,
-        num_top_values: int = 10,
         method: str = "inner-product",
         verbose: bool = True,
     ) -> List[Tuple[float, str]]:
@@ -229,7 +226,7 @@ class Analyst:
         meta_weights = [
             (weight.item(), name) for weight, name in zip(weights, item_meta_names)
         ]
-        result = sorted(meta_weights)[::-1][:num_top_values]
+        result = sorted(meta_weights)[::-1]
         if verbose:
             print(f"similarity of seq meta: {seq_meta} for meta: {item_meta_name}")
             for weight, name in result:
@@ -305,7 +302,6 @@ class Analyst:
         self,
         seq_index: int,
         method: str = "inner-product",
-        num_top_values: int = 5,
         verbose: bool = True,
     ) -> List[Tuple[Tensor, str]]:
         """
@@ -332,7 +328,7 @@ class Analyst:
 
         result: List[Tuple[Tensor, str]] = []
 
-        weights = calc_similarity(e_seq, e_item_metas)
+        weights = calc_similarity(e_seq, e_item_metas, method)
         result += [
             (weight, f"seq_id -> {item_meta_name}")
             for weight, item_meta_name in zip(weights, item_meta_names)
@@ -340,13 +336,13 @@ class Analyst:
 
         for seq_meta_index, seq_meta_name in zip(seq_meta_indicies, seq_meta_names):
             e_seq_meta = self.model.seq_meta_embedding[seq_meta_index]
-            weights = calc_similarity(e_seq_meta, e_item_metas)
+            weights = calc_similarity(e_seq_meta, e_item_metas, method)
             result += [
                 (weight, f"{seq_meta_name} -> {item_meta_name}")
                 for weight, item_meta_name in zip(weights, item_meta_names)
             ]
 
-        result = sorted(result)[::-1][:num_top_values]
+        result = sorted(result)[::-1]
         if verbose:
             print(f"analysis of seq_id: {seq_id}")
             for weight, name in result:
