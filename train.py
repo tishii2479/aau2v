@@ -46,9 +46,28 @@ def main() -> None:
 
 def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
     parser = ArgumentParser()
-    parser.add_argument("--model-name", type=str, default="attentive", help="使用するモデル")
     parser.add_argument(
-        "--dataset-name", type=str, default="toydata-paper", help="使用するデータセット"
+        "--model-name",
+        type=str,
+        default="attentive",
+        help="使用するモデル",
+        choices=["attentive", "old-attentive", "doc2vec"],
+    )
+    parser.add_argument(
+        "--dataset-name",
+        type=str,
+        default="toydata-paper",
+        help="使用するデータセット",
+        choices=[
+            "toydata-paper",
+            "toydata-small",
+            "hm",
+            "movielens",
+            "movielens-simple",
+            "movielens-equal-gender",
+            "20newsgroup",
+            "20newsgroup-small",
+        ],
     )
     parser.add_argument("--num-cluster", type=int, default=10, help="クラスタリングの際に使うクラスタ数")
     parser.add_argument("--d-model", type=int, default=128, help="埋め込み表現の次元数")

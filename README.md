@@ -27,17 +27,16 @@ $ inv train-ml
 
 ## ISSUE:
 
-- `to_sequential_data`の並列化
-- ログをわかりやすく
-    - エラーをちゃんと出す
-- `pathlib`を使う
 - コメントを日本語にする
     - `Analyst`の各関数にドキュメントを書く
     - Tensorの引数にサイズを書く
 - `analyst`のリファクタリング
     - `similarity_*`の整理
+- `to_sequential_data`の並列化
+- ログをわかりやすく
+    - エラーをちゃんと出す
+- `pathlib`を使う
 - `eval.py`を作る
-- `ArgumentParser`のenum系の引数に`choices`を追加する
 - pytorchのGPUを試す
     - https://zenn.dev/hidetoshi/articles/20220731_pytorch-m1-macbook-gpu
 
