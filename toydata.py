@@ -64,6 +64,8 @@ def generate_toydata(
     },
     test_length: int = 20,
     seed: int = 0,
+    save_to_csv: bool = False,
+    base_data_dir: str = "data/",
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     rnd = random.Random(seed)
 
@@ -158,11 +160,12 @@ def generate_toydata(
     train_df.index.name = "user_id"
     test_df.index.name = "user_id"
 
-    data_dir = f"../data/{data_name}/"
+    if save_to_csv:
+        data_dir = f"{base_data_dir}/{data_name}/"
 
-    user_df.to_csv(data_dir + "users.csv")
-    item_df.to_csv(data_dir + "items.csv")
-    train_df.to_csv(data_dir + "train.csv")
-    test_df.to_csv(data_dir + "test.csv")
+        user_df.to_csv(data_dir + "users.csv")
+        item_df.to_csv(data_dir + "items.csv")
+        train_df.to_csv(data_dir + "train.csv")
+        test_df.to_csv(data_dir + "test.csv")
 
     return train_df, test_df, user_df, item_df

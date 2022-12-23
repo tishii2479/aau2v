@@ -42,7 +42,6 @@ $ inv train-ml
 - `ArgumentParser`のenum系の引数に`choices`を追加する
 - pytorchのGPUを試す
     - https://zenn.dev/hidetoshi/articles/20220731_pytorch-m1-macbook-gpu
-- `toydata`を関数に切り分ける
 
 ## TODO:
 

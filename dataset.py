@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn import datasets
 from torchtext.data import get_tokenizer
 
+import toydata
 from dataset_manager import SequenceDatasetManager
 from util import get_all_items
 
@@ -43,48 +44,21 @@ def load_dataset_manager(
     print(f"dataset_manager does not exist at: {pickle_path}, create dataset")
 
     match dataset_name:
-        case "toydata":
-            dataset = create_toydata(
-                train_path=f"{data_dir}/toydata/train.csv",
-                test_path=f"{data_dir}/toydata/test.csv",
-                user_path=f"{data_dir}/toydata/users.csv",
-                item_path=f"{data_dir}/toydata/items.csv",
-            )
-        case "toydata-simple":
-            dataset = create_toydata(
-                train_path=f"{data_dir}/toydata-simple/train.csv",
-                test_path=f"{data_dir}/toydata-simple/test.csv",
-                user_path=f"{data_dir}/toydata-simple/users.csv",
-                item_path=f"{data_dir}/toydata-simple/items.csv",
-            )
-        case "toydata-simple-mf":
-            dataset = create_toydata(
-                train_path=f"{data_dir}/toydata-simple-mf/train.csv",
-                test_path=f"{data_dir}/toydata-simple-mf/test.csv",
-                user_path=f"{data_dir}/toydata-simple-mf/users.csv",
-                item_path=f"{data_dir}/toydata-simple-mf/items.csv",
-            )
-        case "toydata-hard":
-            dataset = create_toydata(
-                train_path=f"{data_dir}/toydata-hard/train.csv",
-                test_path=f"{data_dir}/toydata-hard/test.csv",
-                user_path=f"{data_dir}/toydata-hard/users.csv",
-                item_path=f"{data_dir}/toydata-hard/items.csv",
-            )
         case "toydata-paper":
-            dataset = create_toydata(
-                train_path=f"{data_dir}/toydata-paper/train.csv",
-                test_path=f"{data_dir}/toydata-paper/test.csv",
-                user_path=f"{data_dir}/toydata-paper/users.csv",
-                item_path=f"{data_dir}/toydata-paper/items.csv",
+            data = toydata.generate_toydata(
+                data_name="toydata-paper",
             )
+            dataset = convert_toydata(*data)
         case "toydata-small":
-            dataset = create_toydata(
-                train_path=f"{data_dir}/toydata-small/train.csv",
-                test_path=f"{data_dir}/toydata-small/test.csv",
-                user_path=f"{data_dir}/toydata-small/users.csv",
-                item_path=f"{data_dir}/toydata-small/items.csv",
+            # テスト用の小さいデータ
+            data = toydata.generate_toydata(
+                data_name="toydata-small",
+                user_count_per_segment=50,
+                item_count_per_segment=3,
+                seq_lengths=[20],
+                test_length=20,
             )
+            dataset = convert_toydata(*data)
         case "hm":
             dataset = create_hm_data(
                 purchase_history_path=f"{data_dir}/hm/filtered_purchase_history.csv",
@@ -221,16 +195,12 @@ def create_hm_data(
     )
 
 
-def create_toydata(
-    train_path: str,
-    test_path: str,
-    user_path: str,
-    item_path: str,
+def convert_toydata(
+    train_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+    user_df: pd.DataFrame,
+    item_df: pd.DataFrame,
 ) -> RawDataset:
-    train_df = pd.read_csv(train_path, dtype={"user_id": str}, index_col="user_id")
-    test_df = pd.read_csv(test_path, dtype={"user_id": str}, index_col="user_id")
-    user_df = pd.read_csv(user_path, dtype={"user_id": str}, index_col="user_id")
-    item_df = pd.read_csv(item_path, dtype={"item_id": str}, index_col="item_id")
     train_raw_sequences = {
         user_name: sequence.split(" ")
         for user_name, sequence in zip(

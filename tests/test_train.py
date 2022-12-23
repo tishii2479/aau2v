@@ -50,6 +50,8 @@ class TestTrain(unittest.TestCase):
         )
         analyst = Analyst(trainer.model, dataset_manager)
         print(analyst.similarity_between_seq_and_item(0))
+        print(analyst.similarity_between_seq_and_item_meta(0, "genre"))
+        print(analyst.similarity_between_seq_meta_and_item_meta("gender", "M", "genre"))
         print(analyst.analyze_seq(0))
 
 
