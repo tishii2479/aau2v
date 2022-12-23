@@ -152,11 +152,10 @@ class Analyst:
         self,
         seq_index: int,  # TODO: accept str as seq_id
         item_meta_name: str,  # TODO: accept List[str]
-        num_top_values: int = 10,
+        num_top_values: int = 10,  # ISSUE: なくす?
         method: str = "inner-product",
         verbose: bool = True,
     ) -> List[Tuple[Tensor, str]]:
-        # TODO: meta_weightsでzipを使う
         # TODO: 戻り値をfloatにする
         item_meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
         item_meta_names = [
@@ -167,9 +166,9 @@ class Analyst:
         )
         e_seq = self.model.seq_embedding[seq_index]
         e_item_metas = self.model.item_meta_embedding[item_meta_indicies]
-        weight = calc_similarity(e_seq, e_item_metas, method)
+        weights = calc_similarity(e_seq, e_item_metas, method)
         item_meta_weights = [
-            (weight[i], item_meta_values[i]) for i in range(len(item_meta_values))
+            (weight, name) for weight, name in zip(weights, item_meta_names)
         ]
         result = sorted(item_meta_weights)[::-1][:num_top_values]
         if verbose:
@@ -190,9 +189,11 @@ class Analyst:
         ]
         e_seq = self.model.seq_embedding[seq_index]
         e_items = self.model.item_embedding[item_indicies]
-        weight = calc_similarity(e_seq, e_items, method)
+        weights = calc_similarity(e_seq, e_items, method)
         item_names = self.dataset_manager.item_le.inverse_transform(item_indicies)
-        item_weights = [(weight[i], item_names[i]) for i in range(num_recent_items)]
+        item_weights = [(weight, name) for weight, name in zip(weights, item_names)][
+            :num_recent_items
+        ]
         result = sorted(item_weights)[::-1]
         if verbose:
             print(f"item weights of seq: {seq_index}")
@@ -224,9 +225,9 @@ class Analyst:
         )
         e_seq_meta = self.model.seq_meta_embedding[seq_meta_index]
         e_item_metas = self.model.item_meta_embedding[item_meta_indicies]
-        weight = calc_similarity(e_seq_meta, e_item_metas, method)
+        weights = calc_similarity(e_seq_meta, e_item_metas, method)
         meta_weights = [
-            (weight[i], item_meta_values[i]) for i in range(len(item_meta_values))
+            (weight, name) for weight, name in zip(weights, item_meta_names)
         ]
         result = sorted(meta_weights)[::-1][:num_top_values]
         if verbose:
