@@ -355,38 +355,38 @@ class Analyst:
         embeddings: Dict[str, np.ndarray] = {}
         for seq_meta_value in self.dataset_manager.seq_meta_dict[seq_meta_name]:
             full_seq_meta_value = to_full_meta_value(seq_meta_name, seq_meta_value)
-            embeddings[full_seq_meta_value] = self.seq_meta_embedding[
-                full_seq_meta_value
-            ]
+            embeddings[full_seq_meta_value] = (
+                self.seq_meta_embedding[full_seq_meta_value].detach().numpy()
+            )
         for item_meta_value in self.dataset_manager.item_meta_dict[item_meta_name]:
             full_item_meta_value = to_full_meta_value(item_meta_name, item_meta_value)
-            embeddings[full_item_meta_value] = self.item_meta_embedding[
-                full_item_meta_value
-            ]
+            embeddings[full_item_meta_value] = (
+                self.item_meta_embedding[full_item_meta_value].detach().numpy()
+            )
         visualize_vectors(embeddings, method=method)
 
     @property
-    def seq_embedding(self) -> Dict[str, np.ndarray]:
+    def seq_embedding(self) -> Dict[str, Tensor]:
         return {
-            seq_name: h_seq.detach().numpy()
+            seq_name: h_seq
             for seq_name, h_seq in zip(
                 self.dataset_manager.seq_le.classes_, self.model.seq_embedding
             )
         }
 
     @property
-    def item_embedding(self) -> Dict[str, np.ndarray]:
+    def item_embedding(self) -> Dict[str, Tensor]:
         return {
-            item_name: h_item.detach().numpy()
+            item_name: h_item
             for item_name, h_item in zip(
                 self.dataset_manager.item_le.classes_, self.model.item_embedding
             )
         }
 
     @property
-    def seq_meta_embedding(self) -> Dict[str, np.ndarray]:
+    def seq_meta_embedding(self) -> Dict[str, Tensor]:
         return {
-            seq_meta_name: h_seq_meta.detach().numpy()
+            seq_meta_name: h_seq_meta
             for seq_meta_name, h_seq_meta in zip(
                 self.dataset_manager.seq_meta_le.classes_,
                 self.model.seq_meta_embedding,
@@ -394,9 +394,9 @@ class Analyst:
         }
 
     @property
-    def item_meta_embedding(self) -> Dict[str, np.ndarray]:
+    def item_meta_embedding(self) -> Dict[str, Tensor]:
         return {
-            item_meta_name: h_item_meta.detach().numpy()
+            item_meta_name: h_item_meta
             for item_meta_name, h_item_meta in zip(
                 self.dataset_manager.item_meta_le.classes_,
                 self.model.item_meta_embedding,
