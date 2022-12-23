@@ -30,6 +30,7 @@ def visualize_cluster(
     cluster_labels: List[int],
     answer_labels: Optional[List[int]] = None,
 ) -> None:
+    # TODO: return ax
     r"""
     Visualize cluster to 2d
     """
@@ -56,6 +57,7 @@ def visualize_cluster(
 
 
 def visualize_vectors(embeddings: Dict[str, np.ndarray], method: str = "pca") -> None:
+    # TODO: return ax
     vector_names = np.array(list(embeddings.keys()))
     vector_values = np.array(list(embeddings.values()))
 

@@ -36,7 +36,7 @@ $ inv train-ml
     - Tensorの引数にサイズを書く
 - `analyst`のリファクタリング
     - `similarity_*`の整理
-    - `runner`と`analyst`に分離する
+- `trainer`の拡張
     - `onTrainStart`、`onEpochEnd`などのコールバックを受け入れる
 - 不要なオプションを消す
     - `add_positional_encoding`、`use_learnable_embedding`など
