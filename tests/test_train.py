@@ -36,6 +36,7 @@ class TestTrain(unittest.TestCase):
         analyst.similarity_between_seq_and_item_meta(0, "genre")
         analyst.similarity_between_seq_and_item(0)
         analyst.similarity_between_seq_meta_and_item_meta("gender", "M", "genre")
+        analyst.analyze_seq(0)
 
 
 if __name__ == "__main__":

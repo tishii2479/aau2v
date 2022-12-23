@@ -48,6 +48,7 @@ $ inv train-ml
     - https://zenn.dev/hidetoshi/articles/20220731_pytorch-m1-macbook-gpu
 - `np.ndarray`を`torch.Tensor`に統一する
 - analystは`pd.DataFrame`を返す?
+- 埋め込み表現の変数は`e`を使用する
 
 ## TODO:
 
