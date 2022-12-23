@@ -76,20 +76,20 @@ class Model(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def calc_context_vector(
+    def calc_prediction_vector(
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
     ) -> Tensor:
         """
-        モデルに入力を与えた時の、出力層に入力する前のコンテキストベクトルを返す
+        モデルに入力を与えた時の、出力層に入力する前の予測ベクトルを返す
         `calc_out`の中で使われることを想定している
 
         Args:
             Same as `Model.forward()`
 
         Returns:
-            c: コンテキストベクトル (batch_size, d_model)
+            p: 予測ベクトル (batch_size, d_model)
         """
         raise NotImplementedError()
 
@@ -206,13 +206,13 @@ class AttentiveModel2(PyTorchModel):
         item_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
-        c = self.calc_context_vector(
+        c = self.calc_prediction_vector(
             seq_index=seq_index,
             item_indicies=item_indicies,
         )
         return self.output.forward(c, target_index)
 
-    def calc_context_vector(
+    def calc_prediction_vector(
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
@@ -223,9 +223,9 @@ class AttentiveModel2(PyTorchModel):
         Q = torch.reshape(u, (-1, 1, self.d_model))
         K = V
         V = V
-        c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
+        p = torch.reshape(attention(Q, K, V), (-1, self.d_model))
 
-        return c
+        return p
 
     @property
     def seq_embedding(self) -> Tensor:
@@ -325,13 +325,13 @@ class AttentiveModel(PyTorchModel):
         item_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
-        c = self.calc_context_vector(
+        c = self.calc_prediction_vector(
             seq_index=seq_index,
             item_indicies=item_indicies,
         )
         return self.output.forward(c, target_index)
 
-    def calc_context_vector(
+    def calc_prediction_vector(
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
@@ -342,9 +342,9 @@ class AttentiveModel(PyTorchModel):
         Q = torch.reshape(u, (-1, 1, self.d_model))
         K = V
         V = V
-        c = torch.reshape(attention(Q, K, V), (-1, self.d_model))
+        p = torch.reshape(attention(Q, K, V), (-1, self.d_model))
 
-        return c
+        return p
 
     @property
     def seq_embedding(self) -> Tensor:
@@ -416,13 +416,13 @@ class Doc2Vec(PyTorchModel):
         item_indicies: Tensor,
         target_index: Tensor,
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
-        c = self.calc_context_vector(
+        c = self.calc_prediction_vector(
             seq_index=seq_index,
             item_indicies=item_indicies,
         )
         return self.output.forward(c, target_index)
 
-    def calc_context_vector(
+    def calc_prediction_vector(
         self,
         seq_index: Tensor,
         item_indicies: Tensor,
@@ -432,8 +432,8 @@ class Doc2Vec(PyTorchModel):
         u = self.embedding_seq.forward(seq_index)
         V = self.embedding_item.forward(item_indicies)
 
-        c = (u + V.sum(dim=1)) / (window_size + 1)
-        return c
+        p = (u + V.sum(dim=1)) / (window_size + 1)
+        return p
 
     @property
     def seq_embedding(self) -> Tensor:

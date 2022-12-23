@@ -293,7 +293,7 @@ class PyTorchTrainer(Trainer):
                     target_index,
                 ) = data
 
-                c = self.model.calc_context_vector(
+                c = self.model.calc_prediction_vector(
                     seq_index=seq_index,
                     item_indicies=item_indicies,
                 )
