@@ -106,9 +106,12 @@ def visualize_loss(
 
 
 def visualize_heatmap(
-    data: np.ndarray, seq_keys: List[str], item_keys: List[str]
+    data: np.ndarray,
+    seq_keys: List[str],
+    item_keys: List[str],
+    figsize: Tuple[float, float] = (12, 8),
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
-    fig = plt.figure()
+    fig = plt.figure(figsize=figsize)
     ax = sns.heatmap(
         data,
         linewidth=0.2,

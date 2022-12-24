@@ -209,7 +209,7 @@ def process_metadata(
             item data (item_id, (meta_name, meta_value))
 
     Returns:
-        Tuple[LabelEncoder, Dict[str, Set[int]]]:
+        Tuple[LabelEncoder, Dict[str, List[str]]]:
             (Label Encoder of meta data, Dictionary of list of meta datas)
     """
     meta_dict: Dict[str, List[str]] = {}
