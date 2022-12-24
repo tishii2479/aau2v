@@ -1,4 +1,5 @@
 import abc
+import os
 from typing import Callable, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
@@ -143,9 +144,15 @@ class PyTorchTrainer(Trainer):
                 raise ValueError(f"invalid model_name: {trainer_config.model_name}")
 
         if self.trainer_config.load_model:
-            print(f"load_state_dict from: {self.trainer_config.model_path}")
-            loaded = torch.load(self.trainer_config.model_path)  # type: ignore
-            self.model.load_state_dict(loaded)
+            if os.path.exists(self.trainer_config.model_path) is False:
+                print(
+                    "Warning: load_model is specified at trainer_config, "
+                    + f"but model does not exists at {self.trainer_config.model_path}"
+                )
+            else:
+                print(f"load_state_dict from: {self.trainer_config.model_path}")
+                loaded = torch.load(self.trainer_config.model_path)  # type: ignore
+                self.model.load_state_dict(loaded)
         elif self.trainer_config.ignore_saved_model is False:
             check_model_path(self.trainer_config.model_path)
 

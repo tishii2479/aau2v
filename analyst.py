@@ -1,8 +1,10 @@
 import collections
 from typing import Dict, List, Optional, Tuple
 
+import matplotlib
 import numpy as np
 import pandas as pd
+import torch
 from sklearn.cluster import KMeans
 from torch import Tensor
 
@@ -16,6 +18,7 @@ from util import (
     to_full_meta_value,
     top_cluster_items,
     visualize_cluster,
+    visualize_heatmap,
     visualize_vectors,
 )
 
@@ -155,7 +158,7 @@ class Analyst:
         item_meta_name: str,  # TODO: accept List[str]
         method: str = "inner-product",
     ) -> pd.DataFrame:
-        item_meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
+        item_meta_values = self.dataset_manager.item_meta_dict[item_meta_name]
         item_meta_names = [
             to_full_meta_value(item_meta_name, value) for value in item_meta_values
         ]
@@ -197,7 +200,7 @@ class Analyst:
     ) -> pd.DataFrame:
         seq_meta = to_full_meta_value(seq_meta_name, seq_meta_value)
         seq_meta_index = self.dataset_manager.seq_meta_le.transform([seq_meta])
-        item_meta_values = list(self.dataset_manager.item_meta_dict[item_meta_name])
+        item_meta_values = self.dataset_manager.item_meta_dict[item_meta_name]
         item_meta_names = [
             to_full_meta_value(item_meta_name, value) for value in item_meta_values
         ]
@@ -324,7 +327,7 @@ class Analyst:
 
     def visualize_meta_embedding(
         self, seq_meta_name: str, item_meta_name: str, method: str = "pca"
-    ) -> None:
+    ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         embeddings: Dict[str, np.ndarray] = {}
         for seq_meta_value in self.dataset_manager.seq_meta_dict[seq_meta_name]:
             full_seq_meta_value = to_full_meta_value(seq_meta_name, seq_meta_value)
@@ -336,7 +339,52 @@ class Analyst:
             embeddings[full_item_meta_value] = (
                 self.item_meta_embedding[full_item_meta_value].detach().numpy()
             )
-        visualize_vectors(embeddings, method=method)
+        return visualize_vectors(embeddings, method=method)
+
+    def visualize_similarity_heatmap(
+        self,
+        seq_meta_names: Optional[List[str]] = None,
+        item_meta_names: Optional[List[str]] = None,
+    ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+        seq_meta = self.seq_meta_embedding
+        item_meta = self.item_meta_embedding
+
+        if seq_meta_names is not None:
+            seq_meta_keys = []
+            for seq_meta_name in seq_meta_names:
+                if seq_meta_name not in self.dataset_manager.seq_meta_dict:
+                    raise ValueError(
+                        f"{seq_meta_name} is not in "
+                        + f"{list(self.dataset_manager.seq_meta_dict.keys())}"
+                    )
+                seq_meta_keys += [
+                    to_full_meta_value(seq_meta_name, value)
+                    for value in self.dataset_manager.seq_meta_dict[seq_meta_name]
+                ]
+        else:
+            seq_meta_keys = self.dataset_manager.seq_meta_le.classes_
+
+        if item_meta_names is not None:
+            item_meta_keys = []
+            for item_meta_name in item_meta_names:
+                if item_meta_name not in self.dataset_manager.item_meta_dict:
+                    raise ValueError(
+                        f"{item_meta_name} is not in "
+                        + f"{list(self.dataset_manager.item_meta_dict.keys())}"
+                    )
+                item_meta_keys += [
+                    to_full_meta_value(item_meta_name, value)
+                    for value in self.dataset_manager.item_meta_dict[item_meta_name]
+                ]
+        else:
+            item_meta_keys = self.dataset_manager.item_meta_le.classes_
+
+        data = np.zeros((len(seq_meta_keys), len(item_meta_keys)))
+        for i, seq_key in enumerate(seq_meta_keys):
+            for j, item_key in enumerate(item_meta_keys):
+                data[i][j] = torch.dot(seq_meta[seq_key], item_meta[item_key])
+
+        return visualize_heatmap(data, seq_meta_keys, item_meta_keys)
 
     @property
     def seq_embedding(self) -> Dict[str, Tensor]:

@@ -2,8 +2,10 @@ import os
 from math import log
 from typing import Any, ChainMap, Dict, List, Optional, Tuple, Union
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 from matplotlib import cm
 from sklearn.decomposition import PCA
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -29,8 +31,7 @@ def visualize_cluster(
     num_cluster: int,
     cluster_labels: List[int],
     answer_labels: Optional[List[int]] = None,
-) -> None:
-    # TODO: return ax
+) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     r"""
     Visualize cluster to 2d
     """
@@ -40,23 +41,25 @@ def visualize_cluster(
 
     colors = cm.rainbow(np.linspace(0, 1, num_cluster))
 
-    plt.figure()
+    fig, ax = plt.subplots()
 
     for i in range(pca_features.shape[0]):
         if answer_labels is not None:
             marker = "$" + str(answer_labels[i]) + "$"
         else:
             marker = "."
-        plt.scatter(
+        ax.scatter(
             x=pca_features[i, 0],
             y=pca_features[i, 1],
             color=colors[cluster_labels[i]],
             marker=marker,
         )
-    plt.show()
+    return fig, ax
 
 
-def visualize_vectors(embeddings: Dict[str, np.ndarray], method: str = "pca") -> None:
+def visualize_vectors(
+    embeddings: Dict[str, np.ndarray], method: str = "pca"
+) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     # TODO: return ax
     vector_names = np.array(list(embeddings.keys()))
     vector_values = np.array(list(embeddings.values()))
@@ -74,22 +77,24 @@ def visualize_vectors(embeddings: Dict[str, np.ndarray], method: str = "pca") ->
     dec.fit(vector_values)
     dec_features = dec.fit_transform(vector_values)
 
-    plt.figure()
+    fig, ax = plt.subplots()
 
     for i in range(dec_features.shape[0]):
         marker = "."
         norm_vec = dec_features[i]
-        plt.scatter(
+        ax.scatter(
             x=norm_vec[0],
             y=norm_vec[1],
             marker=marker,
         )
-        plt.annotate(vector_names[i], (norm_vec[0], norm_vec[1]))
-    plt.savefig("data/vis_vectors.svg", format="svg")
-    plt.show()
+        ax.annotate(vector_names[i], (norm_vec[0], norm_vec[1]))
+    fig.savefig("data/vis_vectors.svg", format="svg")
+    return fig, ax
 
 
-def visualize_loss(loss_dict: Dict[str, List[float]]) -> None:
+def visualize_loss(
+    loss_dict: Dict[str, List[float]]
+) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     fig, ax = plt.subplots()
     ax.set_xlabel("Epochs")
     ax.set_ylabel("Loss")
@@ -97,7 +102,23 @@ def visualize_loss(loss_dict: Dict[str, List[float]]) -> None:
         ax.plot(losses, label=loss_name)
     ax.legend()
     fig.tight_layout()
-    plt.show()
+    return fig, ax
+
+
+def visualize_heatmap(
+    data: np.ndarray, seq_keys: List[str], item_keys: List[str]
+) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+    fig = plt.figure()
+    ax = sns.heatmap(
+        data,
+        linewidth=0.2,
+        xticklabels=item_keys,
+        yticklabels=seq_keys,
+        cmap="OrRd",
+        cbar=True,
+    )
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+    return fig, ax
 
 
 def top_cluster_items(

@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -201,7 +201,7 @@ class SequenceDataset(Dataset):
 def process_metadata(
     items: Dict[str, Dict[str, str]],
     exclude_metadata_columns: Optional[List[str]] = None,
-) -> Tuple[preprocessing.LabelEncoder, Dict[str, Set[str]]]:
+) -> Tuple[preprocessing.LabelEncoder, Dict[str, List[str]]]:
     """Process meta datas
 
     Args:
@@ -212,7 +212,7 @@ def process_metadata(
         Tuple[LabelEncoder, Dict[str, Set[int]]]:
             (Label Encoder of meta data, Dictionary of list of meta datas)
     """
-    meta_dict: Dict[str, Set[str]] = {}
+    meta_dict: Dict[str, List[str]] = {}
     for _, meta_data in items.items():
         for meta_name, meta_value in meta_data.items():
             if (
@@ -221,14 +221,14 @@ def process_metadata(
             ):
                 continue
             if meta_name not in meta_dict:
-                meta_dict[meta_name] = set()
+                meta_dict[meta_name] = []
 
             # 補助情報が複数ある場合はリストで渡される
             if isinstance(meta_value, list):
                 for e in meta_value:
-                    meta_dict[meta_name].add(e)
+                    meta_dict[meta_name].append(e)
             else:
-                meta_dict[meta_name].add(meta_value)
+                meta_dict[meta_name].append(meta_value)
 
     all_meta_values: List[str] = []
     for meta_name, meta_values in meta_dict.items():
