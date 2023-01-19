@@ -110,6 +110,9 @@ def visualize_heatmap(
     seq_keys: List[str],
     item_keys: List[str],
     figsize: Tuple[float, float] = (12, 8),
+    annot: bool = False,
+    cbar: bool = True,
+    cmap: str = "OrRd",
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     fig = plt.figure(figsize=figsize)
     ax = sns.heatmap(
@@ -117,8 +120,9 @@ def visualize_heatmap(
         linewidth=0.2,
         xticklabels=item_keys,
         yticklabels=seq_keys,
-        cmap="OrRd",
-        cbar=True,
+        annot=annot,
+        cmap=cmap,
+        cbar=cbar,
     )
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
     return fig, ax

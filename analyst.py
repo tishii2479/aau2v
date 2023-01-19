@@ -366,6 +366,10 @@ class Analyst:
             for j, item_key in enumerate(item_meta_keys):
                 data[i][j] = torch.dot(seq_meta[seq_key], item_meta[item_key])
 
+        # genre:ActionとかをActionにする
+        # seq_meta_keys = list(map(lambda s: s[s.find(":") + 1 :], seq_meta_keys))
+        # item_meta_keys = list(map(lambda s: s[s.find(":") + 1 :], item_meta_keys))
+
         return visualize_heatmap(data, seq_meta_keys, item_meta_keys, figsize)
 
     @property
