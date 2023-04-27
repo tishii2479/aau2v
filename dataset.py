@@ -17,7 +17,45 @@ from util import get_all_items
 
 @dataclass
 class RawDataset:
-    # TODO: write doc
+    """
+    train_raw_sequences (Dict[str, List[str]])
+        生の訓練用シーケンシャルデータ
+        系列ID : [要素1, 要素2, ..., 要素n]
+        例: "doc_001", [ "私", "は", "猫" ]
+    item_metadata (Optional[Dict[str, Dict[str, Any]]], optional):
+        要素の補助情報の辞書
+        要素 : {
+            補助情報ID: 補助情報の値
+        }
+        例: "私" : {
+            "品詞": "名詞",
+            "長さ": 1
+        }
+        Defaults to None.
+    seq_metadata (Optional[Dict[str, Dict[str, Any]]], optional):
+        系列の補助情報の辞書
+        系列: {
+            補助情報ID: 補助情報の値
+        }
+        例: "doc_001" : {
+            "ジャンル": 動物,
+            "単語数": 3
+        }
+        Defaults to None.
+    test_raw_sequences (Optional[Dict[str, Dict[str, List[str]]]], optional):
+        生のテスト用シーケンシャルデータ
+        複数のテストデータがあることを想定して、
+        { テストデータ名 : テストデータ } の形式で管理
+        テストデータの形式はtrain_raw_sequencesと一緒
+        Defaults to None.
+    exclude_seq_metadata_columns (Optional[List[str]], optional):
+        `seq_metadata`の中で補助情報として扱わない列の名前のリスト（例: 顧客IDなど）
+        Defaults to None.
+    exclude_item_metadata_columns (Optional[List[str]], optional):
+        `item_metadata`の中で補助情報として扱わない列の名前のリスト（例: 商品IDなど）
+        Defaults to None.
+    """
+
     train_raw_sequences: Dict[str, List[str]]
     item_metadata: Optional[Dict[str, Dict[str, Any]]] = None
     seq_metadata: Optional[Dict[str, Dict[str, Any]]] = None
@@ -26,23 +64,10 @@ class RawDataset:
     exclude_item_metadata_columns: Optional[List[str]] = None
 
 
-def load_dataset_manager(
+def load_raw_dataset(
     dataset_name: str,
-    dataset_dir: str,
-    load_dataset: bool,
-    save_dataset: bool,
-    window_size: int = 5,
     data_dir: str = "data/",
-) -> SequenceDatasetManager:
-    pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")
-    if load_dataset and os.path.exists(pickle_path):
-        print(f"load cached dataset_manager from: {pickle_path}")
-        with open(pickle_path, "rb") as f:
-            dataset_manager: SequenceDatasetManager = pickle.load(f)
-        return dataset_manager
-
-    print(f"dataset_manager does not exist at: {pickle_path}, create dataset")
-
+) -> RawDataset:
     match dataset_name:
         case "toydata-paper":
             data = toydata.generate_toydata(
@@ -123,6 +148,28 @@ def load_dataset_manager(
             )
         case _:
             raise ValueError(f"invalid dataset-name: {dataset_name}")
+
+    return dataset
+
+
+def load_dataset_manager(
+    dataset_name: str,
+    dataset_dir: str,
+    load_dataset: bool,
+    save_dataset: bool,
+    window_size: int = 5,
+    data_dir: str = "data/",
+) -> SequenceDatasetManager:
+    pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")
+    if load_dataset and os.path.exists(pickle_path):
+        print(f"load cached dataset_manager from: {pickle_path}")
+        with open(pickle_path, "rb") as f:
+            dataset_manager: SequenceDatasetManager = pickle.load(f)
+        return dataset_manager
+
+    print(f"dataset_manager does not exist at: {pickle_path}, create dataset")
+
+    dataset = load_raw_dataset(dataset_name=dataset_name, data_dir=data_dir)
 
     dataset_manager = SequenceDatasetManager(
         train_raw_sequences=dataset.train_raw_sequences,

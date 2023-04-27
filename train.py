@@ -4,7 +4,6 @@ from typing import Tuple
 import numpy as np
 import torch
 
-from analyst import Analyst
 from config import ModelConfig, TrainerConfig
 from dataset import load_dataset_manager
 from trainers import PyTorchTrainer
@@ -31,17 +30,7 @@ def main() -> None:
         trainer_config=trainer_config,
         model_config=model_config,
     )
-    analyst = Analyst(trainer.model, dataset_manager)
-
-    def on_epoch_start(epoch: int) -> None:
-        analyst.similarity_between_seq_meta_and_item_meta(
-            "gender", "M", "genre", method="inner-product"
-        )
-        analyst.similarity_between_seq_meta_and_item_meta(
-            "gender", "F", "genre", method="inner-product"
-        )
-
-    trainer.fit(on_epoch_start=on_epoch_start, show_fig=False)
+    trainer.fit(show_fig=False)
 
 
 def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
