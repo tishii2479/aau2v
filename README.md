@@ -42,7 +42,7 @@ $ poetry run python3 src/train.py --help
 
 usage: train.py [-h] [--model-name {attentive,old-attentive,doc2vec}]
                 [--dataset-name {toydata-paper,toydata-small,hm,movielens,movielens-simple,movielens-equal-gender,20newsgroup,20newsgroup-small}]
-                [--num-cluster NUM_CLUSTER] [--d-model D_MODEL]
+                [--d-model D_MODEL]
                 [--max-embedding-norm MAX_EMBEDDING_NORM]
                 [--init-embedding-std INIT_EMBEDDING_STD] [--window-size WINDOW_SIZE]
                 [--negative_sample_size NEGATIVE_SAMPLE_SIZE] [--batch-size BATCH_SIZE]
@@ -56,8 +56,6 @@ options:
                         使用するモデル
   --dataset-name {toydata-paper,toydata-small,hm,movielens,movielens-simple,movielens-equal-gender,20newsgroup,20newsgroup-small}
                         使用するデータセット
-  --num-cluster NUM_CLUSTER
-                        クラスタリングの際に使うクラスタ数
   --d-model D_MODEL     埋め込み表現の次元数
   --max-embedding-norm MAX_EMBEDDING_NORM
                         埋め込み表現のノルムの最大値

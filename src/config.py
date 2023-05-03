@@ -69,7 +69,6 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
             "20newsgroup-small",
         ],
     )
-    parser.add_argument("--num-cluster", type=int, default=10, help="クラスタリングの際に使うクラスタ数")
     parser.add_argument("--d-model", type=int, default=128, help="埋め込み表現の次元数")
     parser.add_argument(
         "--max-embedding-norm",
