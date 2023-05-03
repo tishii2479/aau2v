@@ -42,6 +42,7 @@ $ inv train-ml
 - `trainer_config`形の整理
     - `save_model`っている?
 - `load_model`を`trainer`の外に出す
+- `notebook`の整理
 
 ## TODO:
 
