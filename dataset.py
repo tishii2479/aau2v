@@ -161,6 +161,8 @@ def load_dataset_manager(
     data_dir: str = "data/",
 ) -> SequenceDatasetManager:
     pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")
+    os.makedirs(dataset_dir, exist_ok=True)
+
     if load_dataset and os.path.exists(pickle_path):
         print(f"load cached dataset_manager from: {pickle_path}")
         with open(pickle_path, "rb") as f:
