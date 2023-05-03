@@ -1,4 +1,7 @@
 import copy
+import os
+import pickle
+from pathlib import Path
 from typing import Any, Dict, List, MutableSet, Optional, Tuple
 
 import numpy as np
@@ -8,84 +11,43 @@ from sklearn import preprocessing
 from torch import Tensor
 from torch.utils.data import Dataset
 
+from dataset import RawDataset, load_raw_dataset
 from util import get_all_items, to_full_meta_value
 
 
 class SequenceDatasetManager:
-    def __init__(
-        self,
-        train_raw_sequences: Dict[str, List[str]],
-        item_metadata: Optional[Dict[str, Dict[str, Any]]] = None,
-        seq_metadata: Optional[Dict[str, Dict[str, Any]]] = None,
-        test_raw_sequences_dict: Optional[Dict[str, Dict[str, List[str]]]] = None,
-        exclude_seq_metadata_columns: Optional[List[str]] = None,
-        exclude_item_metadata_columns: Optional[List[str]] = None,
-        window_size: int = 8,
-    ) -> None:
-        """訓練データとテストデータを管理するクラス
+    """
+    訓練データとテストデータを管理するクラス
+    """
 
-        Args:
-            train_raw_sequences (Dict[str, List[str]])
-                生の訓練用シーケンシャルデータ
-                系列ID : [要素1, 要素2, ..., 要素n]
-                例: "doc_001", [ "私", "は", "猫" ]
-            item_metadata (Optional[Dict[str, Dict[str, Any]]], optional):
-                要素の補助情報の辞書
-                要素 : {
-                    補助情報ID: 補助情報の値
-                }
-                例: "私" : {
-                    "品詞": "名詞",
-                    "長さ": 1
-                }
-                Defaults to None.
-            seq_metadata (Optional[Dict[str, Dict[str, Any]]], optional):
-                系列の補助情報の辞書
-                系列: {
-                    補助情報ID: 補助情報の値
-                }
-                例: "doc_001" : {
-                    "ジャンル": 動物,
-                    "単語数": 3
-                }
-                Defaults to None.
-            test_raw_sequences (Optional[Dict[str, Dict[str, List[str]]]], optional):
-                生のテスト用シーケンシャルデータ
-                複数のテストデータがあることを想定して、
-                { テストデータ名 : テストデータ } の形式で管理
-                テストデータの形式はtrain_raw_sequencesと一緒
-                Defaults to None.
-            exclude_seq_metadata_columns (Optional[List[str]], optional):
-                `seq_metadata`の中で補助情報として扱わない列の名前のリスト（例: 顧客IDなど）
-                Defaults to None.
-            exclude_item_metadata_columns (Optional[List[str]], optional):
-                `item_metadata`の中で補助情報として扱わない列の名前のリスト（例: 商品IDなど）
-                Defaults to None.
-            window_size (int, optional):
-                学習するときに参照する過去の要素の個数
-                Defaults to 8.
-        """
-        self.raw_sequences = copy.deepcopy(train_raw_sequences)
-        if test_raw_sequences_dict is not None:
+    def __init__(self, dataset: RawDataset, window_size: int) -> None:
+        self.raw_sequences = copy.deepcopy(dataset.train_raw_sequences)
+        if dataset.test_raw_sequences_dict is not None:
             # seq_idが一緒の訓練データとテストデータがあるかもしれないので、系列をマージする
-            for _, test_raw_sequences in test_raw_sequences_dict.items():
+            for _, test_raw_sequences in dataset.test_raw_sequences_dict.items():
                 for seq_id, raw_sequence in test_raw_sequences.items():
                     if seq_id in self.raw_sequences:
                         self.raw_sequences[seq_id].extend(raw_sequence)
                     else:
                         self.raw_sequences[seq_id] = raw_sequence
 
-        self.item_metadata = item_metadata if item_metadata is not None else {}
-        self.seq_metadata = seq_metadata if seq_metadata is not None else {}
+        self.item_metadata = (
+            dataset.item_metadata if dataset.item_metadata is not None else {}
+        )
+        self.seq_metadata = (
+            dataset.seq_metadata if dataset.seq_metadata is not None else {}
+        )
 
         items = get_all_items(self.raw_sequences)
         self.item_le = preprocessing.LabelEncoder().fit(items)
         self.item_meta_le, self.item_meta_dict = process_metadata(
-            self.item_metadata, exclude_metadata_columns=exclude_item_metadata_columns
+            self.item_metadata,
+            exclude_metadata_columns=dataset.exclude_item_metadata_columns,
         )
         self.seq_le = preprocessing.LabelEncoder().fit(list(self.raw_sequences.keys()))
         self.seq_meta_le, self.seq_meta_dict = process_metadata(
-            self.seq_metadata, exclude_metadata_columns=exclude_seq_metadata_columns
+            self.seq_metadata,
+            exclude_metadata_columns=dataset.exclude_seq_metadata_columns,
         )
 
         self.num_seq = len(self.raw_sequences)
@@ -116,16 +78,19 @@ class SequenceDatasetManager:
         )
 
         self.train_dataset = SequenceDataset(
-            raw_sequences=train_raw_sequences,
+            raw_sequences=dataset.train_raw_sequences,
             seq_le=self.seq_le,
             item_le=self.item_le,
             window_size=window_size,
         )
         self.sequences = copy.deepcopy(self.train_dataset.sequences)
 
-        if test_raw_sequences_dict is not None:
+        if dataset.test_raw_sequences_dict is not None:
             self.test_dataset: Optional[Dict[str, SequenceDataset]] = {}
-            for test_name, test_raw_sequences in test_raw_sequences_dict.items():
+            for (
+                test_name,
+                test_raw_sequences,
+            ) in dataset.test_raw_sequences_dict.items():
                 self.test_dataset[test_name] = SequenceDataset(
                     raw_sequences=test_raw_sequences,
                     seq_le=self.seq_le,
@@ -140,13 +105,13 @@ class SequenceDatasetManager:
             names=self.item_le.classes_,
             meta_le=self.item_meta_le,
             metadata=self.item_metadata,
-            exclude_metadata_columns=exclude_item_metadata_columns,
+            exclude_metadata_columns=dataset.exclude_item_metadata_columns,
         )
         self.seq_meta_indices, self.seq_meta_weights = get_meta_indices(
             names=self.seq_le.classes_,
             meta_le=self.seq_meta_le,
             metadata=self.seq_metadata,
-            exclude_metadata_columns=exclude_seq_metadata_columns,
+            exclude_metadata_columns=dataset.exclude_seq_metadata_columns,
         )
 
 
@@ -340,3 +305,35 @@ def to_sequential_data(
             )
     print("to_sequential_data end")
     return sequences, data
+
+
+def load_dataset_manager(
+    dataset_name: str,
+    dataset_dir: str,
+    load_dataset: bool,
+    save_dataset: bool,
+    window_size: int = 5,
+    data_dir: str = "data/",
+) -> SequenceDatasetManager:
+    pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")
+
+    if load_dataset and os.path.exists(pickle_path):
+        print(f"load cached dataset_manager from: {pickle_path}")
+        with open(pickle_path, "rb") as f:
+            dataset_manager: SequenceDatasetManager = pickle.load(f)
+        return dataset_manager
+
+    print(f"dataset_manager does not exist at: {pickle_path}, create dataset")
+
+    dataset = load_raw_dataset(dataset_name=dataset_name, data_dir=data_dir)
+
+    dataset_manager = SequenceDatasetManager(dataset, window_size=window_size)
+
+    if save_dataset:
+        os.makedirs(dataset_dir, exist_ok=True)
+        print(f"dumping dataset_manager to: {pickle_path}")
+        with open(pickle_path, "wb") as f:
+            pickle.dump(dataset_manager, f)
+        print(f"dumped dataset_manager to: {pickle_path}")
+
+    return dataset_manager

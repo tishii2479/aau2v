@@ -1,8 +1,5 @@
-import os
-import pickle
 from collections import ChainMap
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import gensim
@@ -10,7 +7,6 @@ import pandas as pd
 from sklearn import datasets
 from torchtext.data import get_tokenizer
 
-from dataset_manager import SequenceDatasetManager
 from toydata import generate_toydata
 from util import get_all_items
 
@@ -150,46 +146,6 @@ def load_raw_dataset(
             raise ValueError(f"invalid dataset-name: {dataset_name}")
 
     return dataset
-
-
-def load_dataset_manager(
-    dataset_name: str,
-    dataset_dir: str,
-    load_dataset: bool,
-    save_dataset: bool,
-    window_size: int = 5,
-    data_dir: str = "data/",
-) -> SequenceDatasetManager:
-    pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")
-
-    if load_dataset and os.path.exists(pickle_path):
-        print(f"load cached dataset_manager from: {pickle_path}")
-        with open(pickle_path, "rb") as f:
-            dataset_manager: SequenceDatasetManager = pickle.load(f)
-        return dataset_manager
-
-    print(f"dataset_manager does not exist at: {pickle_path}, create dataset")
-
-    dataset = load_raw_dataset(dataset_name=dataset_name, data_dir=data_dir)
-
-    dataset_manager = SequenceDatasetManager(
-        train_raw_sequences=dataset.train_raw_sequences,
-        test_raw_sequences_dict=dataset.test_raw_sequences_dict,
-        item_metadata=dataset.item_metadata,
-        seq_metadata=dataset.seq_metadata,
-        exclude_seq_metadata_columns=dataset.exclude_seq_metadata_columns,
-        exclude_item_metadata_columns=dataset.exclude_item_metadata_columns,
-        window_size=window_size,
-    )
-
-    if save_dataset:
-        os.makedirs(dataset_dir, exist_ok=True)
-        print(f"dumping dataset_manager to: {pickle_path}")
-        with open(pickle_path, "wb") as f:
-            pickle.dump(dataset_manager, f)
-        print(f"dumped dataset_manager to: {pickle_path}")
-
-    return dataset_manager
 
 
 def create_hm_data(

@@ -6,7 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../src/"))
 
 from src.analyst import Analyst  # noqa
 from src.config import ModelConfig, TrainerConfig  # noqa
-from src.dataset import load_dataset_manager  # noqa
+from src.dataset_manager import load_dataset_manager  # noqa
 from src.trainers import PyTorchTrainer  # noqa
 
 
