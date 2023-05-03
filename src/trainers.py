@@ -1,5 +1,4 @@
 import abc
-import os
 from typing import Callable, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
@@ -12,8 +11,8 @@ from torch.utils.data import DataLoader
 
 from config import ModelConfig, TrainerConfig
 from dataset_manager import SequenceDatasetManager
-from model import AttentiveModel, Doc2Vec, OldAttentiveModel, PyTorchModel
-from util import check_model_path, visualize_loss
+from model import PyTorchModel
+from util import visualize_loss
 
 
 class Trainer(metaclass=abc.ABCMeta):
@@ -74,6 +73,7 @@ class PyTorchTrainer(Trainer):
 
     def __init__(
         self,
+        model: PyTorchModel,
         dataset_manager: SequenceDatasetManager,
         trainer_config: TrainerConfig,
         model_config: ModelConfig,
@@ -92,70 +92,9 @@ class PyTorchTrainer(Trainer):
                 self.test_data_loaders[test_name] = test_data_loader
         else:
             self.test_data_loaders = None
+
         self.trainer_config = trainer_config
-
-        match trainer_config.model_name:
-            case "attentive":
-                self.model = AttentiveModel(
-                    num_seq=self.dataset_manager.num_seq,
-                    num_item=self.dataset_manager.num_item,
-                    num_seq_meta=dataset_manager.num_seq_meta,
-                    num_item_meta=self.dataset_manager.num_item_meta,
-                    num_seq_meta_types=self.dataset_manager.num_seq_meta_types,
-                    num_item_meta_types=self.dataset_manager.num_item_meta_types,
-                    d_model=model_config.d_model,
-                    init_embedding_std=model_config.init_embedding_std,
-                    max_embedding_norm=model_config.max_embedding_norm,
-                    sequences=self.dataset_manager.sequences,
-                    seq_meta_indices=self.dataset_manager.seq_meta_indices,
-                    seq_meta_weights=self.dataset_manager.seq_meta_weights,
-                    item_meta_indices=self.dataset_manager.item_meta_indices,
-                    item_meta_weights=self.dataset_manager.item_meta_weights,
-                    negative_sample_size=model_config.negative_sample_size,
-                )
-            case "old-attentive":
-                self.model = OldAttentiveModel(
-                    num_seq=self.dataset_manager.num_seq,
-                    num_item=self.dataset_manager.num_item,
-                    num_seq_meta=dataset_manager.num_seq_meta,
-                    num_item_meta=self.dataset_manager.num_item_meta,
-                    num_seq_meta_types=self.dataset_manager.num_seq_meta_types,
-                    num_item_meta_types=self.dataset_manager.num_item_meta_types,
-                    d_model=model_config.d_model,
-                    init_embedding_std=model_config.init_embedding_std,
-                    max_embedding_norm=model_config.max_embedding_norm,
-                    sequences=self.dataset_manager.sequences,
-                    seq_meta_indices=self.dataset_manager.seq_meta_indices,
-                    seq_meta_weights=self.dataset_manager.seq_meta_weights,
-                    item_meta_indices=self.dataset_manager.item_meta_indices,
-                    item_meta_weights=self.dataset_manager.item_meta_weights,
-                    negative_sample_size=model_config.negative_sample_size,
-                )
-            case "doc2vec":
-                self.model = Doc2Vec(
-                    num_seq=self.dataset_manager.num_seq,
-                    num_item=self.dataset_manager.num_item,
-                    d_model=model_config.d_model,
-                    max_embedding_norm=model_config.max_embedding_norm,
-                    sequences=self.dataset_manager.sequences,
-                    negative_sample_size=model_config.negative_sample_size,
-                )
-            case _:
-                raise ValueError(f"invalid model_name: {trainer_config.model_name}")
-
-        if self.trainer_config.load_model:
-            if os.path.exists(self.trainer_config.model_path) is False:
-                print(
-                    "Warning: load_model is specified at trainer_config, "
-                    + f"but model does not exists at {self.trainer_config.model_path}"
-                )
-            else:
-                print(f"load_state_dict from: {self.trainer_config.model_path}")
-                loaded = torch.load(self.trainer_config.model_path)  # type: ignore
-                self.model.load_state_dict(loaded)
-        elif self.trainer_config.ignore_saved_model is False:
-            check_model_path(self.trainer_config.model_path)
-
+        self.model = model
         self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
 
     def fit(

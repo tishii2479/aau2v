@@ -5,7 +5,8 @@ import numpy as np
 import torch
 
 from config import ModelConfig, TrainerConfig
-from dataset import load_dataset_manager
+from dataset_manager import load_dataset_manager
+from model import load_model
 from trainers import PyTorchTrainer
 
 
@@ -24,8 +25,13 @@ def main() -> None:
         save_dataset=trainer_config.save_dataset,
         window_size=model_config.window_size,
     )
-
+    model = load_model(
+        dataset_manager=dataset_manager,
+        trainer_config=trainer_config,
+        model_config=model_config,
+    )
     trainer = PyTorchTrainer(
+        model=model,
         dataset_manager=dataset_manager,
         trainer_config=trainer_config,
         model_config=model_config,
