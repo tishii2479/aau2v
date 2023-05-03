@@ -33,7 +33,7 @@ $ python3 src/train.py
 
 ### サンプルコード
 
-[example.ipynb](/example.ipynb)
+- [example.ipynb](/example.ipynb)
 
 ## ISSUE:
 
@@ -45,13 +45,13 @@ $ python3 src/train.py
 - `to_sequential_data`の並列化
 - ログをわかりやすく
     - エラーをちゃんと出す
+    - `logger`の使用
 - `pathlib`を使う
 - `eval.py`を作る
 - pytorchのGPUを試す
     - https://zenn.dev/hidetoshi/articles/20220731_pytorch-m1-macbook-gpu
 - `trainer_config`形の整理
     - `save_model`っている?
-- `load_model`を`trainer`の外に出す
 - `notebook`の整理
 
 ## TODO:
