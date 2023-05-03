@@ -4,7 +4,7 @@
 
 ### 環境
 
-- パッケージマネージャに`poetry`（ https://python-poetry.org/docs/ ）を使用しています
+- パッケージマネージャに`poetry`（ https://python-poetry.org/docs/ ）を使用
 
 ```
 $ python3 --version
@@ -20,6 +20,10 @@ $ poetry --version
 $ poetry install
 ```
 
+### サンプルコード
+
+- [example.ipynb](/example.ipynb)
+
 ### モデルの学習
 
 ```shell
@@ -31,9 +35,53 @@ $ poetry shell
 $ python3 src/train.py
 ```
 
-### サンプルコード
+### 学習時の設定
 
-- [example.ipynb](/example.ipynb)
+```
+$ poetry run python3 src/train.py --help
+
+usage: train.py [-h] [--model-name {attentive,old-attentive,doc2vec}]
+                [--dataset-name {toydata-paper,toydata-small,hm,movielens,movielens-simple,movielens-equal-gender,20newsgroup,20newsgroup-small}]
+                [--num-cluster NUM_CLUSTER] [--d-model D_MODEL]
+                [--max-embedding-norm MAX_EMBEDDING_NORM]
+                [--init-embedding-std INIT_EMBEDDING_STD] [--window-size WINDOW_SIZE]
+                [--negative_sample_size NEGATIVE_SAMPLE_SIZE] [--batch-size BATCH_SIZE]
+                [--epochs EPOCHS] [--lr LR] [--verbose] [--load-model]
+                [--ignore-saved-model] [--no-save-model] [--no-load-dataset]
+                [--no-save-dataset] [--model-dir MODEL_DIR] [--dataset-dir DATASET_DIR]
+
+options:
+  -h, --help            show this help message and exit
+  --model-name {attentive,old-attentive,doc2vec}
+                        使用するモデル
+  --dataset-name {toydata-paper,toydata-small,hm,movielens,movielens-simple,movielens-equal-gender,20newsgroup,20newsgroup-small}
+                        使用するデータセット
+  --num-cluster NUM_CLUSTER
+                        クラスタリングの際に使うクラスタ数
+  --d-model D_MODEL     埋め込み表現の次元数
+  --max-embedding-norm MAX_EMBEDDING_NORM
+                        埋め込み表現のノルムの最大値
+  --init-embedding-std INIT_EMBEDDING_STD
+                        埋め込み表現を初期化する時に用いる正規分布の標準偏差
+  --window-size WINDOW_SIZE
+                        学習する際に参照する過去の要素の個数
+  --negative_sample_size NEGATIVE_SAMPLE_SIZE
+                        ネガティブサンプリングのサンプル数
+  --batch-size BATCH_SIZE
+                        バッチサイズ
+  --epochs EPOCHS       エポック数
+  --lr LR               学習率
+  --verbose             ログを詳細に出すかどうか
+  --load-model          `model_dir`からモデルのパラメータを読み込むかどうか
+  --ignore-saved-model  `model_dir`にあるモデルのパラメータを無視するかどうか
+  --no-save-model       `model_dir`にモデルを保存するかどうか
+  --no-load-dataset     `datset_dir`からデータセットを読み込むかどうか
+  --no-save-dataset     `dataset_dir`にデータセットを保存するかどうか
+  --model-dir MODEL_DIR
+                        モデルを保存するディレクトリ
+  --dataset-dir DATASET_DIR
+                        データセットを保存するディレクトリ
+```
 
 ## ISSUE:
 
