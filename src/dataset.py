@@ -64,8 +64,11 @@ def load_raw_dataset(
     dataset_name: str,
     data_dir: str = "data/",
 ) -> RawDataset:
+    # NOTE: hm, movielens, movielens-*は元データがないと動かない
+    # TODO: いつか追加する
     match dataset_name:
         case "toydata-paper":
+            # 卒論で使った人工データ
             data = generate_toydata(
                 data_name="toydata-paper",
             )

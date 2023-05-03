@@ -40,6 +40,16 @@ class Analyst:
         item_meta_name: str,  # TODO: accept List[str]
         method: str = "inner-product",
     ) -> pd.DataFrame:
+        """系列と要素の補助情報の類似度を計算する
+
+        Args:
+            seq_index (int): 系列
+            item_meta_name (str): 要素の補助情報の名前
+            method (str): 類似度の計算方法
+
+        Returns:
+            pd.DataFrame: 系列と要素の補助情報の類似度
+        """
         item_meta_values = self.dataset_manager.item_meta_dict[item_meta_name]
         item_meta_names = [
             to_full_meta_value(item_meta_name, value) for value in item_meta_values
@@ -60,6 +70,17 @@ class Analyst:
         num_recent_items: int = 10,
         method: str = "inner-product",
     ) -> pd.DataFrame:
+        """
+        系列と要素の類似度を計算する
+
+        Args:
+            seq_index (int): 系列
+            num_recent_items (int, optional): 参照する要素の個数. Defaults to 10.
+            method (str, optional): 類似度の計算方法. Defaults to "inner-product".
+
+        Returns:
+            pd.DataFrame: 系列と要素の類似度
+        """
         item_indices = self.dataset_manager.train_dataset.sequences[seq_index][
             -num_recent_items:
         ]
@@ -80,6 +101,18 @@ class Analyst:
         item_meta_name: str,
         method: str = "inner-product",
     ) -> pd.DataFrame:
+        """
+        系列の補助情報seq_meta_nameと要素の補助情報item_meta_nameの類似度を全て求める
+
+        Args:
+            seq_meta_name (str): 系列の補助情報の名前
+            seq_meta_value (str): 系列の補助情報の値
+            item_meta_name (str): 要素の補助情報の値
+            method (str, optional): 類似度の計算方法. Defaults to "inner-product".
+
+        Returns:
+            pd.DataFrame: 要素の補助情報ごとの類似度
+        """
         seq_meta = to_full_meta_value(seq_meta_name, seq_meta_value)
         seq_meta_index = self.dataset_manager.seq_meta_le.transform([seq_meta])
         item_meta_values = self.dataset_manager.item_meta_dict[item_meta_name]
@@ -102,13 +135,16 @@ class Analyst:
         method: str = "inner-product",
     ) -> pd.DataFrame:
         """
-        系列seq_index固有の埋め込み表現と補助情報の埋め込み表現の、itemの補助情報に対する類似度を全て求める
+        系列seq_index固有の埋め込み表現と補助情報の埋め込み表現の、要素の補助情報に対する類似度を全て求める
 
         Args:
             seq_index (int): 対象の系列の番号
             method (str): 類似度の求め方    Defaults to "inner-product"
             num_top_values (int): 使用する項目の数  Defaults to 5
             verbose (bool): 詳細を表示するかどうか  Defaults to True
+
+        Returns:
+            pd.DataFrame: 系列seq_indexの要素の補助情報に対する類似度
         """
         item_meta_indices = list(range(self.dataset_manager.num_item_meta))
         seq_id = self.dataset_manager.seq_le.inverse_transform([seq_index])[0]
@@ -148,6 +184,19 @@ class Analyst:
         item_meta_names: Optional[List[str]] = None,
         figsize: Tuple[float, float] = (12, 8),
     ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+        """系列の補助情報と要素の補助情報の類似度を可視化したヒートマップを作成する
+
+        Args:
+            seq_meta_names (Optional[List[str]], optional):
+            系列の補助情報. Defaults to None.
+            item_meta_names (Optional[List[str]], optional):
+            要素の補助情報. Defaults to None.
+            figsize (Tuple[float, float], optional):
+            作成する画像の大きさ. Defaults to (12, 8).
+
+        Returns:
+            Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: ヒートマップ
+        """
         seq_meta = self.seq_meta_embedding
         item_meta = self.item_meta_embedding
 
