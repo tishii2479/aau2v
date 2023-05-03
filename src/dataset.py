@@ -10,9 +10,9 @@ import pandas as pd
 from sklearn import datasets
 from torchtext.data import get_tokenizer
 
-from src.dataset_manager import SequenceDatasetManager
-from src.toydata import generate_toydata
-from src.util import get_all_items
+from dataset_manager import SequenceDatasetManager
+from toydata import generate_toydata
+from util import get_all_items
 
 
 @dataclass
@@ -161,7 +161,6 @@ def load_dataset_manager(
     data_dir: str = "data/",
 ) -> SequenceDatasetManager:
     pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")
-    os.makedirs(dataset_dir, exist_ok=True)
 
     if load_dataset and os.path.exists(pickle_path):
         print(f"load cached dataset_manager from: {pickle_path}")
@@ -184,6 +183,7 @@ def load_dataset_manager(
     )
 
     if save_dataset:
+        os.makedirs(dataset_dir, exist_ok=True)
         print(f"dumping dataset_manager to: {pickle_path}")
         with open(pickle_path, "wb") as f:
             pickle.dump(dataset_manager, f)

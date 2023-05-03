@@ -8,7 +8,7 @@ from sklearn import preprocessing
 from torch import Tensor
 from torch.utils.data import Dataset
 
-from src.util import get_all_items, to_full_meta_value
+from util import get_all_items, to_full_meta_value
 
 
 class SequenceDatasetManager:

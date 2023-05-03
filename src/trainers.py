@@ -10,10 +10,10 @@ import tqdm
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from src.config import ModelConfig, TrainerConfig
-from src.dataset_manager import SequenceDatasetManager
-from src.model import AttentiveModel, Doc2Vec, OldAttentiveModel, PyTorchModel
-from src.util import check_model_path, visualize_loss
+from config import ModelConfig, TrainerConfig
+from dataset_manager import SequenceDatasetManager
+from model import AttentiveModel, Doc2Vec, OldAttentiveModel, PyTorchModel
+from util import check_model_path, visualize_loss
 
 
 class Trainer(metaclass=abc.ABCMeta):

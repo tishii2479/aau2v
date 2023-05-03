@@ -8,10 +8,10 @@ import torch
 from sklearn.cluster import KMeans
 from torch import Tensor
 
-from src.dataset_manager import SequenceDatasetManager
-from src.layer import attention_weight, cosine_similarity
-from src.model import Model
-from src.util import (
+from dataset_manager import SequenceDatasetManager
+from layer import attention_weight, cosine_similarity
+from model import Model
+from util import (
     calc_cluster_occurence_array,
     calc_coherence,
     calc_sequence_occurence_array,
@@ -26,11 +26,13 @@ from src.util import (
 def calc_similarity(a: Tensor, b: Tensor, method: str = "inner-product") -> Tensor:
     match method:
         case "attention":
-            sim = attention_weight(a, b)
+            sim: Tensor = attention_weight(a, b)
         case "cos":
             sim = cosine_similarity(a, b)
         case "inner-product":
-            sim = np.matmul(a, b.T)
+            sim = torch.matmul(a, b.T)
+        case _:
+            raise ValueError(f"Invalid method for calc_similarity: {method}")
     return sim.squeeze()
 
 

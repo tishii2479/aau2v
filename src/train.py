@@ -4,9 +4,9 @@ from typing import Tuple
 import numpy as np
 import torch
 
-from src.config import ModelConfig, TrainerConfig
-from src.dataset import load_dataset_manager
-from src.trainers import PyTorchTrainer
+from config import ModelConfig, TrainerConfig
+from dataset import load_dataset_manager
+from trainers import PyTorchTrainer
 
 
 def main() -> None:

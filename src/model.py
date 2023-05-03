@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from src.layer import (
+from layer import (
     MetaEmbeddingLayer,
     NegativeSampling,
     NormalizedEmbeddingLayer,
