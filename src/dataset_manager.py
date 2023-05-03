@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, MutableSet, Optional, Tuple
 
 import numpy as np
 import torch
@@ -212,7 +212,7 @@ def process_metadata(
         Tuple[LabelEncoder, Dict[str, List[str]]]:
             (Label Encoder of meta data, Dictionary of list of meta datas)
     """
-    meta_dict: Dict[str, List[str]] = {}
+    meta_dict: Dict[str, MutableSet[str]] = {}
     for _, meta_data in items.items():
         for meta_name, meta_value in meta_data.items():
             if (
@@ -221,24 +221,26 @@ def process_metadata(
             ):
                 continue
             if meta_name not in meta_dict:
-                meta_dict[meta_name] = []
+                meta_dict[meta_name] = set()
 
             # 補助情報が複数ある場合はリストで渡される
             if isinstance(meta_value, list):
                 for e in meta_value:
-                    meta_dict[meta_name].append(e)
+                    meta_dict[meta_name].add(e)
             else:
-                meta_dict[meta_name].append(meta_value)
+                meta_dict[meta_name].add(meta_value)
 
     all_meta_values: List[str] = []
-    for meta_name, meta_values in meta_dict.items():
-        for value in meta_values:
+    new_meta_dict: Dict[str, List[str]] = {}
+    for meta_name in meta_dict.keys():
+        new_meta_dict[meta_name] = list(meta_dict[meta_name])
+        for value in new_meta_dict[meta_name]:
             # create str that is identical
             all_meta_values.append(to_full_meta_value(meta_name, value))
 
     meta_le = preprocessing.LabelEncoder().fit(all_meta_values)
 
-    return meta_le, meta_dict
+    return meta_le, new_meta_dict
 
 
 def get_meta_indices(
