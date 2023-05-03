@@ -1,10 +1,6 @@
 # 卒業研究
 
-## セットアップ
-
-### 環境
-
-- パッケージマネージャに`poetry`（ https://python-poetry.org/docs/ ）を使用
+## 環境構築
 
 ```
 $ python3 --version
@@ -14,17 +10,19 @@ $ poetry --version
 1.2.1
 ```
 
-### ライブラリのインストール
+- パッケージマネージャに`poetry`（ https://python-poetry.org/docs/ ）を使用
+
+### 必要ライブラリのインストール
 
 ```shell
 $ poetry install
 ```
 
-### サンプルコード
+## サンプルコード
 
 - [example.ipynb](/example.ipynb)
 
-### モデルの学習
+## モデルの学習
 
 ```shell
 $ poetry run python3 src/train.py
