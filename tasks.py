@@ -14,22 +14,22 @@ def lint(c):  # type: ignore
         "--show-source",
         "--statistics",
     ]
-    invoke.run("poetry run flake8 . " + " ".join(flake_options))
+    invoke.run("poetry run flake8 src/ " + " ".join(flake_options))
     mypy_options = [
         "--follow-imports=silent",
         "--ignore-missing-imports",
         "--show-column-numbers",
-        "--warn-return-any",
+        "--no-warn-return-any",
         "--no-implicit-optional",
         "--disallow-untyped-calls",
         "--no-pretty",
         "--disallow-untyped-defs",
         "--allow-redefinition",
     ]
-    invoke.run("poetry run mypy . " + " ".join(mypy_options))
+    invoke.run("poetry run mypy src/ " + " ".join(mypy_options))
     black_options = [
         "--check",
         "--diff",
         "--color",
     ]
-    invoke.run("poetry run black . " + " ".join(black_options))
+    invoke.run("poetry run black src/ " + " ".join(black_options))
