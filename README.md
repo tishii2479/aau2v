@@ -4,7 +4,7 @@
 
 ### 環境
 
-- パッケージマネージャにpoetry（https://python-poetry.org/docs/）を使用しています
+- パッケージマネージャに`poetry`（ https://python-poetry.org/docs/ ）を使用しています
 
 ```
 $ python3 --version
