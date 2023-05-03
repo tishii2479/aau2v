@@ -1,9 +1,9 @@
 import unittest
 
-from analyst import Analyst
-from config import ModelConfig, TrainerConfig
-from dataset import load_dataset_manager
-from trainers import PyTorchTrainer
+from src.analyst import Analyst
+from src.config import ModelConfig, TrainerConfig
+from src.dataset import load_dataset_manager
+from src.trainers import PyTorchTrainer
 
 
 class TestTrain(unittest.TestCase):

@@ -8,10 +8,10 @@ import torch
 from sklearn.cluster import KMeans
 from torch import Tensor
 
-from dataset_manager import SequenceDatasetManager
-from layer import attention_weight, cosine_similarity
-from model import Model
-from util import (
+from src.dataset_manager import SequenceDatasetManager
+from src.layer import attention_weight, cosine_similarity
+from src.model import Model
+from src.util import (
     calc_cluster_occurence_array,
     calc_coherence,
     calc_sequence_occurence_array,

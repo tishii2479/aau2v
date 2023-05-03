@@ -10,9 +10,9 @@ import pandas as pd
 from sklearn import datasets
 from torchtext.data import get_tokenizer
 
-import toydata
-from dataset_manager import SequenceDatasetManager
-from util import get_all_items
+from src.dataset_manager import SequenceDatasetManager
+from src.toydata import generate_toydata
+from src.util import get_all_items
 
 
 @dataclass
@@ -70,13 +70,13 @@ def load_raw_dataset(
 ) -> RawDataset:
     match dataset_name:
         case "toydata-paper":
-            data = toydata.generate_toydata(
+            data = generate_toydata(
                 data_name="toydata-paper",
             )
             dataset = convert_toydata(*data)
         case "toydata-small":
             # テスト用の小さいデータ
-            data = toydata.generate_toydata(
+            data = generate_toydata(
                 data_name="toydata-small",
                 user_count_per_segment=50,
                 item_count_per_segment=3,
