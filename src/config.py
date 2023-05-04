@@ -61,6 +61,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         choices=[
             "toydata-paper",
             "toydata-small",
+            "toydata-seq-lengths",
             "hm",
             "movielens",
             "movielens-simple",

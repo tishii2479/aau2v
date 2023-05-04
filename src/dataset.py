@@ -83,6 +83,16 @@ def load_raw_dataset(
                 test_length=20,
             )
             dataset = convert_toydata(*data)
+        case "toydata-seq-lengths":
+            # テスト用の小さいデータ
+            data = generate_toydata(
+                data_name="toydata-seq-lengths",
+                user_count_per_segment=100,
+                item_count_per_segment=10,
+                seq_lengths=[25, 50, 75, 100],
+                test_length=20,
+            )
+            dataset = convert_toydata(*data)
         case "hm":
             dataset = create_hm_data(
                 purchase_history_path=f"{data_dir}/hm/filtered_purchase_history.csv",

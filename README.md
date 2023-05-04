@@ -39,7 +39,7 @@ $ python3 src/train.py
 $ poetry run python3 src/train.py --help
 
 usage: train.py [-h] [--model-name {attentive,old-attentive,doc2vec}]
-                [--dataset-name {toydata-paper,toydata-small,hm,movielens,movielens-simple,movielens-equal-gender,20newsgroup,20newsgroup-small}]
+                [--dataset-name {toydata-paper,toydata-small,toydata-seq-lengths,hm,movielens,movielens-simple,movielens-equal-gender,20newsgroup,20newsgroup-small}]
                 [--d-model D_MODEL]
                 [--max-embedding-norm MAX_EMBEDDING_NORM]
                 [--init-embedding-std INIT_EMBEDDING_STD] [--window-size WINDOW_SIZE]
@@ -52,7 +52,7 @@ options:
   -h, --help            show this help message and exit
   --model-name {attentive,old-attentive,doc2vec}
                         使用するモデル
-  --dataset-name {toydata-paper,toydata-small,hm,movielens,movielens-simple,movielens-equal-gender,20newsgroup,20newsgroup-small}
+  --dataset-name {toydata-paper,toydata-small,toydata-seq-lengths,hm,movielens,movielens-simple,movielens-equal-gender,20newsgroup,20newsgroup-small}
                         使用するデータセット
   --d-model D_MODEL     埋め込み表現の次元数
   --max-embedding-norm MAX_EMBEDDING_NORM
