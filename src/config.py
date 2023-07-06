@@ -64,6 +64,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
             "toydata-seq-lengths",
             "hm",
             "movielens",
+            "movielens-new",
             "movielens-simple",
             "movielens-equal-gender",
             "20newsgroup",

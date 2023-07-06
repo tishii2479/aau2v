@@ -114,6 +114,20 @@ def load_raw_dataset(
                 user_path=f"{data_dir}/ml-1m/users.csv",
                 movie_path=f"{data_dir}/ml-1m/movies.csv",
             )
+        case "movielens-new":
+            dataset = create_movielens_data(
+                train_path=f"{data_dir}/ml-1m-new/train.csv",
+                test_paths={
+                    "train-size=0": f"{data_dir}/ml-1m-new/test-0.csv",
+                    "train-size=10": f"{data_dir}/ml-1m-new/test-10.csv",
+                    "train-size=20": f"{data_dir}/ml-1m-new/test-20.csv",
+                    "train-size=30": f"{data_dir}/ml-1m-new/test-30.csv",
+                    "train-size=40": f"{data_dir}/ml-1m-new/test-40.csv",
+                    "train-size=50": f"{data_dir}/ml-1m-new/test-50.csv",
+                },
+                user_path=f"{data_dir}/ml-1m-new/users.csv",
+                movie_path=f"{data_dir}/ml-1m-new/movies.csv",
+            )
         case "movielens-simple":
             dataset = create_movielens_data(
                 train_path=f"{data_dir}/ml-1m/train.csv",
@@ -263,7 +277,7 @@ def create_movielens_data(
         movie_df = movie_df[movie_columns]
 
     train_raw_sequences = {
-        index: sequence.split(" ")
+        index: [] if pd.isna(sequence) else sequence.split(" ")
         for index, sequence in zip(train_df.index.values, train_df.sequence.values)
     }
     user_metadata = user_df.to_dict("index")
