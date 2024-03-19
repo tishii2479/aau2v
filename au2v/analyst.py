@@ -6,10 +6,10 @@ import pandas as pd
 import torch
 from torch import Tensor
 
-from dataset_manager import SequenceDatasetManager
-from layer import attention_weight, cosine_similarity
-from model import Model
-from util import to_full_meta_value, visualize_heatmap
+from au2v.dataset_manager import SequenceDatasetManager
+from au2v.layer import attention_weight, cosine_similarity
+from au2v.model import Model
+from au2v.util import to_full_meta_value, visualize_heatmap
 
 
 def calc_similarity(a: Tensor, b: Tensor, method: str = "inner-product") -> Tensor:

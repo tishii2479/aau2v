@@ -18,6 +18,7 @@ class TrainerConfig:
     save_dataset: bool = True
     model_dir: str = "cache/model/"
     dataset_dir: str = "cache/dataset/"
+    device: str = "cpu"
 
     @property
     def model_path(self) -> str:
@@ -42,6 +43,7 @@ class ModelConfig:
     window_size: int = 5
     negative_sample_size: int = 5
     lr: float = 0.0001
+    weight_decay: float = 0.0001
 
 
 def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
@@ -84,16 +86,31 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         default=0.2,
         help="埋め込み表現を初期化する時に用いる正規分布の標準偏差",
     )
-    parser.add_argument("--window-size", type=int, default=5, help="学習する際に参照する過去の要素の個数")
     parser.add_argument(
-        "--negative_sample_size", type=int, default=5, help="ネガティブサンプリングのサンプル数"
+        "--window-size",
+        type=int,
+        default=5,
+        help="学習する際に参照する過去の要素の個数",
+    )
+    parser.add_argument(
+        "--negative_sample_size",
+        type=int,
+        default=5,
+        help="ネガティブサンプリングのサンプル数",
     )
     parser.add_argument("--batch-size", type=int, default=64, help="バッチサイズ")
     parser.add_argument("--epochs", type=int, default=3, help="エポック数")
     parser.add_argument("--lr", type=float, default=0.0001, help="学習率")
-    parser.add_argument("--verbose", action="store_true", help="ログを詳細に出すかどうか")
     parser.add_argument(
-        "--load-model", action="store_true", help="`model_dir`からモデルのパラメータを読み込むかどうか"
+        "--weight-decay", type=float, default=0.0001, help="L2正則化の強さ"
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", help="ログを詳細に出すかどうか"
+    )
+    parser.add_argument(
+        "--load-model",
+        action="store_true",
+        help="`model_dir`からモデルのパラメータを読み込むかどうか",
     )
     parser.add_argument(
         "--ignore-saved-model",
@@ -101,19 +118,37 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         help="`model_dir`にあるモデルのパラメータを無視するかどうか",
     )
     parser.add_argument(
-        "--no-save-model", action="store_true", help="`model_dir`にモデルを保存するかどうか"
+        "--no-save-model",
+        action="store_true",
+        help="`model_dir`にモデルを保存するかどうか",
     )
     parser.add_argument(
-        "--no-load-dataset", action="store_true", help="`datset_dir`からデータセットを読み込むかどうか"
+        "--no-load-dataset",
+        action="store_true",
+        help="`datset_dir`からデータセットを読み込むかどうか",
     )
     parser.add_argument(
-        "--no-save-dataset", action="store_true", help="`dataset_dir`にデータセットを保存するかどうか"
+        "--no-save-dataset",
+        action="store_true",
+        help="`dataset_dir`にデータセットを保存するかどうか",
     )
     parser.add_argument(
-        "--model-dir", type=str, default="cache/model/", help="モデルを保存するディレクトリ"
+        "--model-dir",
+        type=str,
+        default="cache/model/",
+        help="モデルを保存するディレクトリ",
     )
     parser.add_argument(
-        "--dataset-dir", type=str, default="cache/dataset/", help="データセットを保存するディレクトリ"
+        "--dataset-dir",
+        type=str,
+        default="cache/dataset/",
+        help="データセットを保存するディレクトリ",
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="cpu",
+        help="計算を実行するデバイス",
     )
 
     args = parser.parse_args()
@@ -131,6 +166,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         verbose=args.verbose,
         model_dir=args.model_dir,
         dataset_dir=args.dataset_dir,
+        device=args.device,
     )
     model_config = ModelConfig(
         d_model=args.d_model,
@@ -139,5 +175,6 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         window_size=args.window_size,
         negative_sample_size=args.negative_sample_size,
         lr=args.lr,
+        weight_decay=args.weight_decay,
     )
     return trainer_config, model_config

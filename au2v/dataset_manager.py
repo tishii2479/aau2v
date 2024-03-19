@@ -11,8 +11,8 @@ from sklearn import preprocessing
 from torch import Tensor
 from torch.utils.data import Dataset
 
-from dataset import RawDataset, load_raw_dataset
-from util import get_all_items, to_full_meta_value
+from au2v.dataset import RawDataset, load_raw_dataset
+from au2v.util import get_all_items, to_full_meta_value
 
 
 class SequenceDatasetManager:
@@ -288,8 +288,8 @@ def to_sequential_data(
             item_indices = torch.tensor(
                 np.concatenate(
                     [
-                        sequence[j - window_size : j],
-                        sequence[j + 1 : j + window_size + 1],
+                        sequence[j - window_size : j],  # noqa
+                        sequence[j + 1 : j + window_size + 1],  # noqa
                     ]
                 ),
                 dtype=torch.long,

@@ -4,6 +4,6 @@ data/
 .mypy_cache
 .ipynb_checkpoints
 example/
-cache/
+cache*/
 log/
 tmp/

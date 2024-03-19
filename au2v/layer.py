@@ -95,6 +95,7 @@ class NegativeSampling(nn.Module):
         d_model: int,
         num_item: int,
         sequences: List[List[int]],
+        device: str = "cpu",
         init_embedding_std: float = 1,
         power: float = 0.75,
         negative_sample_size: int = 5,
@@ -110,6 +111,7 @@ class NegativeSampling(nn.Module):
             max_embedding_norm=max_embedding_norm,
             init_embedding_std=init_embedding_std,
         )
+        self.device = device
 
     def forward(
         self, h: Tensor, target_index: Tensor
@@ -135,7 +137,7 @@ class NegativeSampling(nn.Module):
         negative_sample = torch.tensor(
             self.sampler.get_negative_sample(batch_size, self.negative_sample_size),
             dtype=torch.long,
-        )
+        ).to(device=self.device)
 
         neg_out = torch.sigmoid(self.embedding.forward(h, negative_sample))
         neg_out = torch.reshape(neg_out, (batch_size, self.negative_sample_size))
@@ -163,22 +165,22 @@ class NormalizedEmbeddingLayer(nn.Embedding):
             max_norm=max_norm,
         )
         nn.init.normal_(self.weight, mean=mean, std=std)
-        self.forward_count = 0
+        # self.forward_count = 0
 
-    def forward(self, x: Tensor) -> Tensor:
-        # ISSUE: 補助情報ごとに正規化してみても良さそう
-        if torch.is_grad_enabled():
-            self.forward_count += 1
-            # 毎回重みを正規化すると以下の問題があるため、1024回forwardが呼ばれるたびに正規化する
-            # - 学習時間が長くなる
-            # - 学習率が高いと、学習量が各要素間で偏っている状態で正規化してしまうためうまくいかない
-            # ISSUE: self.forward_countが本当に必要か確認する
-            if self.forward_count % 1024 == 0:
-                with torch.no_grad():
-                    # 埋め込み表現の各次元の大きさの最大値を1にする
-                    # TODO: 最大値を注入できるようにする
-                    self.weight.data /= self.weight.abs().max()
-        return super().forward(x)
+    # def forward(self, x: Tensor) -> Tensor:
+    #     # ISSUE: 補助情報ごとに正規化してみても良さそう
+    #     if torch.is_grad_enabled():
+    #         self.forward_count += 1
+    #         # 毎回重みを正規化すると以下の問題があるため、1024回forwardが呼ばれるたびに正規化する
+    #         # - 学習時間が長くなる
+    #         # - 学習率が高いと、学習量が各要素間で偏っている状態で正規化してしまうためうまくいかない
+    #         # ISSUE: self.forward_countが本当に必要か確認する
+    #         if self.forward_count % 1024 == 0:
+    #             with torch.no_grad():
+    #                 # 埋め込み表現の各次元の大きさの最大値を1にする
+    #                 # TODO: 最大値を注入できるようにする
+    #                 self.weight.data /= self.weight.abs().max()
+    #     return super().forward(x)
 
 
 class MetaEmbeddingLayer(nn.Module):
@@ -232,6 +234,7 @@ class WeightSharedNegativeSampling(nn.Module):
         item_meta_indices: Tensor,
         item_meta_weights: Tensor,
         embedding_item: nn.Module,
+        device: str = "cpu",
         power: float = 0.75,
         negative_sample_size: int = 5,
     ) -> None:
@@ -243,6 +246,7 @@ class WeightSharedNegativeSampling(nn.Module):
         self.item_meta_indices = item_meta_indices
         self.item_meta_weights = item_meta_weights
         self.embedding_item = embedding_item
+        self.device = device
         self.sampler = UnigramSampler(sequences, power)
 
     def forward(
@@ -271,20 +275,20 @@ class WeightSharedNegativeSampling(nn.Module):
         e_pos_items = torch.reshape(e_pos_items, (-1, 1, self.d_model))
         pos_out = torch.sigmoid(torch.matmul(h, e_pos_items.mT))
         pos_out = torch.reshape(pos_out, (batch_size, 1))
-        pos_label = torch.ones(batch_size, 1)
+        pos_label = torch.ones(batch_size, 1).to(self.device)
 
         # negative
         # (batch_size, negative_sample_size)
         negative_sample = torch.tensor(
             self.sampler.get_negative_sample(batch_size, self.negative_sample_size),
             dtype=torch.long,
-        )
+        ).to(self.device)
         e_neg_items = self.embedding_item.forward(negative_sample)
         e_neg_items = torch.reshape(
             e_neg_items, (-1, self.negative_sample_size, self.d_model)
         )
         neg_out = torch.sigmoid(torch.matmul(h, e_neg_items.mT))
         neg_out = torch.reshape(neg_out, (batch_size, self.negative_sample_size))
-        neg_label = torch.zeros(batch_size, self.negative_sample_size)
+        neg_label = torch.zeros(batch_size, self.negative_sample_size).to(self.device)
 
         return pos_out, pos_label, neg_out, neg_label

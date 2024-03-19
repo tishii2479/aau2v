@@ -4,11 +4,11 @@ import unittest
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../src/"))
 
-from src.analyst import Analyst  # noqa
-from src.config import ModelConfig, TrainerConfig  # noqa
-from src.dataset_manager import load_dataset_manager  # noqa
-from src.model import load_model  # noqa
-from src.trainers import PyTorchTrainer  # noqa
+from au2v.analyst import Analyst  # noqa
+from au2v.config import ModelConfig, TrainerConfig  # noqa
+from au2v.dataset_manager import load_dataset_manager  # noqa
+from au2v.model import load_model  # noqa
+from au2v.trainer import PyTorchTrainer  # noqa
 
 
 class TestTrain(unittest.TestCase):

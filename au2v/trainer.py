@@ -9,10 +9,10 @@ import tqdm
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from config import ModelConfig, TrainerConfig
-from dataset_manager import SequenceDatasetManager
-from model import PyTorchModel
-from util import visualize_loss
+from au2v.config import ModelConfig, TrainerConfig
+from au2v.dataset_manager import SequenceDatasetManager
+from au2v.model import PyTorchModel
+from au2v.util import visualize_loss
 
 
 class Trainer(metaclass=abc.ABCMeta):
@@ -95,7 +95,12 @@ class PyTorchTrainer(Trainer):
 
         self.trainer_config = trainer_config
         self.model = model
-        self.optimizer = Adam(self.model.parameters(), lr=model_config.lr)
+        self.model.to(self.trainer_config.device)
+        self.optimizer = Adam(
+            self.model.parameters(),
+            lr=model_config.lr,
+            weight_decay=model_config.weight_decay,
+        )
 
     def fit(
         self,
@@ -126,14 +131,13 @@ class PyTorchTrainer(Trainer):
                 ) = data
 
                 loss = self.model.forward(
-                    seq_index=seq_index,
-                    item_indices=item_indices,
-                    target_index=target_index,
+                    seq_index=seq_index.to(self.trainer_config.device),
+                    item_indices=item_indices.to(self.trainer_config.device),
+                    target_index=target_index.to(self.trainer_config.device),
                 )
-                # ISSUE: lossをbatch_sizeで割った方がいいかも
-                # loss /= self.trainer_config.batch_size
+                loss /= seq_index.size(0)
                 self.optimizer.zero_grad()
-                loss.backward()  # type: ignore
+                _ = loss.backward()
                 self.optimizer.step()
 
                 if self.trainer_config.verbose:
@@ -206,9 +210,9 @@ class PyTorchTrainer(Trainer):
                 ) = data
 
                 pos_out, pos_label, neg_out, neg_label = self.model.calc_out(
-                    seq_index=seq_index,
-                    item_indices=item_indices,
-                    target_index=target_index,
+                    seq_index=seq_index.to(self.trainer_config.device),
+                    item_indices=item_indices.to(self.trainer_config.device),
+                    target_index=target_index.to(self.trainer_config.device),
                 )
 
                 if show_fig:
@@ -221,6 +225,8 @@ class PyTorchTrainer(Trainer):
                 loss_neg = F.binary_cross_entropy(neg_out, neg_label)
                 negative_sample_size = neg_label.size(1)
                 loss = (loss_pos + loss_neg / negative_sample_size) / 2
+
+                loss /= seq_index.size(0)
                 total_loss += loss.item()
 
             total_loss /= len(data_loader)

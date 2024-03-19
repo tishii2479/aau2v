@@ -1,27 +1,30 @@
 [tool.poetry]
-name = "my-doc2vec"
+name = "au2v"
 version = "0.1.0"
 description = ""
 authors = ["Tatsuya Ishii <tishii2479@gmail.com>"]
 readme = "README.md"
+packages = [
+    { include = "au2v" }
+]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
-scipy = "=1.9.1"
 matplotlib = "=3.6.0"
-torch = "=1.12.1"
-gensim = "=4.2.0"
 pandas = "=1.5.0"
 tqdm = "=4.64.1"
-torchtext = "^0.13.1"
 flake8 = "^5.0.4"
 mypy = "^0.982"
 black = "^22.10.0"
 invoke = "^1.7.3"
-scikit-learn = "1.1.1"
 nbstripout = "^0.6.1"
 seaborn = "^0.12.1"
 ipykernel = "^6.22.0"
+torch = "^2.2.1"
+torchtext = "^0.17.1"
+scipy = "^1.12.0"
+scikit-learn = "^1.4.1.post1"
+gensim = "^4.3.2"
 
 
 [build-system]

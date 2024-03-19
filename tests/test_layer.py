@@ -6,7 +6,7 @@ import torch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../src/"))
 
-import src.layer  # noqa
+import au2v.layer  # noqa
 
 
 class TestLayer(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestLayer(unittest.TestCase):
             [1, 3, 2],
             [0, 2, 1],
         ]
-        lay = src.layer.NegativeSampling(
+        lay = au2v.layer.NegativeSampling(
             d_model=3, num_item=4, sequences=sequences, power=1, negative_sample_size=5
         )
         h = torch.Tensor([[0, 1, 0]])
@@ -25,7 +25,7 @@ class TestLayer(unittest.TestCase):
         self.assertAlmostEqual(1, lay.sampler.word_p.sum())
 
     def test_embedding_dot(self) -> None:
-        lay = src.layer.EmbeddingDot(d_model=3, num_item=4)
+        lay = au2v.layer.EmbeddingDot(d_model=3, num_item=4)
         embedding_weight = lay.embedding.weight
         h = torch.Tensor([[[0, 1, 0]], [[1, 0, 0]]])
         indices = torch.tensor([[1], [2]], dtype=torch.long)
@@ -49,7 +49,7 @@ class TestLayer(unittest.TestCase):
         h_item_meta = torch.rand(batch_size, window_size, item_meta_size, d_model)
         item_meta_weights = torch.rand(batch_size, window_size, item_meta_size)
 
-        h_item_meta_weighted = src.layer.calc_weighted_meta(
+        h_item_meta_weighted = au2v.layer.calc_weighted_meta(
             h_item_meta, item_meta_weights
         )
 
@@ -84,7 +84,7 @@ class TestLayer(unittest.TestCase):
                 [1, 1, 0, 0],
             ]
         )
-        embedding_item = src.layer.MetaEmbeddingLayer(
+        embedding_item = au2v.layer.MetaEmbeddingLayer(
             num_item,
             num_item_meta,
             num_item_meta_types,
@@ -92,7 +92,7 @@ class TestLayer(unittest.TestCase):
             item_meta_indices,
             item_meta_weights,
         )
-        lay = src.layer.WeightSharedNegativeSampling(
+        lay = au2v.layer.WeightSharedNegativeSampling(
             d_model=d_model,
             num_item_meta_types=num_item_meta_types,
             sequences=sequences,

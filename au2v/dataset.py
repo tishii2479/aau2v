@@ -7,8 +7,8 @@ import pandas as pd
 from sklearn import datasets
 from torchtext.data import get_tokenizer
 
-from toydata import generate_toydata
-from util import get_all_items
+from au2v.toydata import generate_toydata
+from au2v.util import get_all_items
 
 
 @dataclass
@@ -200,9 +200,11 @@ def create_hm_data(
     test_raw_sequences = {
         index: sequence.split(" ")
         for index, sequence in zip(
-            sequences_df.index.values[max_data_size : max_data_size + test_data_size],
+            sequences_df.index.values[
+                max_data_size : max_data_size + test_data_size  # noqa
+            ],
             sequences_df.sequence.values[
-                max_data_size : max_data_size + test_data_size
+                max_data_size : max_data_size + test_data_size  # noqa
             ],
         )
     }

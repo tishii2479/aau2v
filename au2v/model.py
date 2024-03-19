@@ -6,16 +6,16 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from config import ModelConfig, TrainerConfig
-from dataset_manager import SequenceDatasetManager
-from layer import (
+from au2v.config import ModelConfig, TrainerConfig
+from au2v.dataset_manager import SequenceDatasetManager
+from au2v.layer import (
     MetaEmbeddingLayer,
     NegativeSampling,
     NormalizedEmbeddingLayer,
     WeightSharedNegativeSampling,
     attention,
 )
-from util import check_model_path
+from au2v.util import check_model_path
 
 
 class Model(metaclass=abc.ABCMeta):
@@ -144,6 +144,7 @@ class AttentiveModel(PyTorchModel):
         seq_meta_weights: Tensor,
         item_meta_indices: Tensor,
         item_meta_weights: Tensor,
+        device: str = "cpu",
         d_model: int = 128,
         init_embedding_std: float = 1,
         max_embedding_norm: Optional[float] = None,
@@ -199,6 +200,7 @@ class AttentiveModel(PyTorchModel):
             item_meta_indices=item_meta_indices,
             item_meta_weights=item_meta_weights,
             embedding_item=self.embedding_item,
+            device=device,
         )
 
     def calc_out(
@@ -261,6 +263,7 @@ class OldAttentiveModel(PyTorchModel):
         seq_meta_weights: Tensor,
         item_meta_indices: Tensor,
         item_meta_weights: Tensor,
+        device: str = "cpu",
         d_model: int = 128,
         init_embedding_std: float = 1,
         max_embedding_norm: Optional[float] = None,
@@ -373,6 +376,7 @@ class Doc2Vec(PyTorchModel):
         num_seq: int,
         num_item: int,
         sequences: List[List[int]],
+        device: str = "cpu",
         d_model: int = 128,
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
@@ -407,6 +411,7 @@ class Doc2Vec(PyTorchModel):
             sequences=sequences,
             negative_sample_size=negative_sample_size,
         )
+        self.device = device
 
     def calc_out(
         self,
@@ -465,11 +470,20 @@ def load_model(
                 init_embedding_std=model_config.init_embedding_std,
                 max_embedding_norm=model_config.max_embedding_norm,
                 sequences=dataset_manager.sequences,
-                seq_meta_indices=dataset_manager.seq_meta_indices,
-                seq_meta_weights=dataset_manager.seq_meta_weights,
-                item_meta_indices=dataset_manager.item_meta_indices,
-                item_meta_weights=dataset_manager.item_meta_weights,
+                seq_meta_indices=dataset_manager.seq_meta_indices.to(
+                    trainer_config.device
+                ),
+                seq_meta_weights=dataset_manager.seq_meta_weights.to(
+                    trainer_config.device
+                ),
+                item_meta_indices=dataset_manager.item_meta_indices.to(
+                    trainer_config.device
+                ),
+                item_meta_weights=dataset_manager.item_meta_weights.to(
+                    trainer_config.device
+                ),
                 negative_sample_size=model_config.negative_sample_size,
+                device=trainer_config.device,
             )
         case "old-attentive":
             model = OldAttentiveModel(
@@ -483,11 +497,20 @@ def load_model(
                 init_embedding_std=model_config.init_embedding_std,
                 max_embedding_norm=model_config.max_embedding_norm,
                 sequences=dataset_manager.sequences,
-                seq_meta_indices=dataset_manager.seq_meta_indices,
-                seq_meta_weights=dataset_manager.seq_meta_weights,
-                item_meta_indices=dataset_manager.item_meta_indices,
-                item_meta_weights=dataset_manager.item_meta_weights,
+                seq_meta_indices=dataset_manager.seq_meta_indices.to(
+                    trainer_config.device
+                ),
+                seq_meta_weights=dataset_manager.seq_meta_weights.to(
+                    trainer_config.device
+                ),
+                item_meta_indices=dataset_manager.item_meta_indices.to(
+                    trainer_config.device
+                ),
+                item_meta_weights=dataset_manager.item_meta_weights.to(
+                    trainer_config.device
+                ),
                 negative_sample_size=model_config.negative_sample_size,
+                device=trainer_config.device,
             )
         case "doc2vec":
             model = Doc2Vec(
@@ -497,6 +520,7 @@ def load_model(
                 max_embedding_norm=model_config.max_embedding_norm,
                 sequences=dataset_manager.sequences,
                 negative_sample_size=model_config.negative_sample_size,
+                device=trainer_config.device,
             )
         case _:
             raise ValueError(f"invalid model_name: {trainer_config.model_name}")
