@@ -81,7 +81,7 @@ class Analyst:
         Returns:
             pd.DataFrame: 系列と要素の類似度
         """
-        item_indices = self.dataset_manager.train_dataset.sequences[seq_index][
+        item_indices = self.dataset_manager.dataset.sequences[seq_index][
             -num_recent_items:
         ]
         e_seq = self.model.seq_embedding[seq_index]

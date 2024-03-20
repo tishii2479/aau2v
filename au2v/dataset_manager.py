@@ -1,3 +1,4 @@
+import collections
 import copy
 import os
 import pickle
@@ -7,6 +8,7 @@ from typing import Any, Dict, List, MutableSet, Optional, Tuple
 import torch
 import tqdm
 from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
 from torch import Tensor
 from torch.utils.data import Dataset
 
@@ -21,15 +23,6 @@ class SequenceDatasetManager:
 
     def __init__(self, dataset: RawDataset, window_size: int) -> None:
         self.raw_sequences = copy.deepcopy(dataset.train_raw_sequences)
-        if dataset.test_raw_sequences_dict is not None:
-            # seq_idが一緒の訓練データとテストデータがあるかもしれないので、系列をマージする
-            for _, test_raw_sequences in dataset.test_raw_sequences_dict.items():
-                for seq_id, raw_sequence in test_raw_sequences.items():
-                    if seq_id in self.raw_sequences:
-                        self.raw_sequences[seq_id].extend(raw_sequence)
-                    else:
-                        self.raw_sequences[seq_id] = raw_sequence
-
         self.item_metadata = (
             dataset.item_metadata if dataset.item_metadata is not None else {}
         )
@@ -37,8 +30,9 @@ class SequenceDatasetManager:
             dataset.seq_metadata if dataset.seq_metadata is not None else {}
         )
 
-        items = get_all_items(self.raw_sequences)
-        self.item_le = preprocessing.LabelEncoder().fit(items)
+        self.item_le = preprocessing.LabelEncoder().fit(
+            get_all_items(self.raw_sequences)
+        )
         self.item_meta_le, self.item_meta_dict = process_metadata(
             self.item_metadata,
             exclude_metadata_columns=dataset.exclude_item_metadata_columns,
@@ -49,8 +43,8 @@ class SequenceDatasetManager:
             exclude_metadata_columns=dataset.exclude_seq_metadata_columns,
         )
 
-        self.num_seq = len(self.raw_sequences)
-        self.num_item = len(items)
+        self.num_seq = len(self.seq_le.classes_)
+        self.num_item = len(self.item_le.classes_)
         self.num_item_meta = len(self.item_meta_le.classes_)
         self.num_seq_meta = len(self.seq_meta_le.classes_)
 
@@ -76,29 +70,12 @@ class SequenceDatasetManager:
             + f"num_seq_meta_types: {self.num_seq_meta_types}"
         )
 
-        self.train_dataset = SequenceDataset(
+        self.train_dataset, self.valid_dataset = create_train_valid_dataset(
             raw_sequences=dataset.train_raw_sequences,
             seq_le=self.seq_le,
             item_le=self.item_le,
             window_size=window_size,
         )
-        self.sequences = copy.deepcopy(self.train_dataset.sequences)
-
-        if dataset.test_raw_sequences_dict is not None:
-            self.test_datasets: Optional[Dict[str, SequenceDataset]] = {}
-            for (
-                test_name,
-                test_raw_sequences,
-            ) in dataset.test_raw_sequences_dict.items():
-                self.test_datasets[test_name] = SequenceDataset(
-                    raw_sequences=test_raw_sequences,
-                    seq_le=self.seq_le,
-                    item_le=self.item_le,
-                    window_size=window_size,
-                )
-                self.sequences += self.test_datasets[test_name].sequences
-        else:
-            self.test_datasets = None
 
         self.item_meta_indices, self.item_meta_weights = get_meta_indices(
             names=self.item_le.classes_,
@@ -113,14 +90,19 @@ class SequenceDatasetManager:
             exclude_metadata_columns=dataset.exclude_seq_metadata_columns,
         )
 
+        self.item_counter: collections.Counter = collections.Counter()
+        for sequence in self.train_dataset.sequences:
+            for item in sequence:
+                self.item_counter[item] += 1
+
 
 class SequenceDataset(Dataset):
     def __init__(
         self,
         raw_sequences: Dict[str, List[str]],
-        seq_le: preprocessing.LabelEncoder,
-        item_le: preprocessing.LabelEncoder,
-        window_size: int = 8,
+        sequences: list[list[int]],
+        data: list[tuple[int, int]],
+        window_size: int,
     ) -> None:
         """
         補助情報を含んだシーケンシャルのデータを保持するクラス
@@ -139,26 +121,50 @@ class SequenceDataset(Dataset):
                 Defaults to 8.
         """
         self.raw_sequences = raw_sequences
-
-        self.sequences, self.data = to_sequential_data(
-            raw_sequences=self.raw_sequences,
-            seq_le=seq_le,
-            item_le=item_le,
-            window_size=window_size,
-        )
+        self.sequences = sequences
+        self.data = data
+        self.w = window_size
 
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, idx: int) -> Tuple[int, int]:
-        """
-        Returns:
-        (
-          seq_index,
-          target_index
+    def __getitem__(self, idx: int) -> tuple[int, list[int], int]:
+        seq_index, target_index = self.data[idx]
+        item_indices = (
+            self.sequences[seq_index][target_index - self.w : target_index]  # noqa
+            + self.sequences[seq_index][
+                target_index + 1 : target_index + self.w + 1  # noqa
+            ]
         )
-        """
-        return self.data[idx]
+        return seq_index, item_indices, target_index
+
+
+def create_train_valid_dataset(
+    raw_sequences: Dict[str, List[str]],
+    seq_le: preprocessing.LabelEncoder,
+    item_le: preprocessing.LabelEncoder,
+    window_size: int = 8,
+) -> tuple[SequenceDataset, SequenceDataset]:
+    sequences, data = to_sequential_data(
+        raw_sequences=raw_sequences,
+        seq_le=seq_le,
+        item_le=item_le,
+        window_size=window_size,
+    )
+    train_data, valid_data = train_test_split(data, test_size=0.2)
+    train_dataset = SequenceDataset(
+        raw_sequences=raw_sequences,
+        sequences=sequences,
+        data=train_data,
+        window_size=window_size,
+    )
+    valid_dataset = SequenceDataset(
+        raw_sequences=raw_sequences,
+        sequences=sequences,
+        data=valid_data,
+        window_size=window_size,
+    )
+    return train_dataset, valid_dataset
 
 
 def process_metadata(
@@ -280,7 +286,7 @@ def to_sequential_data(
         sequences[seq_index] = sequence
 
         left = window_size
-        right = len(sequence) - 1 - window_size
+        right = len(sequence) - window_size
         if left >= right:
             continue
         data.extend(list(map(lambda j: (seq_index, j), range(left, right))))

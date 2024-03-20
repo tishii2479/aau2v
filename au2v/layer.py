@@ -1,6 +1,6 @@
 import collections
 from math import sqrt
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import torch
@@ -30,17 +30,13 @@ def calc_weighted_meta(e_meta: Tensor, meta_weights: Tensor) -> Tensor:
 
 
 class UnigramSampler:
-    def __init__(self, sequences: List[List[int]], power: float) -> None:
-        counts: collections.Counter = collections.Counter()
-        for sequence in sequences:
-            for item in sequence:
-                counts[item] += 1
-
-        self.vocab_size = len(counts)
-
-        self.word_p = np.zeros(self.vocab_size)
+    def __init__(
+        self, vocab_size: int, counter: collections.Counter, power: float
+    ) -> None:
+        self.vocab_size = vocab_size
+        self.word_p = np.zeros(vocab_size)
         for i in range(self.vocab_size):
-            self.word_p[i] = counts[i]
+            self.word_p[i] = max(1, counter[i])
 
         self.word_p = np.power(self.word_p, power)
         self.word_p /= np.sum(self.word_p)
@@ -94,7 +90,7 @@ class NegativeSampling(nn.Module):
         self,
         d_model: int,
         num_item: int,
-        sequences: List[List[int]],
+        item_counter: collections.Counter,
         device: str = "cpu",
         init_embedding_std: float = 1,
         power: float = 0.75,
@@ -104,7 +100,9 @@ class NegativeSampling(nn.Module):
         super().__init__()
         self.d_model = d_model
         self.negative_sample_size = negative_sample_size
-        self.sampler = UnigramSampler(sequences, power)
+        self.sampler = UnigramSampler(
+            vocab_size=num_item, counter=item_counter, power=power
+        )
         self.embedding = EmbeddingDot(
             d_model,
             num_item,
@@ -231,8 +229,9 @@ class WeightSharedNegativeSampling(nn.Module):
     def __init__(
         self,
         d_model: int,
+        num_item: int,
         num_item_meta_types: int,
-        sequences: List[List[int]],
+        item_counter: collections.Counter,
         item_meta_indices: Tensor,
         item_meta_weights: Tensor,
         embedding_item: nn.Module,
@@ -249,7 +248,9 @@ class WeightSharedNegativeSampling(nn.Module):
         self.item_meta_weights = item_meta_weights
         self.embedding_item = embedding_item
         self.device = device
-        self.sampler = UnigramSampler(sequences, power)
+        self.sampler = UnigramSampler(
+            vocab_size=num_item, counter=item_counter, power=power
+        )
 
     def forward(
         self,

@@ -33,7 +33,7 @@ def main() -> None:
         trainer_config=trainer_config,
         model_config=model_config,
     )
-    trainer.fit(show_fig=False)
+    trainer.fit()
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import abc
+import collections
 import os
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -18,7 +19,7 @@ from au2v.layer import (
 from au2v.util import check_model_path
 
 
-class Model(metaclass=abc.ABCMeta):
+class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
     def forward(
         self,
         seq_index: Tensor,
@@ -124,10 +125,6 @@ class Model(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
 
-class PyTorchModel(Model, nn.Module):
-    pass
-
-
 class AttentiveModel(PyTorchModel):
     """AttentiveModel（提案モデル）のクラス"""
 
@@ -139,7 +136,7 @@ class AttentiveModel(PyTorchModel):
         num_item_meta: int,
         num_seq_meta_types: int,
         num_item_meta_types: int,
-        sequences: List[List[int]],
+        item_counter: collections.Counter,
         seq_meta_indices: Tensor,
         seq_meta_weights: Tensor,
         item_meta_indices: Tensor,
@@ -194,8 +191,9 @@ class AttentiveModel(PyTorchModel):
 
         self.output = WeightSharedNegativeSampling(
             d_model=d_model,
+            num_item=num_item,
             num_item_meta_types=num_item_meta_types,
-            sequences=sequences,
+            item_counter=item_counter,
             negative_sample_size=negative_sample_size,
             item_meta_indices=item_meta_indices,
             item_meta_weights=item_meta_weights,
@@ -258,7 +256,7 @@ class OldAttentiveModel(PyTorchModel):
         num_item_meta: int,
         num_seq_meta_types: int,
         num_item_meta_types: int,
-        sequences: List[List[int]],
+        item_counter: collections.Counter,
         seq_meta_indices: Tensor,
         seq_meta_weights: Tensor,
         item_meta_indices: Tensor,
@@ -315,7 +313,7 @@ class OldAttentiveModel(PyTorchModel):
         self.output = NegativeSampling(
             d_model=d_model,
             num_item=num_item,
-            sequences=sequences,
+            item_counter=item_counter,
             negative_sample_size=negative_sample_size,
             init_embedding_std=init_embedding_std,
             device=device,
@@ -376,7 +374,7 @@ class Doc2Vec(PyTorchModel):
         self,
         num_seq: int,
         num_item: int,
-        sequences: List[List[int]],
+        item_counter: collections.Counter,
         device: str = "cpu",
         d_model: int = 128,
         max_embedding_norm: Optional[float] = None,
@@ -409,7 +407,7 @@ class Doc2Vec(PyTorchModel):
         self.output = NegativeSampling(
             d_model=d_model,
             num_item=num_item,
-            sequences=sequences,
+            item_counter=item_counter,
             negative_sample_size=negative_sample_size,
             device=device,
         )
@@ -456,8 +454,8 @@ def load_model(
     dataset_manager: SequenceDatasetManager,
     trainer_config: TrainerConfig,
     model_config: ModelConfig,
-) -> Model:
-    model: Model
+) -> PyTorchModel:
+    model: PyTorchModel
     match trainer_config.model_name:
         case "attentive":
             model = AttentiveModel(
@@ -470,7 +468,7 @@ def load_model(
                 d_model=model_config.d_model,
                 init_embedding_std=model_config.init_embedding_std,
                 max_embedding_norm=model_config.max_embedding_norm,
-                sequences=dataset_manager.sequences,
+                item_counter=dataset_manager.item_counter,
                 seq_meta_indices=dataset_manager.seq_meta_indices.to(
                     trainer_config.device
                 ),
@@ -497,7 +495,7 @@ def load_model(
                 d_model=model_config.d_model,
                 init_embedding_std=model_config.init_embedding_std,
                 max_embedding_norm=model_config.max_embedding_norm,
-                sequences=dataset_manager.sequences,
+                item_counter=dataset_manager.item_counter,
                 seq_meta_indices=dataset_manager.seq_meta_indices.to(
                     trainer_config.device
                 ),
@@ -519,7 +517,7 @@ def load_model(
                 num_item=dataset_manager.num_item,
                 d_model=model_config.d_model,
                 max_embedding_norm=model_config.max_embedding_norm,
-                sequences=dataset_manager.sequences,
+                item_counter=dataset_manager.item_counter,
                 negative_sample_size=model_config.negative_sample_size,
                 device=trainer_config.device,
             )
