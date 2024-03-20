@@ -1,14 +1,9 @@
-from collections import ChainMap
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-import gensim
 import pandas as pd
-from sklearn import datasets
-from torchtext.data import get_tokenizer
 
 from au2v.toydata import generate_toydata
-from au2v.util import get_all_items
 
 
 @dataclass
@@ -64,8 +59,6 @@ def load_raw_dataset(
     dataset_name: str,
     data_dir: str = "data/",
 ) -> RawDataset:
-    # NOTE: hm, movielens, movielens-*は元データがないと動かない
-    # TODO: いつか追加する
     match dataset_name:
         case "toydata-paper":
             # 卒論で使った人工データ
@@ -93,14 +86,6 @@ def load_raw_dataset(
                 test_length=20,
             )
             dataset = convert_toydata(*data)
-        case "hm":
-            dataset = create_hm_data(
-                purchase_history_path=f"{data_dir}/hm/filtered_purchase_history.csv",
-                item_path=f"{data_dir}/hm/items.csv",
-                customer_path=f"{data_dir}/hm/customers.csv",
-                max_data_size=1000,
-                test_data_size=500,
-            )
         case "movielens":
             dataset = create_movielens_data(
                 train_path=f"{data_dir}/ml-1m/train.csv",
@@ -110,119 +95,10 @@ def load_raw_dataset(
                 user_path=f"{data_dir}/ml-1m/users.csv",
                 movie_path=f"{data_dir}/ml-1m/movies.csv",
             )
-        case "movielens-new":
-            dataset = create_movielens_data(
-                train_path=f"{data_dir}/ml-1m-new/train.csv",
-                test_paths={
-                    "train-size=0": f"{data_dir}/ml-1m-new/test-0.csv",
-                    "train-size=10": f"{data_dir}/ml-1m-new/test-10.csv",
-                    "train-size=20": f"{data_dir}/ml-1m-new/test-20.csv",
-                    "train-size=30": f"{data_dir}/ml-1m-new/test-30.csv",
-                    "train-size=40": f"{data_dir}/ml-1m-new/test-40.csv",
-                    "train-size=50": f"{data_dir}/ml-1m-new/test-50.csv",
-                },
-                user_path=f"{data_dir}/ml-1m-new/users.csv",
-                movie_path=f"{data_dir}/ml-1m-new/movies.csv",
-            )
-        case "movielens-simple":
-            dataset = create_movielens_data(
-                train_path=f"{data_dir}/ml-1m/train.csv",
-                test_paths={
-                    "train-size=10": f"{data_dir}/ml-1m/test-10.csv",
-                    "train-size=20": f"{data_dir}/ml-1m/test-20.csv",
-                    "train-size=30": f"{data_dir}/ml-1m/test-30.csv",
-                    "train-size=40": f"{data_dir}/ml-1m/test-40.csv",
-                    "train-size=50": f"{data_dir}/ml-1m/test-50.csv",
-                },
-                user_path=f"{data_dir}/ml-1m/users.csv",
-                movie_path=f"{data_dir}/ml-1m/movies.csv",
-                user_columns=["gender"],
-                movie_columns=["genre"],
-            )
-        case "movielens-equal-gender":
-            dataset = create_movielens_data(
-                train_path=f"{data_dir}/ml-1m/equal-gender-train.csv",
-                test_paths={
-                    "train-size=10": f"{data_dir}/ml-1m/test-10.csv",
-                    "train-size=20": f"{data_dir}/ml-1m/test-20.csv",
-                    "train-size=30": f"{data_dir}/ml-1m/test-30.csv",
-                    "train-size=40": f"{data_dir}/ml-1m/test-40.csv",
-                    "train-size=50": f"{data_dir}/ml-1m/test-50.csv",
-                },
-                user_path=f"{data_dir}/ml-1m/users.csv",
-                movie_path=f"{data_dir}/ml-1m/movies.csv",
-            )
-        case "20newsgroup":
-            dataset = create_20newsgroup_data(
-                max_data_size=1000,
-                min_seq_length=50,
-                test_data_size=500,
-            )
-        case "20newsgroup-small":
-            # テスト用の小さいデータ
-            dataset = create_20newsgroup_data(
-                max_data_size=10,
-                min_seq_length=50,
-                test_data_size=50,
-            )
         case _:
             raise ValueError(f"invalid dataset-name: {dataset_name}")
 
     return dataset
-
-
-def create_hm_data(
-    purchase_history_path: str,
-    item_path: str,
-    customer_path: str,
-    max_data_size: int,
-    test_data_size: int,
-) -> RawDataset:
-    sequences_df = pd.read_csv(
-        purchase_history_path, dtype={"customer_id": str}, index_col="customer_id"
-    )
-    items_df = pd.read_csv(item_path, dtype={"article_id": str}, index_col="article_id")
-    customers_df = pd.read_csv(
-        customer_path, dtype={"customer_id": str}, index_col="customer_id"
-    )
-
-    raw_sequences = {
-        index: sequence.split(" ")
-        for index, sequence in zip(
-            sequences_df.index.values[:max_data_size],
-            sequences_df.sequence.values[:max_data_size],
-        )
-    }
-    test_raw_sequences = {
-        index: sequence.split(" ")
-        for index, sequence in zip(
-            sequences_df.index.values[
-                max_data_size : max_data_size + test_data_size  # noqa
-            ],
-            sequences_df.sequence.values[
-                max_data_size : max_data_size + test_data_size  # noqa
-            ],
-        )
-    }
-    item_metadata = items_df.to_dict("index")
-    customer_metadata = customers_df.to_dict("index")
-
-    items_set = get_all_items(ChainMap(raw_sequences, test_raw_sequences))
-
-    # item_set（raw_sequence, test_raw_sequence）に含まれている商品のみ抽出する
-    item_metadata = dict(
-        filter(lambda item: item[0] in items_set, item_metadata.items())
-    )
-
-    test_raw_sequences_dict = {"test": test_raw_sequences}
-
-    return RawDataset(
-        train_raw_sequences=raw_sequences,
-        item_metadata=item_metadata,
-        seq_metadata=customer_metadata,
-        test_raw_sequences_dict=test_raw_sequences_dict,
-        exclude_item_metadata_columns=["prod_name"],
-    )
 
 
 def convert_toydata(
@@ -300,63 +176,4 @@ def create_movielens_data(
         seq_metadata=user_metadata,
         test_raw_sequences_dict=test_raw_sequences_dict,
         exclude_item_metadata_columns=["title"],
-    )
-
-
-def create_20newsgroup_data(
-    max_data_size: int = 1000,
-    min_seq_length: int = 50,
-    test_data_size: int = 500,
-) -> RawDataset:
-    newsgroups_train = datasets.fetch_20newsgroups(
-        data_home="data",
-        subset="train",
-        remove=("headers", "footers", "quotes"),
-        shuffle=False,
-        random_state=0,
-    )
-    tokenizer = get_tokenizer("basic_english")
-
-    dictionary = gensim.corpora.Dictionary(
-        [tokenizer(document) for document in newsgroups_train.data]
-    )
-    dictionary.filter_extremes(no_below=10, no_above=0.1)
-
-    train_raw_sequences: Dict[str, List[str]] = {}
-    test_raw_sequences: Dict[str, List[str]] = {}
-    seq_metadata: Dict[str, Dict[str, Any]] = {}
-
-    for doc_id, (target, document) in enumerate(
-        zip(newsgroups_train.target, newsgroups_train.data)
-    ):
-        if (
-            len(train_raw_sequences) + len(test_raw_sequences)
-            >= max_data_size + test_data_size
-        ):
-            break
-
-        tokens = tokenizer(document)
-        sequence = []
-        for word in tokens:
-            if word in dictionary.token2id:
-                sequence.append(word)
-
-        if len(sequence) <= min_seq_length:
-            continue
-
-        seq_metadata[str(doc_id)] = {"target": target}
-
-        if len(train_raw_sequences) < max_data_size:
-            train_raw_sequences[str(doc_id)] = sequence
-        else:
-            test_raw_sequences[str(doc_id)] = sequence
-
-    test_raw_sequences_dict: Dict[str, Dict[str, List[str]]] = {
-        "test": test_raw_sequences
-    }
-
-    return RawDataset(
-        train_raw_sequences=train_raw_sequences,
-        seq_metadata=seq_metadata,
-        test_raw_sequences_dict=test_raw_sequences_dict,
     )

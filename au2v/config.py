@@ -64,13 +64,7 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
             "toydata-paper",
             "toydata-small",
             "toydata-seq-lengths",
-            "hm",
             "movielens",
-            "movielens-new",
-            "movielens-simple",
-            "movielens-equal-gender",
-            "20newsgroup",
-            "20newsgroup-small",
         ],
     )
     parser.add_argument("--d-model", type=int, default=128, help="埋め込み表現の次元数")
