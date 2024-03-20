@@ -151,8 +151,11 @@ def create_movielens_data(
         movie_df = movie_df[movie_columns]
 
     train_raw_sequences = {
-        index: [] if pd.isna(sequence) else sequence.split(" ")
-        for index, sequence in zip(train_df.index.values, train_df.sequence.values)
+        index: sequence.split(" ")
+        for index, sequence in zip(
+            train_df.index.values,
+            train_df.sequence.values,
+        )
     }
     user_metadata = user_df.to_dict("index")
     movie_df.genre = movie_df.genre.apply(lambda s: s.split("|"))
