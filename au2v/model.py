@@ -318,6 +318,7 @@ class OldAttentiveModel(PyTorchModel):
             sequences=sequences,
             negative_sample_size=negative_sample_size,
             init_embedding_std=init_embedding_std,
+            device=device,
         )
 
     def calc_out(
@@ -410,8 +411,8 @@ class Doc2Vec(PyTorchModel):
             num_item=num_item,
             sequences=sequences,
             negative_sample_size=negative_sample_size,
+            device=device,
         )
-        self.device = device
 
     def calc_out(
         self,

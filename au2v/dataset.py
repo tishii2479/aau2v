@@ -105,11 +105,7 @@ def load_raw_dataset(
             dataset = create_movielens_data(
                 train_path=f"{data_dir}/ml-1m/train.csv",
                 test_paths={
-                    "train-size=10": f"{data_dir}/ml-1m/test-10.csv",
-                    "train-size=20": f"{data_dir}/ml-1m/test-20.csv",
-                    "train-size=30": f"{data_dir}/ml-1m/test-30.csv",
-                    "train-size=40": f"{data_dir}/ml-1m/test-40.csv",
-                    "train-size=50": f"{data_dir}/ml-1m/test-50.csv",
+                    "test": f"{data_dir}/ml-1m/test.csv",
                 },
                 user_path=f"{data_dir}/ml-1m/users.csv",
                 movie_path=f"{data_dir}/ml-1m/movies.csv",

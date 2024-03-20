@@ -130,7 +130,7 @@ class NegativeSampling(nn.Module):
             self.embedding.forward(h, torch.reshape(target_index, (batch_size, 1)))
         )
         pos_out = torch.reshape(pos_out, (batch_size, 1))
-        pos_label = torch.ones(batch_size, 1)
+        pos_label = torch.ones(batch_size, 1).to(device=self.device)
 
         # negative
         # (batch_size, negative_sample_size)
@@ -141,7 +141,9 @@ class NegativeSampling(nn.Module):
 
         neg_out = torch.sigmoid(self.embedding.forward(h, negative_sample))
         neg_out = torch.reshape(neg_out, (batch_size, self.negative_sample_size))
-        neg_label = torch.zeros(batch_size, self.negative_sample_size)
+        neg_label = torch.zeros(batch_size, self.negative_sample_size).to(
+            device=self.device
+        )
 
         return pos_out, pos_label, neg_out, neg_label
 

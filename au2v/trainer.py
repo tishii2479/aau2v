@@ -82,9 +82,9 @@ class PyTorchTrainer(Trainer):
         self.train_data_loader = DataLoader(
             self.dataset_manager.train_dataset, batch_size=trainer_config.batch_size
         )
-        if self.dataset_manager.test_dataset is not None:
+        if self.dataset_manager.test_datasets is not None:
             self.test_data_loaders: Optional[Dict[str, DataLoader]] = {}
-            for test_name, dataset in self.dataset_manager.test_dataset.items():
+            for test_name, dataset in self.dataset_manager.test_datasets.items():
                 test_data_loader = DataLoader(
                     dataset,
                     batch_size=trainer_config.batch_size,
@@ -94,6 +94,7 @@ class PyTorchTrainer(Trainer):
             self.test_data_loaders = None
 
         self.trainer_config = trainer_config
+        self.model_config = model_config
         self.model = model
         self.model.to(self.trainer_config.device)
         self.optimizer = Adam(
@@ -118,24 +119,39 @@ class PyTorchTrainer(Trainer):
         if on_train_start is not None:
             on_train_start()
 
+        w = self.model_config.window_size
+
         for epoch in range(self.trainer_config.epochs):
             if on_epoch_start is not None:
                 on_epoch_start(epoch)
 
             total_loss = 0.0
             for i, data in enumerate(tqdm.tqdm(self.train_data_loader)):
-                (
-                    seq_index,
-                    item_indices,
-                    target_index,
-                ) = data
-
+                seq_indices, target_indices = data
+                item_indices = []
+                for seq_index, target_index in zip(seq_indices, target_indices):
+                    item_indices.append(
+                        (
+                            self.dataset_manager.train_dataset.sequences[seq_index][
+                                target_index - w : target_index  # noqa
+                            ]
+                            + self.dataset_manager.train_dataset.sequences[seq_index][
+                                target_index + 1 : target_index + w + 1  # noqa
+                            ]
+                        )
+                    )
                 loss = self.model.forward(
-                    seq_index=seq_index.to(self.trainer_config.device),
-                    item_indices=item_indices.to(self.trainer_config.device),
-                    target_index=target_index.to(self.trainer_config.device),
+                    seq_index=torch.LongTensor(seq_indices).to(
+                        self.trainer_config.device
+                    ),
+                    item_indices=torch.LongTensor(item_indices).to(
+                        self.trainer_config.device
+                    ),
+                    target_index=torch.LongTensor(target_indices).to(
+                        self.trainer_config.device
+                    ),
                 )
-                loss /= seq_index.size(0)
+                loss /= seq_indices.size(0)
                 self.optimizer.zero_grad()
                 _ = loss.backward()
                 self.optimizer.step()
@@ -197,22 +213,43 @@ class PyTorchTrainer(Trainer):
             print("No test dataset")
             return 0, {}
         self.model.eval()
+
+        w = self.model_config.window_size
         total_loss_dict: Dict[str, float] = {}
+
         for test_name, data_loader in self.test_data_loaders.items():
+            if self.dataset_manager.test_datasets is None:
+                continue
+            sequences = self.dataset_manager.test_datasets[test_name].sequences
+
             pos_outputs: List[float] = []
             neg_outputs: List[float] = []
             total_loss = 0.0
             for i, data in enumerate(tqdm.tqdm(data_loader)):
-                (
-                    seq_index,
-                    item_indices,
-                    target_index,
-                ) = data
+                seq_indices, target_indices = data
+                item_indices = []
+                for seq_index, target_index in zip(seq_indices, target_indices):
+                    item_indices.append(
+                        (
+                            sequences[seq_index][
+                                target_index - w : target_index  # noqa
+                            ]
+                            + sequences[seq_index][
+                                target_index + 1 : target_index + w + 1  # noqa
+                            ]
+                        )
+                    )
 
                 pos_out, pos_label, neg_out, neg_label = self.model.calc_out(
-                    seq_index=seq_index.to(self.trainer_config.device),
-                    item_indices=item_indices.to(self.trainer_config.device),
-                    target_index=target_index.to(self.trainer_config.device),
+                    seq_index=torch.LongTensor(seq_indices).to(
+                        self.trainer_config.device
+                    ),
+                    item_indices=torch.LongTensor(item_indices).to(
+                        self.trainer_config.device
+                    ),
+                    target_index=torch.LongTensor(target_indices).to(
+                        self.trainer_config.device
+                    ),
                 )
 
                 if show_fig:
@@ -223,10 +260,11 @@ class PyTorchTrainer(Trainer):
 
                 loss_pos = F.binary_cross_entropy(pos_out, pos_label)
                 loss_neg = F.binary_cross_entropy(neg_out, neg_label)
-                negative_sample_size = neg_label.size(1)
-                loss = (loss_pos + loss_neg / negative_sample_size) / 2
+                loss = (
+                    loss_pos + loss_neg / self.model_config.negative_sample_size
+                ) / 2
 
-                loss /= seq_index.size(0)
+                loss /= seq_indices.size(0)
                 total_loss += loss.item()
 
             total_loss /= len(data_loader)

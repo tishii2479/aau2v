@@ -4,7 +4,6 @@ import pickle
 from pathlib import Path
 from typing import Any, Dict, List, MutableSet, Optional, Tuple
 
-import numpy as np
 import torch
 import tqdm
 from sklearn import preprocessing
@@ -86,20 +85,20 @@ class SequenceDatasetManager:
         self.sequences = copy.deepcopy(self.train_dataset.sequences)
 
         if dataset.test_raw_sequences_dict is not None:
-            self.test_dataset: Optional[Dict[str, SequenceDataset]] = {}
+            self.test_datasets: Optional[Dict[str, SequenceDataset]] = {}
             for (
                 test_name,
                 test_raw_sequences,
             ) in dataset.test_raw_sequences_dict.items():
-                self.test_dataset[test_name] = SequenceDataset(
+                self.test_datasets[test_name] = SequenceDataset(
                     raw_sequences=test_raw_sequences,
                     seq_le=self.seq_le,
                     item_le=self.item_le,
                     window_size=window_size,
                 )
-                self.sequences += self.test_dataset[test_name].sequences
+                self.sequences += self.test_datasets[test_name].sequences
         else:
-            self.test_dataset = None
+            self.test_datasets = None
 
         self.item_meta_indices, self.item_meta_weights = get_meta_indices(
             names=self.item_le.classes_,
@@ -151,12 +150,11 @@ class SequenceDataset(Dataset):
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[int, int]:
         """
         Returns:
         (
           seq_index,
-          item_indices,
           target_index
         )
         """
@@ -262,7 +260,7 @@ def to_sequential_data(
     seq_le: preprocessing.LabelEncoder,
     item_le: preprocessing.LabelEncoder,
     window_size: int,
-) -> Tuple[List[List[int]], List[Tuple[Tensor, Tensor, Tensor]]]:
+) -> Tuple[List[List[int]], List[Tuple[int, int]]]:
     """
     シーケンシャルデータを学習データに変換する
 
@@ -270,39 +268,23 @@ def to_sequential_data(
         Tuple[List[List[int]], List[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]]]:
             (sequences, data)
     """
-    sequences: List[List[int]] = []
+    sequences: List[List[int]] = [[] for _ in range(len(seq_le.classes_))]
     data = []
 
-    # TODO: parallelize
     print("to_sequential_data start")
-    for seq_name, raw_sequence in tqdm.tqdm(raw_sequences.items()):
-        sequence = item_le.transform(raw_sequence)
-        sequences.append(sequence)
+    seq_indices = seq_le.transform(list(raw_sequences.keys()))
+    for i, raw_sequence in enumerate(tqdm.tqdm(raw_sequences.values())):
+        seq_index = seq_indices[i]
 
-        seq_index = torch.tensor(seq_le.transform([seq_name])[0], dtype=torch.long)
+        sequence = item_le.transform(raw_sequence).tolist()
+        sequences[seq_index] = sequence
+
         left = window_size
         right = len(sequence) - 1 - window_size
         if left >= right:
             continue
-        for j in range(left, right):
-            item_indices = torch.tensor(
-                np.concatenate(
-                    [
-                        sequence[j - window_size : j],  # noqa
-                        sequence[j + 1 : j + window_size + 1],  # noqa
-                    ]
-                ),
-                dtype=torch.long,
-            )
-            target_index = torch.tensor(sequence[j], dtype=torch.long)
+        data.extend(list(map(lambda j: (seq_index, j), range(left, right))))
 
-            data.append(
-                (
-                    seq_index,
-                    item_indices,
-                    target_index,
-                )
-            )
     print("to_sequential_data end")
     return sequences, data
 
