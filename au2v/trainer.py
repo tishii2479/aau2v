@@ -97,15 +97,6 @@ class PyTorchTrainer:
                 torch.save(self.model, self.trainer_config.model_path)
                 print(f"saved model to {self.trainer_config.model_path}")
 
-            print(
-                calc_accuracy(
-                    model=self.model,
-                    num_item=self.dataset_manager.num_item,
-                    test_dataset=self.dataset_manager.test_datasets["test"],
-                    top_k=[10, 30, 50],
-                )
-            )
-
         if on_train_end is not None:
             on_train_end()
 
