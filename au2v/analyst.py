@@ -8,7 +8,7 @@ from torch import Tensor
 
 from au2v.dataset_manager import SequenceDatasetManager
 from au2v.layer import attention_weight, cosine_similarity
-from au2v.model import Model
+from au2v.model import PyTorchModel
 from au2v.util import to_full_meta_value, visualize_heatmap
 
 
@@ -28,7 +28,7 @@ def calc_similarity(a: Tensor, b: Tensor, method: str = "inner-product") -> Tens
 class Analyst:
     def __init__(
         self,
-        model: Model,
+        model: PyTorchModel,
         dataset_manager: SequenceDatasetManager,
     ):
         self.model = model
@@ -81,7 +81,7 @@ class Analyst:
         Returns:
             pd.DataFrame: 系列と要素の類似度
         """
-        item_indices = self.dataset_manager.dataset.sequences[seq_index][
+        item_indices = self.dataset_manager.train_dataset.sequences[seq_index][
             -num_recent_items:
         ]
         e_seq = self.model.seq_embedding[seq_index]

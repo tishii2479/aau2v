@@ -48,9 +48,9 @@ class RawDataset:
     """
 
     train_raw_sequences: Dict[str, List[str]]
+    test_raw_sequences_dict: Dict[str, Dict[str, List[str]]]
     item_metadata: Optional[Dict[str, Dict[str, Any]]] = None
     seq_metadata: Optional[Dict[str, Dict[str, Any]]] = None
-    test_raw_sequences_dict: Optional[Dict[str, Dict[str, List[str]]]] = None
     exclude_seq_metadata_columns: Optional[List[str]] = None
     exclude_item_metadata_columns: Optional[List[str]] = None
 

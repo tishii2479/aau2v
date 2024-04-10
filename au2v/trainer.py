@@ -94,8 +94,17 @@ class PyTorchTrainer:
                 on_epoch_end(epoch)
 
             if self.trainer_config.save_model:
-                torch.save(self.model.state_dict(), self.trainer_config.model_path)
+                torch.save(self.model, self.trainer_config.model_path)
                 print(f"saved model to {self.trainer_config.model_path}")
+
+            print(
+                calc_accuracy(
+                    model=self.model,
+                    num_item=self.dataset_manager.num_item,
+                    test_dataset=self.dataset_manager.test_datasets["test"],
+                    top_k=[10, 30, 50],
+                )
+            )
 
         if on_train_end is not None:
             on_train_end()

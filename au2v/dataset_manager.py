@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Dict, List, MutableSet, Optional, Tuple
 
 import torch
-import tqdm
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from torch import Tensor
@@ -30,14 +29,14 @@ class SequenceDatasetManager:
             dataset.seq_metadata if dataset.seq_metadata is not None else {}
         )
 
-        self.item_le = preprocessing.LabelEncoder().fit(
-            get_all_items(self.raw_sequences)
+        self.seq_le, self.item_le = get_seq_item_le(
+            raw_sequences=self.raw_sequences,
+            test_raw_sequences_dict=dataset.test_raw_sequences_dict,
         )
         self.item_meta_le, self.item_meta_dict = process_metadata(
             self.item_metadata,
             exclude_metadata_columns=dataset.exclude_item_metadata_columns,
         )
-        self.seq_le = preprocessing.LabelEncoder().fit(list(self.raw_sequences.keys()))
         self.seq_meta_le, self.seq_meta_dict = process_metadata(
             self.seq_metadata,
             exclude_metadata_columns=dataset.exclude_seq_metadata_columns,
@@ -95,14 +94,22 @@ class SequenceDatasetManager:
             for item in sequence:
                 self.item_counter[item] += 1
 
+        self.test_datasets = create_test_datasets(
+            test_raw_sequences_dict=dataset.test_raw_sequences_dict,
+            seq_le=self.seq_le,
+            item_le=self.item_le,
+            left_window_size=window_size * 2,
+        )
+
 
 class SequenceDataset(Dataset):
     def __init__(
         self,
-        raw_sequences: Dict[str, List[str]],
+        raw_sequences: dict[str, list[str]],
         sequences: list[list[int]],
         data: list[tuple[int, int]],
-        window_size: int,
+        left_window_size: int,
+        right_window_size: int,
     ) -> None:
         """
         補助情報を含んだシーケンシャルのデータを保持するクラス
@@ -123,7 +130,8 @@ class SequenceDataset(Dataset):
         self.raw_sequences = raw_sequences
         self.sequences = sequences
         self.data = data
-        self.w = window_size
+        self.left_w = left_window_size
+        self.right_w = right_window_size
 
     def __len__(self) -> int:
         return len(self.data)
@@ -131,16 +139,17 @@ class SequenceDataset(Dataset):
     def __getitem__(self, idx: int) -> tuple[int, list[int], int]:
         seq_index, target_index = self.data[idx]
         item_indices = (
-            self.sequences[seq_index][target_index - self.w : target_index]  # noqa
+            self.sequences[seq_index][target_index - self.left_w : target_index]  # noqa
             + self.sequences[seq_index][
-                target_index + 1 : target_index + self.w + 1  # noqa
+                target_index + 1 : target_index + self.right_w + 1  # noqa
             ]
         )
+        target_index = self.sequences[seq_index][target_index]
         return seq_index, item_indices, target_index
 
 
 def create_train_valid_dataset(
-    raw_sequences: Dict[str, List[str]],
+    raw_sequences: dict[str, list[str]],
     seq_le: preprocessing.LabelEncoder,
     item_le: preprocessing.LabelEncoder,
     window_size: int = 8,
@@ -149,20 +158,23 @@ def create_train_valid_dataset(
         raw_sequences=raw_sequences,
         seq_le=seq_le,
         item_le=item_le,
-        window_size=window_size,
+        left_window_size=window_size,
+        right_window_size=window_size,
     )
     train_data, valid_data = train_test_split(data, test_size=0.2)
     train_dataset = SequenceDataset(
         raw_sequences=raw_sequences,
         sequences=sequences,
         data=train_data,
-        window_size=window_size,
+        left_window_size=window_size,
+        right_window_size=window_size,
     )
     valid_dataset = SequenceDataset(
         raw_sequences=raw_sequences,
         sequences=sequences,
         data=valid_data,
-        window_size=window_size,
+        left_window_size=window_size,
+        right_window_size=window_size,
     )
     return train_dataset, valid_dataset
 
@@ -261,12 +273,95 @@ def get_meta_indices(
     return meta_indices, meta_weights
 
 
-def to_sequential_data(
-    raw_sequences: Dict[str, List[str]],
+def get_seq_item_le(
+    raw_sequences: dict[str, list[str]],
+    test_raw_sequences_dict: dict[str, dict[str, list[str]]],
+) -> tuple[preprocessing.LabelEncoder, preprocessing.LabelEncoder]:
+    seq_le = preprocessing.LabelEncoder().fit(
+        list(raw_sequences.keys())
+        + sum(
+            list(
+                map(
+                    lambda d: list(d.keys()),
+                    test_raw_sequences_dict.values(),
+                )
+            ),
+            [],
+        )
+    )
+    item_le = preprocessing.LabelEncoder().fit(
+        get_all_items(raw_sequences)
+        + sum(
+            sum(
+                list(
+                    map(
+                        lambda d: list(d.values()),
+                        test_raw_sequences_dict.values(),
+                    )
+                ),
+                [],
+            ),
+            [],
+        )
+    )
+    return seq_le, item_le
+
+
+def create_test_datasets(
+    test_raw_sequences_dict: dict[str, dict[str, list[str]]],
     seq_le: preprocessing.LabelEncoder,
     item_le: preprocessing.LabelEncoder,
-    window_size: int,
-) -> Tuple[List[List[int]], List[Tuple[int, int]]]:
+    left_window_size: int,
+) -> dict[str, list[tuple[int, list[int], list[int]]]]:
+    return {
+        test_name: to_sequential_test_data(
+            raw_sequences=raw_sequences,
+            seq_le=seq_le,
+            item_le=item_le,
+            left_window_size=left_window_size,
+        )
+        for test_name, raw_sequences in test_raw_sequences_dict.items()
+    }
+
+
+def to_sequential_test_data(
+    raw_sequences: dict[str, list[str]],
+    seq_le: preprocessing.LabelEncoder,
+    item_le: preprocessing.LabelEncoder,
+    left_window_size: int,
+) -> list[tuple[int, list[int], list[int]]]:
+    """
+    シーケンシャルデータをテストデータに変換する
+
+    Returns:
+        (seq_index, context_items, target_items)
+    """
+    data = []
+
+    seq_indices = seq_le.transform(list(raw_sequences.keys()))
+    for i, raw_sequence in enumerate(raw_sequences.values()):
+        seq_index = seq_indices[i]
+        sequence = item_le.transform(raw_sequence).tolist()
+
+        # 長さが足りていない系列はテストデータに加えない
+        if len(sequence) < left_window_size + 1:
+            continue
+
+        # テストデータは周囲の要素ではなく、直前の要素のみ特徴量に入れることができる
+        context_items = sequence[:left_window_size]
+        target_items = sequence[left_window_size:]
+        data.append((seq_index, context_items, target_items))
+
+    return data
+
+
+def to_sequential_data(
+    raw_sequences: dict[str, list[str]],
+    seq_le: preprocessing.LabelEncoder,
+    item_le: preprocessing.LabelEncoder,
+    left_window_size: int,
+    right_window_size: int,
+) -> tuple[list[list[int]], list[Tuple[int, int]]]:
     """
     シーケンシャルデータを学習データに変換する
 
@@ -279,14 +374,15 @@ def to_sequential_data(
 
     print("to_sequential_data start")
     seq_indices = seq_le.transform(list(raw_sequences.keys()))
-    for i, raw_sequence in enumerate(tqdm.tqdm(raw_sequences.values())):
+    for i, raw_sequence in enumerate(raw_sequences.values()):
         seq_index = seq_indices[i]
 
         sequence = item_le.transform(raw_sequence).tolist()
         sequences[seq_index] = sequence
 
-        left = window_size
-        right = len(sequence) - window_size
+        # use target index from [left_window_size, ..., -right_window_size]
+        left = left_window_size
+        right = len(sequence) - right_window_size
         if left >= right:
             continue
         data.extend(list(map(lambda j: (seq_index, j), range(left, right))))
@@ -314,7 +410,6 @@ def load_dataset_manager(
     print(f"dataset_manager does not exist at: {pickle_path}, create dataset")
 
     dataset = load_raw_dataset(dataset_name=dataset_name, data_dir=data_dir)
-
     dataset_manager = SequenceDatasetManager(dataset, window_size=window_size)
 
     if save_dataset:

@@ -10,9 +10,9 @@ from torch import Tensor, nn
 from au2v.config import ModelConfig, TrainerConfig
 from au2v.dataset_manager import SequenceDatasetManager
 from au2v.layer import (
+    EmbeddingLayer,
     MetaEmbeddingLayer,
     NegativeSampling,
-    NormalizedEmbeddingLayer,
     WeightSharedNegativeSampling,
     attention,
 )
@@ -54,6 +54,13 @@ class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
         loss = (loss_pos + loss_neg / negative_sample_size) / 2
 
         return loss
+
+    def output_rec_lists(
+        self, seq_index: Tensor, item_indices: Tensor, cand_item_indices: Tensor, k: int
+    ) -> list[list[int]]:
+        h = self.calc_prediction_vector(seq_index=seq_index, item_indices=item_indices)
+        e_v = self.embedding_item.forward(cand_item_indices)
+        return torch.matmul(h, e_v.mT).argsort(dim=1, descending=True)[:, :k].tolist()
 
     @abc.abstractmethod
     def calc_out(
@@ -98,12 +105,10 @@ class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
-    @abc.abstractproperty
     @property
     def seq_embedding(self) -> Tensor:
         raise NotImplementedError()
 
-    @abc.abstractproperty
     @property
     def item_embedding(self) -> Tensor:
         raise NotImplementedError()
@@ -121,7 +126,7 @@ class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
         )
 
     @property
-    def output_item_embedding(self) -> Tensor:
+    def out_item_embedding(self) -> Tensor:
         raise NotImplementedError()
 
 
@@ -362,10 +367,6 @@ class OldAttentiveModel(PyTorchModel):
     def item_meta_embedding(self) -> Tensor:
         return self.embedding_item.embedding_meta.weight.data
 
-    @property
-    def output_item_embedding(self) -> Tensor:
-        return self.output.embedding.embedding.weight.data
-
 
 class Doc2Vec(PyTorchModel):
     """Original Doc2Vec"""
@@ -397,10 +398,10 @@ class Doc2Vec(PyTorchModel):
         """
         super().__init__()
 
-        self.embedding_seq = NormalizedEmbeddingLayer(
+        self.embedding_seq = EmbeddingLayer(
             num_seq, d_model, max_norm=max_embedding_norm
         )
-        self.embedding_item = NormalizedEmbeddingLayer(
+        self.embedding_item = EmbeddingLayer(
             num_item, d_model, max_norm=max_embedding_norm
         )
 
@@ -444,10 +445,6 @@ class Doc2Vec(PyTorchModel):
     @property
     def item_embedding(self) -> Tensor:
         return self.embedding_item.weight.data
-
-    @property
-    def output_item_embedding(self) -> Tensor:
-        return self.output.embedding.embedding.weight.data
 
 
 def load_model(
@@ -532,8 +529,7 @@ def load_model(
             )
         else:
             print(f"load_state_dict from: {trainer_config.model_path}")
-            loaded = torch.load(trainer_config.model_path)  # type: ignore
-            model.load_state_dict(loaded)
+            model = torch.load(trainer_config.model_path)  # type: ignore
     elif trainer_config.ignore_saved_model is False:
         check_model_path(trainer_config.model_path)
 

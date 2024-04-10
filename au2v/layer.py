@@ -64,7 +64,7 @@ class EmbeddingDot(nn.Module):
     ):
         super().__init__()
         self.d_model = d_model
-        self.embedding = NormalizedEmbeddingLayer(
+        self.embedding = EmbeddingLayer(
             num_item, d_model, max_norm=max_embedding_norm, std=init_embedding_std
         )
 
@@ -146,7 +146,7 @@ class NegativeSampling(nn.Module):
         return pos_out, pos_label, neg_out, neg_label
 
 
-class NormalizedEmbeddingLayer(nn.Embedding):
+class EmbeddingLayer(nn.Embedding):
     """
     nn.Embeddingのラッパークラス
     """
@@ -163,24 +163,9 @@ class NormalizedEmbeddingLayer(nn.Embedding):
             num_embeddings=num_embeddings,
             embedding_dim=embedding_dim,
             max_norm=max_norm,
+            scale_grad_by_freq=True,
         )
         nn.init.normal_(self.weight, mean=mean, std=std)
-        # self.forward_count = 0
-
-    # def forward(self, x: Tensor) -> Tensor:
-    #     # ISSUE: 補助情報ごとに正規化してみても良さそう
-    #     if torch.is_grad_enabled():
-    #         self.forward_count += 1
-    #         # 毎回重みを正規化すると以下の問題があるため、1024回forwardが呼ばれるたびに正規化する
-    #         # - 学習時間が長くなる
-    #         # - 学習率が高いと、学習量が各要素間で偏っている状態で正規化してしまうためうまくいかない
-    #         # ISSUE: self.forward_countが本当に必要か確認する
-    #         if self.forward_count % 1024 == 0:
-    #             with torch.no_grad():
-    #                 # 埋め込み表現の各次元の大きさの最大値を1にする
-    #                 # TODO: 最大値を注入できるようにする
-    #                 self.weight.data /= self.weight.abs().max()
-    #     return super().forward(x)
 
 
 class MetaEmbeddingLayer(nn.Module):
@@ -196,13 +181,13 @@ class MetaEmbeddingLayer(nn.Module):
         init_embedding_std: float = 0.2,
     ):
         super().__init__()
-        self.embedding_element = NormalizedEmbeddingLayer(
+        self.embedding_element = EmbeddingLayer(
             num_element,
             d_model,
             max_norm=max_embedding_norm,
             std=init_embedding_std,
         )
-        self.embedding_meta = NormalizedEmbeddingLayer(
+        self.embedding_meta = EmbeddingLayer(
             num_meta,
             d_model,
             max_norm=max_embedding_norm,
