@@ -11,10 +11,23 @@ from torch import Tensor
 from torch.utils.data import Dataset
 
 from au2v.dataset import RawDataset, load_raw_dataset
-from au2v.util import get_all_items, to_full_meta_value
 
 
-class SequenceDatasetManager:
+def to_full_meta_value(meta_name: str, meta_value: Any) -> str:
+    """
+    Generate identical string that describes the meta value
+
+    Args:
+        meta_name (str): meta data name (column name)
+        meta_value (Any): meta data value
+
+    Returns:
+        str: identical string that describes the meta value
+    """
+    return meta_name + ":" + str(meta_value)
+
+
+class SequenceDatasetCenter:
     """
     訓練データとテストデータを管理するクラス
     """
@@ -177,6 +190,110 @@ def create_train_valid_dataset(
     return train_dataset, valid_dataset
 
 
+def to_sequential_data(
+    raw_sequences: dict[str, list[str]],
+    seq_le: preprocessing.LabelEncoder,
+    item_le: preprocessing.LabelEncoder,
+    left_window_size: int,
+    right_window_size: int,
+    valid_ratio: float = 0.2,
+) -> tuple[list[list[int]], list[tuple[int, int]], list[tuple[int, int]]]:
+    """
+    シーケンシャルデータを学習データと検証データに変換する
+    """
+    sequences: list[list[int]] = [[] for _ in range(len(seq_le.classes_))]
+    train_data = []
+    valid_data = []
+
+    seq_indices = seq_le.transform(list(raw_sequences.keys()))
+    for i, raw_sequence in enumerate(raw_sequences.values()):
+        seq_index = seq_indices[i]
+
+        sequence = item_le.transform(raw_sequence).tolist()
+        sequences[seq_index] = sequence
+
+        # 系列長をLとして、以下を満たすなら検証データを作る
+        # L * valid_ratio > left_window_size + right_window_size
+        # L * (1 - valid_ratio) > (left_window_size + right_window_size) * 2
+        seq_len = len(sequence)
+        valid_len = int(round(seq_len * valid_ratio))
+        train_len = seq_len - valid_len
+        if (
+            valid_len > left_window_size + right_window_size
+            and train_len > (left_window_size + right_window_size) * 2
+        ):
+            # 検証データを作る
+            train_left = left_window_size
+            train_right = train_len - right_window_size
+            assert train_left <= train_right
+            train_data.extend(
+                list(map(lambda j: (seq_index, j), range(train_left, train_right)))
+            )
+            valid_left = train_len + left_window_size
+            valid_right = seq_len - right_window_size
+            assert valid_left <= valid_right
+            valid_data.extend(
+                list(map(lambda j: (seq_index, j), range(valid_left, valid_right)))
+            )
+        else:
+            # 検証データを作らない
+            left = left_window_size
+            right = seq_len - right_window_size
+            if left >= right:
+                continue
+            train_data.extend(list(map(lambda j: (seq_index, j), range(left, right))))
+
+    return sequences, train_data, valid_data
+
+
+def create_test_datasets(
+    test_raw_sequences_dict: dict[str, dict[str, list[str]]],
+    seq_le: preprocessing.LabelEncoder,
+    item_le: preprocessing.LabelEncoder,
+    left_window_size: int,
+) -> dict[str, list[tuple[int, list[int], list[int]]]]:
+    return {
+        test_name: to_sequential_test_data(
+            raw_sequences=raw_sequences,
+            seq_le=seq_le,
+            item_le=item_le,
+            left_window_size=left_window_size,
+        )
+        for test_name, raw_sequences in test_raw_sequences_dict.items()
+    }
+
+
+def to_sequential_test_data(
+    raw_sequences: dict[str, list[str]],
+    seq_le: preprocessing.LabelEncoder,
+    item_le: preprocessing.LabelEncoder,
+    left_window_size: int,
+) -> list[tuple[int, list[int], list[int]]]:
+    """
+    シーケンシャルデータをテストデータに変換する
+
+    Returns:
+        (seq_index, context_items, target_items)
+    """
+    data = []
+
+    seq_indices = seq_le.transform(list(raw_sequences.keys()))
+    for i, raw_sequence in enumerate(raw_sequences.values()):
+        seq_index = seq_indices[i]
+        sequence = item_le.transform(raw_sequence).tolist()
+
+        # 長さが足りていない系列はテストデータに加えない
+        if len(sequence) < left_window_size + 1:
+            continue
+
+        # テストデータは周囲の要素ではなく、直前の要素のみ特徴量に入れることができる
+        context_items = sequence[:left_window_size]
+        target_items = sequence[left_window_size:]
+        data.append((seq_index, context_items, target_items))
+
+    return data
+
+
 def process_metadata(
     items: Dict[str, Dict[str, str]],
     exclude_metadata_columns: Optional[List[str]] = None,
@@ -275,6 +392,13 @@ def get_seq_item_le(
     raw_sequences: dict[str, list[str]],
     test_raw_sequences_dict: dict[str, dict[str, list[str]]],
 ) -> tuple[preprocessing.LabelEncoder, preprocessing.LabelEncoder]:
+    def get_all_items(raw_sequences: dict[str, list[str]]) -> List[str]:
+        st = set()
+        for seq in raw_sequences.values():
+            for e in seq:
+                st.add(e)
+        return list(st)
+
     seq_le = preprocessing.LabelEncoder().fit(
         list(raw_sequences.keys())
         + sum(
@@ -305,136 +429,32 @@ def get_seq_item_le(
     return seq_le, item_le
 
 
-def create_test_datasets(
-    test_raw_sequences_dict: dict[str, dict[str, list[str]]],
-    seq_le: preprocessing.LabelEncoder,
-    item_le: preprocessing.LabelEncoder,
-    left_window_size: int,
-) -> dict[str, list[tuple[int, list[int], list[int]]]]:
-    return {
-        test_name: to_sequential_test_data(
-            raw_sequences=raw_sequences,
-            seq_le=seq_le,
-            item_le=item_le,
-            left_window_size=left_window_size,
-        )
-        for test_name, raw_sequences in test_raw_sequences_dict.items()
-    }
-
-
-def to_sequential_test_data(
-    raw_sequences: dict[str, list[str]],
-    seq_le: preprocessing.LabelEncoder,
-    item_le: preprocessing.LabelEncoder,
-    left_window_size: int,
-) -> list[tuple[int, list[int], list[int]]]:
-    """
-    シーケンシャルデータをテストデータに変換する
-
-    Returns:
-        (seq_index, context_items, target_items)
-    """
-    data = []
-
-    seq_indices = seq_le.transform(list(raw_sequences.keys()))
-    for i, raw_sequence in enumerate(raw_sequences.values()):
-        seq_index = seq_indices[i]
-        sequence = item_le.transform(raw_sequence).tolist()
-
-        # 長さが足りていない系列はテストデータに加えない
-        if len(sequence) < left_window_size + 1:
-            continue
-
-        # テストデータは周囲の要素ではなく、直前の要素のみ特徴量に入れることができる
-        context_items = sequence[:left_window_size]
-        target_items = sequence[left_window_size:]
-        data.append((seq_index, context_items, target_items))
-
-    return data
-
-
-def to_sequential_data(
-    raw_sequences: dict[str, list[str]],
-    seq_le: preprocessing.LabelEncoder,
-    item_le: preprocessing.LabelEncoder,
-    left_window_size: int,
-    right_window_size: int,
-    valid_ratio: float = 0.2,
-) -> tuple[list[list[int]], list[tuple[int, int]], list[tuple[int, int]]]:
-    """
-    シーケンシャルデータを学習データと検証データに変換する
-    """
-    sequences: list[list[int]] = [[] for _ in range(len(seq_le.classes_))]
-    train_data = []
-    valid_data = []
-
-    seq_indices = seq_le.transform(list(raw_sequences.keys()))
-    for i, raw_sequence in enumerate(raw_sequences.values()):
-        seq_index = seq_indices[i]
-
-        sequence = item_le.transform(raw_sequence).tolist()
-        sequences[seq_index] = sequence
-
-        # 系列長をLとして、以下を満たすなら検証データを作る
-        # L * valid_ratio > left_window_size + right_window_size
-        # L * (1 - valid_ratio) > (left_window_size + right_window_size) * 2
-        seq_len = len(sequence)
-        valid_len = int(round(seq_len * valid_ratio))
-        train_len = seq_len - valid_len
-        if (
-            valid_len > left_window_size + right_window_size
-            and train_len > (left_window_size + right_window_size) * 2
-        ):
-            # 検証データを作る
-            train_left = left_window_size
-            train_right = train_len - right_window_size
-            assert train_left <= train_right
-            train_data.extend(
-                list(map(lambda j: (seq_index, j), range(train_left, train_right)))
-            )
-            valid_left = train_len + left_window_size
-            valid_right = seq_len - right_window_size
-            assert valid_left <= valid_right
-            valid_data.extend(
-                list(map(lambda j: (seq_index, j), range(valid_left, valid_right)))
-            )
-        else:
-            # 検証データを作らない
-            left = left_window_size
-            right = seq_len - right_window_size
-            if left >= right:
-                continue
-            train_data.extend(list(map(lambda j: (seq_index, j), range(left, right))))
-
-    return sequences, train_data, valid_data
-
-
-def load_dataset_manager(
+def load_dataset_center(
     dataset_name: str,
     dataset_dir: str,
     load_dataset: bool,
     save_dataset: bool,
     window_size: int = 5,
     data_dir: str = "data/",
-) -> SequenceDatasetManager:
+) -> SequenceDatasetCenter:
     pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")
 
     if load_dataset and os.path.exists(pickle_path):
-        print(f"load cached dataset_manager from: {pickle_path}")
+        print(f"load cached dataset_center from: {pickle_path}")
         with open(pickle_path, "rb") as f:
-            dataset_manager: SequenceDatasetManager = pickle.load(f)
-        return dataset_manager
+            dataset_center: SequenceDatasetCenter = pickle.load(f)
+        return dataset_center
 
-    print(f"dataset_manager does not exist at: {pickle_path}, create dataset")
+    print("create dataset")
 
     dataset = load_raw_dataset(dataset_name=dataset_name, data_dir=data_dir)
-    dataset_manager = SequenceDatasetManager(dataset, window_size=window_size)
+    dataset_center = SequenceDatasetCenter(dataset, window_size=window_size)
 
     if save_dataset:
         os.makedirs(dataset_dir, exist_ok=True)
-        print(f"dumping dataset_manager to: {pickle_path}")
+        print(f"dumping dataset_center to: {pickle_path}")
         with open(pickle_path, "wb") as f:
-            pickle.dump(dataset_manager, f)
-        print(f"dumped dataset_manager to: {pickle_path}")
+            pickle.dump(dataset_center, f)
+        print(f"dumped dataset_center to: {pickle_path}")
 
-    return dataset_manager
+    return dataset_center

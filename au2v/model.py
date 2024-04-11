@@ -1,6 +1,5 @@
 import abc
 import collections
-import os
 from typing import Optional, Tuple
 
 import torch
@@ -8,7 +7,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from au2v.config import ModelConfig, TrainerConfig
-from au2v.dataset_manager import SequenceDatasetManager
+from au2v.dataset_center import SequenceDatasetCenter
 from au2v.layer import (
     EmbeddingLayer,
     MetaEmbeddingLayer,
@@ -16,7 +15,6 @@ from au2v.layer import (
     WeightSharedNegativeSampling,
     attention,
 )
-from au2v.util import check_model_path
 
 
 class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
@@ -130,8 +128,8 @@ class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
 
-class AttentiveModel(PyTorchModel):
-    """AttentiveModel（提案モデル）のクラス"""
+class AttentiveAuxiliaryUser2Vec(PyTorchModel):
+    """AttentiveAuxiliaryUser2Vec（AAU2V）のクラス"""
 
     def __init__(
         self,
@@ -277,8 +275,8 @@ class AttentiveModel(PyTorchModel):
         return self.embedding_item.embedding_meta.weight.data
 
 
-class Doc2Vec(PyTorchModel):
-    """Original Doc2Vec"""
+class User2Vec(PyTorchModel):
+    """Original User2Vec"""
 
     def __init__(
         self,
@@ -366,34 +364,34 @@ class Doc2Vec(PyTorchModel):
 
 
 def load_model(
-    dataset_manager: SequenceDatasetManager,
+    dataset_center: SequenceDatasetCenter,
     trainer_config: TrainerConfig,
     model_config: ModelConfig,
 ) -> PyTorchModel:
     model: PyTorchModel
     match trainer_config.model_name:
-        case "attentive":
-            model = AttentiveModel(
-                num_seq=dataset_manager.num_seq,
-                num_item=dataset_manager.num_item,
-                num_seq_meta=dataset_manager.num_seq_meta,
-                num_item_meta=dataset_manager.num_item_meta,
-                num_seq_meta_types=dataset_manager.num_seq_meta_types,
-                num_item_meta_types=dataset_manager.num_item_meta_types,
+        case "aau2v":
+            model = AttentiveAuxiliaryUser2Vec(
+                num_seq=dataset_center.num_seq,
+                num_item=dataset_center.num_item,
+                num_seq_meta=dataset_center.num_seq_meta,
+                num_item_meta=dataset_center.num_item_meta,
+                num_seq_meta_types=dataset_center.num_seq_meta_types,
+                num_item_meta_types=dataset_center.num_item_meta_types,
                 d_model=model_config.d_model,
                 init_embedding_std=model_config.init_embedding_std,
                 max_embedding_norm=model_config.max_embedding_norm,
-                item_counter=dataset_manager.item_counter,
-                seq_meta_indices=dataset_manager.seq_meta_indices.to(
+                item_counter=dataset_center.item_counter,
+                seq_meta_indices=dataset_center.seq_meta_indices.to(
                     trainer_config.device
                 ),
-                seq_meta_weights=dataset_manager.seq_meta_weights.to(
+                seq_meta_weights=dataset_center.seq_meta_weights.to(
                     trainer_config.device
                 ),
-                item_meta_indices=dataset_manager.item_meta_indices.to(
+                item_meta_indices=dataset_center.item_meta_indices.to(
                     trainer_config.device
                 ),
-                item_meta_weights=dataset_manager.item_meta_weights.to(
+                item_meta_weights=dataset_center.item_meta_weights.to(
                     trainer_config.device
                 ),
                 negative_sample_size=model_config.negative_sample_size,
@@ -402,30 +400,18 @@ def load_model(
                 use_meta=model_config.use_meta,
                 use_attention=model_config.use_attention,
             )
-        case "doc2vec":
-            model = Doc2Vec(
-                num_seq=dataset_manager.num_seq,
-                num_item=dataset_manager.num_item,
+        case "user2vec":
+            model = User2Vec(
+                num_seq=dataset_center.num_seq,
+                num_item=dataset_center.num_item,
                 d_model=model_config.d_model,
                 init_embedding_std=model_config.init_embedding_std,
                 max_embedding_norm=model_config.max_embedding_norm,
-                item_counter=dataset_manager.item_counter,
+                item_counter=dataset_center.item_counter,
                 negative_sample_size=model_config.negative_sample_size,
                 device=trainer_config.device,
             )
         case _:
             raise ValueError(f"invalid model_name: {trainer_config.model_name}")
-
-    if trainer_config.load_model:
-        if os.path.exists(trainer_config.model_path) is False:
-            print(
-                "Warning: load_model is specified at trainer_config, "
-                + f"but model does not exists at {trainer_config.model_path}"
-            )
-        else:
-            print(f"load_state_dict from: {trainer_config.model_path}")
-            model = torch.load(trainer_config.model_path)  # type: ignore
-    elif trainer_config.ignore_saved_model is False:
-        check_model_path(trainer_config.model_path)
 
     return model

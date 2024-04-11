@@ -6,7 +6,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from au2v.config import ModelConfig, TrainerConfig
-from au2v.dataset_manager import SequenceDatasetManager
+from au2v.dataset_center import SequenceDatasetCenter
 from au2v.model import PyTorchModel
 
 
@@ -16,17 +16,17 @@ class PyTorchTrainer:
     def __init__(
         self,
         model: PyTorchModel,
-        dataset_manager: SequenceDatasetManager,
+        dataset_center: SequenceDatasetCenter,
         trainer_config: TrainerConfig,
         model_config: ModelConfig,
     ) -> None:
-        self.dataset_manager = dataset_manager
+        self.dataset_center = dataset_center
         self.data_loaders = {
             "train": DataLoader(
-                self.dataset_manager.train_dataset, batch_size=trainer_config.batch_size
+                self.dataset_center.train_dataset, batch_size=trainer_config.batch_size
             ),
             "valid": DataLoader(
-                self.dataset_manager.valid_dataset, batch_size=trainer_config.batch_size
+                self.dataset_center.valid_dataset, batch_size=trainer_config.batch_size
             ),
         }
 

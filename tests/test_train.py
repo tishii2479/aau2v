@@ -4,9 +4,8 @@ import unittest
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../src/"))
 
-from au2v.analyst import Analyst  # noqa
 from au2v.config import ModelConfig, TrainerConfig  # noqa
-from au2v.dataset_manager import load_dataset_manager  # noqa
+from au2v.dataset_center import load_dataset_center  # noqa
 from au2v.model import load_model  # noqa
 from au2v.trainer import PyTorchTrainer  # noqa
 
@@ -15,61 +14,38 @@ class TestTrain(unittest.TestCase):
     def setUp(self) -> None:
         self.trainer_config = TrainerConfig(
             epochs=2,
-            load_model=False,
             save_model=False,
             load_dataset=False,
             save_dataset=False,
+            ignore_saved_model=True,
             model_dir="tmp/",
             dataset_dir="tmp/",
         )
-        self.model_config = ModelConfig()
+        self.model_config = ModelConfig(window_size=1)
 
     def test_train(self) -> None:
-        model_names = ["attentive", "old-attentive", "doc2vec"]
-        dataset_manager = load_dataset_manager(
+        model_names = ["aau2v", "user2vec"]
+        dataset_center = load_dataset_center(
             dataset_name=self.trainer_config.dataset_name,
             dataset_dir=self.trainer_config.dataset_dir,
             load_dataset=self.trainer_config.load_dataset,
             save_dataset=self.trainer_config.save_dataset,
+            window_size=self.model_config.window_size,
         )
         for model_name in model_names:
             self.trainer_config.model_name = model_name
             model = load_model(
-                dataset_manager=dataset_manager,
+                dataset_center=dataset_center,
                 trainer_config=self.trainer_config,
                 model_config=self.model_config,
             )
             trainer = PyTorchTrainer(
                 model=model,
-                dataset_manager=dataset_manager,
+                dataset_center=dataset_center,
                 trainer_config=self.trainer_config,
                 model_config=self.model_config,
             )
             trainer.fit()
-
-    def test_analyst(self) -> None:
-        dataset_manager = load_dataset_manager(
-            dataset_name=self.trainer_config.dataset_name,
-            dataset_dir=self.trainer_config.dataset_dir,
-            load_dataset=self.trainer_config.load_dataset,
-            save_dataset=self.trainer_config.save_dataset,
-        )
-        model = load_model(
-            dataset_manager=dataset_manager,
-            trainer_config=self.trainer_config,
-            model_config=self.model_config,
-        )
-        trainer = PyTorchTrainer(
-            model=model,
-            dataset_manager=dataset_manager,
-            trainer_config=self.trainer_config,
-            model_config=self.model_config,
-        )
-        analyst = Analyst(trainer.model, dataset_manager)
-        analyst.similarity_between_seq_and_item(0)
-        analyst.similarity_between_seq_and_item_meta(0, "genre")
-        analyst.similarity_between_seq_meta_and_item_meta("gender", "M", "genre")
-        analyst.analyze_seq(0)
 
 
 if __name__ == "__main__":

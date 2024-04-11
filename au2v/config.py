@@ -6,13 +6,12 @@ from typing import Optional, Tuple
 
 @dataclass
 class TrainerConfig:
-    model_name: str = "attentive"
+    model_name: str = "aau2v"
     dataset_name: str = "toydata-small"
     epochs: int = 3
     batch_size: int = 64
     verbose: bool = False
     ignore_saved_model: bool = False
-    load_model: bool = True
     save_model: bool = True
     load_dataset: bool = True
     save_dataset: bool = True
@@ -54,9 +53,9 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
     parser.add_argument(
         "--model-name",
         type=str,
-        default="attentive",
+        default="aau2v",
         help="使用するモデル",
-        choices=["attentive", "old-attentive", "doc2vec"],
+        choices=["aau2v", "user2vec"],
     )
     parser.add_argument(
         "--dataset-name",
@@ -112,11 +111,6 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         "--verbose", action="store_true", help="ログを詳細に出すかどうか"
     )
     parser.add_argument(
-        "--load-model",
-        action="store_true",
-        help="`model_dir`からモデルのパラメータを読み込むかどうか",
-    )
-    parser.add_argument(
         "--ignore-saved-model",
         action="store_true",
         help="`model_dir`にあるモデルのパラメータを無視するかどうか",
@@ -162,7 +156,6 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         dataset_name=args.dataset_name,
         epochs=args.epochs,
         batch_size=args.batch_size,
-        load_model=args.load_model,
         ignore_saved_model=args.ignore_saved_model,
         save_model=(args.no_save_model is False),
         load_dataset=(args.no_load_dataset is False),

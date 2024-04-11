@@ -71,9 +71,9 @@ def load_raw_dataset(
             data = generate_toydata(
                 data_name="toydata-small",
                 user_count_per_segment=50,
-                item_count_per_segment=3,
-                seq_lengths=[20],
-                test_length=20,
+                item_count_per_segment=10,
+                seq_lengths=[50],
+                test_length=10,
             )
             dataset = convert_toydata(*data)
         case "toydata-seq-lengths":
