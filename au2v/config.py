@@ -37,13 +37,13 @@ class TrainerConfig:
 
 @dataclass
 class ModelConfig:
-    d_model: int = 128
+    d_model: int = 64
     init_embedding_std: float = 0.2
-    max_embedding_norm: Optional[float] = None
+    max_embedding_norm: Optional[float] = 1
     window_size: int = 5
     negative_sample_size: int = 5
-    lr: float = 0.0001
-    weight_decay: float = 0.0001
+    lr: float = 5e-5
+    weight_decay: float = 1e-8
     use_weight_tying: bool = True
     use_meta: bool = True
     use_attention: bool = True
