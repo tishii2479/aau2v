@@ -5,9 +5,9 @@ import tqdm
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from au2v.config import ModelConfig, TrainerConfig
-from au2v.dataset_center import SequenceDatasetCenter
-from au2v.model import PyTorchModel
+from aau2v.config import ModelConfig, TrainerConfig
+from aau2v.dataset_center import SequenceDatasetCenter
+from aau2v.model import PyTorchModel
 
 
 class PyTorchTrainer:

@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "au2v"
+name = "aau2v"
 version = "0.1.0"
 description = ""
 authors = ["Tatsuya Ishii <tishii2479@gmail.com>"]
 readme = "README.md"
 packages = [
-    { include = "au2v" }
+    { include = "aau2v" }
 ]
 
 [tool.poetry.dependencies]

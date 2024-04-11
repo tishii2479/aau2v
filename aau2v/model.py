@@ -6,9 +6,9 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from au2v.config import ModelConfig, TrainerConfig
-from au2v.dataset_center import SequenceDatasetCenter
-from au2v.layer import (
+from aau2v.config import ModelConfig, TrainerConfig
+from aau2v.dataset_center import SequenceDatasetCenter
+from aau2v.layer import (
     EmbeddingLayer,
     MetaEmbeddingLayer,
     NegativeSampling,

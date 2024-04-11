@@ -10,7 +10,7 @@ from sklearn import preprocessing
 from torch import Tensor
 from torch.utils.data import Dataset
 
-from au2v.dataset import RawDataset, load_raw_dataset
+from aau2v.dataset import RawDataset, load_raw_dataset
 
 
 def to_full_meta_value(meta_name: str, meta_value: Any) -> str:

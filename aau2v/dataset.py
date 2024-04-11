@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
-from au2v.toydata import generate_toydata
+from aau2v.toydata import generate_toydata
 
 
 @dataclass

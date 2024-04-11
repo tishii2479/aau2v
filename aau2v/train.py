@@ -1,10 +1,10 @@
 import numpy as np
 import torch
 
-from au2v.config import parse_config
-from au2v.dataset_center import load_dataset_center
-from au2v.model import load_model
-from au2v.trainer import PyTorchTrainer
+from aau2v.config import parse_config
+from aau2v.dataset_center import load_dataset_center
+from aau2v.model import load_model
+from aau2v.trainer import PyTorchTrainer
 
 
 def main() -> None:

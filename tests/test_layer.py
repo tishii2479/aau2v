@@ -6,12 +6,12 @@ import torch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../src/"))
 
-import au2v.layer  # noqa
+import aau2v.layer  # noqa
 
 
 class TestLayer(unittest.TestCase):
     def test_embedding_dot(self) -> None:
-        lay = au2v.layer.EmbeddingDot(d_model=3, num_item=4)
+        lay = aau2v.layer.EmbeddingDot(d_model=3, num_item=4)
         embedding_weight = lay.embedding.weight
         h = torch.Tensor([[[0, 1, 0]], [[1, 0, 0]]])
         indices = torch.tensor([[1], [2]], dtype=torch.long)
@@ -35,7 +35,7 @@ class TestLayer(unittest.TestCase):
         h_item_meta = torch.rand(batch_size, window_size, item_meta_size, d_model)
         item_meta_weights = torch.rand(batch_size, window_size, item_meta_size)
 
-        h_item_meta_weighted = au2v.layer.calc_weighted_meta(
+        h_item_meta_weighted = aau2v.layer.calc_weighted_meta(
             h_item_meta, item_meta_weights
         )
 
