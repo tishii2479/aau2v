@@ -7,7 +7,6 @@ from typing import Any, Dict, List, MutableSet, Optional, Tuple
 
 import torch
 from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
 from torch import Tensor
 from torch.utils.data import Dataset
 
@@ -154,14 +153,13 @@ def create_train_valid_dataset(
     item_le: preprocessing.LabelEncoder,
     window_size: int = 8,
 ) -> tuple[SequenceDataset, SequenceDataset]:
-    sequences, data = to_sequential_data(
+    sequences, train_data, valid_data = to_sequential_data(
         raw_sequences=raw_sequences,
         seq_le=seq_le,
         item_le=item_le,
         left_window_size=window_size,
         right_window_size=window_size,
     )
-    train_data, valid_data = train_test_split(data, test_size=0.2)
     train_dataset = SequenceDataset(
         raw_sequences=raw_sequences,
         sequences=sequences,
@@ -361,16 +359,14 @@ def to_sequential_data(
     item_le: preprocessing.LabelEncoder,
     left_window_size: int,
     right_window_size: int,
-) -> tuple[list[list[int]], list[Tuple[int, int]]]:
+    valid_ratio: float = 0.2,
+) -> tuple[list[list[int]], list[tuple[int, int]], list[tuple[int, int]]]:
     """
-    シーケンシャルデータを学習データに変換する
-
-    Returns:
-        Tuple[List[List[int]], List[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]]]:
-            (sequences, data)
+    シーケンシャルデータを学習データと検証データに変換する
     """
     sequences: List[List[int]] = [[] for _ in range(len(seq_le.classes_))]
-    data = []
+    train_data = []
+    valid_data = []
 
     print("to_sequential_data start")
     seq_indices = seq_le.transform(list(raw_sequences.keys()))
@@ -380,15 +376,39 @@ def to_sequential_data(
         sequence = item_le.transform(raw_sequence).tolist()
         sequences[seq_index] = sequence
 
-        # use target index from [left_window_size, ..., -right_window_size]
-        left = left_window_size
-        right = len(sequence) - right_window_size
-        if left >= right:
-            continue
-        data.extend(list(map(lambda j: (seq_index, j), range(left, right))))
+        # 系列長をLとして、以下を満たすなら検証データを作る
+        # L * valid_ratio > left_window_size + right_window_size
+        # L * (1 - valid_ratio) > (left_window_size + right_window_size) * 2
+        seq_len = len(sequence)
+        valid_len = int(round(seq_len * valid_ratio))
+        train_len = seq_len - valid_len
+        if (
+            valid_len > left_window_size + right_window_size
+            and train_len > (left_window_size + right_window_size) * 2
+        ):
+            # 検証データを作る
+            train_left = left_window_size
+            train_right = train_len - right_window_size
+            assert train_left <= train_right
+            train_data.extend(
+                list(map(lambda j: (seq_index, j), range(train_left, train_right)))
+            )
+            valid_left = train_len + left_window_size
+            valid_right = seq_len - right_window_size
+            assert valid_left <= valid_right
+            valid_data.extend(
+                list(map(lambda j: (seq_index, j), range(valid_left, valid_right)))
+            )
+        else:
+            # 検証データを作らない
+            left = left_window_size
+            right = seq_len - right_window_size
+            if left >= right:
+                continue
+            train_data.extend(list(map(lambda j: (seq_index, j), range(left, right))))
 
     print("to_sequential_data end")
-    return sequences, data
+    return sequences, train_data, valid_data
 
 
 def load_dataset_manager(
