@@ -1,10 +1,12 @@
 import os
+import random
 from typing import Any, ChainMap, Dict, List, Tuple, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+import torch
 
 
 def to_full_meta_value(meta_name: str, meta_value: Any) -> str:
@@ -39,6 +41,20 @@ def get_all_items(
         for e in seq:
             st.add(e)
     return list(st)
+
+
+def set_seed(seed: int) -> None:
+    # random
+    random.seed(seed)
+
+    # numpy
+    np.random.seed(seed)
+
+    # pytorch
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.mps.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
 
 
 def visualize_loss(

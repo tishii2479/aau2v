@@ -287,6 +287,7 @@ class Doc2Vec(PyTorchModel):
         item_counter: collections.Counter,
         device: str = "cpu",
         d_model: int = 128,
+        init_embedding_std: float = 1,
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
     ) -> None:
@@ -308,18 +309,26 @@ class Doc2Vec(PyTorchModel):
         super().__init__()
 
         self.embedding_seq = EmbeddingLayer(
-            num_seq, d_model, max_norm=max_embedding_norm
+            num_seq,
+            d_model,
+            max_norm=max_embedding_norm,
+            std=init_embedding_std,
         )
         self.embedding_item = EmbeddingLayer(
-            num_item, d_model, max_norm=max_embedding_norm
+            num_item,
+            d_model,
+            max_norm=max_embedding_norm,
+            std=init_embedding_std,
         )
 
         self.output = NegativeSampling(
             d_model=d_model,
             num_item=num_item,
             item_counter=item_counter,
-            negative_sample_size=negative_sample_size,
             device=device,
+            init_embedding_std=init_embedding_std,
+            negative_sample_size=negative_sample_size,
+            max_embedding_norm=max_embedding_norm,
         )
 
     def calc_out(
@@ -398,6 +407,7 @@ def load_model(
                 num_seq=dataset_manager.num_seq,
                 num_item=dataset_manager.num_item,
                 d_model=model_config.d_model,
+                init_embedding_std=model_config.init_embedding_std,
                 max_embedding_norm=model_config.max_embedding_norm,
                 item_counter=dataset_manager.item_counter,
                 negative_sample_size=model_config.negative_sample_size,
