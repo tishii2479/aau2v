@@ -44,6 +44,9 @@ class ModelConfig:
     negative_sample_size: int = 5
     lr: float = 0.0001
     weight_decay: float = 0.0001
+    use_weight_tying: bool = True
+    use_meta: bool = True
+    use_attention: bool = True
 
 
 def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
@@ -92,9 +95,16 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         default=5,
         help="ネガティブサンプリングのサンプル数",
     )
+    parser.add_argument("--lr", type=float, default=0.0001, help="学習率")
+    parser.add_argument(
+        "--no-weight-tying", action="store_true", help="重み共有するかどうか"
+    )
+    parser.add_argument("--no-meta", action="store_true", help="補助情報を使うかどうか")
+    parser.add_argument(
+        "--no-attention", action="store_true", help="Attentionを使うかどうか"
+    )
     parser.add_argument("--batch-size", type=int, default=64, help="バッチサイズ")
     parser.add_argument("--epochs", type=int, default=3, help="エポック数")
-    parser.add_argument("--lr", type=float, default=0.0001, help="学習率")
     parser.add_argument(
         "--weight-decay", type=float, default=0.0001, help="L2正則化の強さ"
     )
