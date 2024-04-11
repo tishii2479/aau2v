@@ -163,7 +163,6 @@ class EmbeddingLayer(nn.Embedding):
             num_embeddings=num_embeddings,
             embedding_dim=embedding_dim,
             max_norm=max_norm,
-            scale_grad_by_freq=True,
         )
         nn.init.normal_(self.weight, mean=mean, std=std)
 

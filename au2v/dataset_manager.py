@@ -364,11 +364,10 @@ def to_sequential_data(
     """
     シーケンシャルデータを学習データと検証データに変換する
     """
-    sequences: List[List[int]] = [[] for _ in range(len(seq_le.classes_))]
+    sequences: list[list[int]] = [[] for _ in range(len(seq_le.classes_))]
     train_data = []
     valid_data = []
 
-    print("to_sequential_data start")
     seq_indices = seq_le.transform(list(raw_sequences.keys()))
     for i, raw_sequence in enumerate(raw_sequences.values()):
         seq_index = seq_indices[i]
@@ -407,7 +406,6 @@ def to_sequential_data(
                 continue
             train_data.extend(list(map(lambda j: (seq_index, j), range(left, right))))
 
-    print("to_sequential_data end")
     return sequences, train_data, valid_data
 
 

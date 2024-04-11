@@ -6,9 +6,9 @@ import pandas as pd
 
 def generate_toydata(
     data_name: str = "toydata",
-    user_count_per_segment: int = 1000,
+    user_count_per_segment: int = 100,
     item_count_per_segment: int = 50,
-    seq_lengths: List[int] = [50],
+    seq_lengths: List[int] = [100],
     genders: List[str] = ["M", "F"],
     ages: List[str] = ["20", "30", "40", "50", "60"],
     genres: List[str] = ["M", "E", "F"],

@@ -45,7 +45,7 @@ class TestTrain(unittest.TestCase):
                 trainer_config=self.trainer_config,
                 model_config=self.model_config,
             )
-            trainer.fit(show_fig=False)
+            trainer.fit()
 
     def test_analyst(self) -> None:
         dataset_manager = load_dataset_manager(
