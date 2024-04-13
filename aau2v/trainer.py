@@ -42,18 +42,11 @@ class PyTorchTrainer:
 
     def fit(
         self,
-        on_train_start: Optional[Callable] = None,
-        on_train_end: Optional[Callable] = None,
-        on_epoch_start: Optional[Callable[[int], None]] = None,
         on_epoch_end: Optional[Callable[[int], None]] = None,
+        on_iter_end: Optional[Callable[[int, int], None]] = None,
     ) -> Dict[str, List[float]]:
-        if on_train_start is not None:
-            on_train_start()
-
         loss_dict: Dict[str, List[float]] = {name: [] for name in self.data_loaders}
         for epoch in range(self.trainer_config.epochs):
-            if on_epoch_start is not None:
-                on_epoch_start(epoch)
 
             total_loss = 0.0
             for data_name, data_loader in self.data_loaders.items():
@@ -63,7 +56,7 @@ class PyTorchTrainer:
                     case _:
                         self.model.eval()
 
-                for _, data in enumerate(tqdm.tqdm(data_loader)):
+                for batch, data in enumerate(tqdm.tqdm(data_loader)):
                     seq_indices, item_indices, target_indices = data
                     item_indices = torch.stack(item_indices).mT
                     loss = self.model.forward(
@@ -86,6 +79,9 @@ class PyTorchTrainer:
 
                     total_loss += loss.item()
 
+                    if on_iter_end is not None:
+                        on_iter_end(epoch, batch)
+
                 total_loss /= len(data_loader)
                 loss_dict[data_name].append(total_loss)
                 print(data_name, total_loss)
@@ -96,8 +92,5 @@ class PyTorchTrainer:
             if self.trainer_config.save_model:
                 torch.save(self.model, self.trainer_config.model_path)
                 print(f"saved model to {self.trainer_config.model_path}")
-
-        if on_train_end is not None:
-            on_train_end()
 
         return loss_dict
