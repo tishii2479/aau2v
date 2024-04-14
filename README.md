@@ -1,100 +1,98 @@
-# 卒業研究
+# Implementation of AAU2V (Attentive and Auxiliary-Informative User2Vec)
 
-## 環境構築
+## Requirements
 
-```
+```shell
 $ python3 --version
-3.10.4
+3.11.6
 
 $ poetry --version
-1.2.1
+1.5.1
 ```
 
-- パッケージマネージャに`poetry`（ https://python-poetry.org/docs/）を使用
+## Setup
 
-### 必要ライブラリのインストール
+### Install required libraries
 
 ```shell
 $ poetry install
 ```
 
-## サンプルコード
+### Download movielens dataset
 
-- [example.ipynb](/example.ipynb)
+1. Download "MovieLens 1M Dataset" from https://grouplens.org/datasets/movielens/1m/.
+2. Place `ml-1m` to directory `./data`
+3. Run `$ poetry run python3 src/preprocess_movielens.py`
 
-## モデルの学習
+## Experiments
 
-```shell
-$ poetry run python3 src/train.py
+To reproduce the experiment results, you can use jupyter notebooks inside directory `./notebooks`.
 
-or
+- `exp-4.ipynb` : Experiment against artifical data.
+- `exp-5-1.ipynb` : Precision evaluation experiment against movielens dataset.
+- `exp-5-2.ipynb` : User and auxiliary information analysis against movielens dataset.
 
-$ poetry shell
-$ python3 src/train.py
+## How to create your own dataset
+
+You can create your own dataset by creating an instance of `aau2v.dataset.RawDataset`.
+Refer `aau2v/dataset.py` for more detail.
+Once you create your own `RawDataset`, you can follow the below procedure to train a model.
+
+```python
+window_size = 5
+dataset = RawDataset(...) # Create your own RawDataset here.
+dataset_center = SequenceDatasetCenter(dataset, window_size)
+
+model = load_model(
+    dataset_center=dataset_center,
+    trainer_config=trainer_config,
+    model_config=model_config,
+)
+trainer = PyTorchTrainer(
+    model=model,
+    dataset_center=dataset_center,
+    trainer_config=trainer_config,
+)
+trainer.fit()
 ```
 
-### 学習時の設定
+## Configs
 
 ```
 $ poetry run python3 src/train.py --help
-
-usage: train.py [-h] [--model-name {attentive,old-attentive,doc2vec}]
-                [--dataset-name {toydata-paper,toydata-small,toydata-seq-lengths,hm,movielens,movielens-simple,movielens-equal-gender,20newsgroup,20newsgroup-small}]
-                [--d-model D_MODEL]
-                [--max-embedding-norm MAX_EMBEDDING_NORM]
-                [--init-embedding-std INIT_EMBEDDING_STD] [--window-size WINDOW_SIZE]
-                [--negative_sample_size NEGATIVE_SAMPLE_SIZE] [--batch-size BATCH_SIZE]
-                [--epochs EPOCHS] [--lr LR] [--verbose] [--load-model]
-                [--ignore-saved-model] [--no-save-model] [--no-load-dataset]
-                [--no-save-dataset] [--model-dir MODEL_DIR] [--dataset-dir DATASET_DIR]
+usage: train.py [-h] [--model-name {aau2v,user2vec}] [--dataset-name {toydata-paper,toydata-small,movielens}] [--d-model D_MODEL]
+                [--max-embedding-norm MAX_EMBEDDING_NORM] [--init-embedding-std INIT_EMBEDDING_STD] [--window-size WINDOW_SIZE]
+                [--negative_sample_size NEGATIVE_SAMPLE_SIZE] [--lr LR] [--no-weight-tying] [--no-meta] [--no-attention]
+                [--batch-size BATCH_SIZE] [--epochs EPOCHS] [--weight-decay WEIGHT_DECAY] [--verbose] [--no-save-model]
+                [--model-dir MODEL_DIR] [--device DEVICE]
 
 options:
   -h, --help            show this help message and exit
-  --model-name {attentive,old-attentive,doc2vec}
-                        使用するモデル
-  --dataset-name {toydata-paper,toydata-small,toydata-seq-lengths,hm,movielens,movielens-simple,movielens-equal-gender,20newsgroup,20newsgroup-small}
-                        使用するデータセット
-  --d-model D_MODEL     埋め込み表現の次元数
+  --model-name {aau2v,user2vec}
+                        The name of embedding model to train
+  --dataset-name {toydata-paper,toydata-small,movielens}
+                        The name of dataset to use for training
+  --d-model D_MODEL     The dimension of embeddings
   --max-embedding-norm MAX_EMBEDDING_NORM
-                        埋め込み表現のノルムの最大値
+                        The maximum l2-norm of embedding representations
   --init-embedding-std INIT_EMBEDDING_STD
-                        埋め込み表現を初期化する時に用いる正規分布の標準偏差
+                        The standard deviation of the normal distribution used when initializing embeddings
   --window-size WINDOW_SIZE
-                        学習する際に参照する過去の要素の個数
+                        The number of elements referenced during training (window_size)
   --negative_sample_size NEGATIVE_SAMPLE_SIZE
-                        ネガティブサンプリングのサンプル数
+                        The sample size for negative sampling
+  --lr LR               The learning rate when optimizing
+  --no-weight-tying     Train model without weight-tying
+  --no-meta             Train model without auxiliary information
+  --no-attention        Train model without attention aggregation
   --batch-size BATCH_SIZE
-                        バッチサイズ
-  --epochs EPOCHS       エポック数
-  --lr LR               学習率
-  --verbose             ログを詳細に出すかどうか
-  --load-model          `model_dir`からモデルのパラメータを読み込むかどうか
-  --ignore-saved-model  `model_dir`にあるモデルのパラメータを無視するかどうか
-  --no-save-model       `model_dir`にモデルを保存するかどうか
-  --no-load-dataset     `datset_dir`からデータセットを読み込むかどうか
-  --no-save-dataset     `dataset_dir`にデータセットを保存するかどうか
+                        The batch size
+  --epochs EPOCHS       The epoch number for training
+  --weight-decay WEIGHT_DECAY
+                        The strenght of weight decay.
+  --verbose             Whether to output logs in detail or not
+  --no-save-model       Does not save model
   --model-dir MODEL_DIR
-                        モデルを保存するディレクトリ
-  --dataset-dir DATASET_DIR
-                        データセットを保存するディレクトリ
+                        The directory to save model weights.
+  --device DEVICE       The device on which the computation is performed
 ```
-
-## ISSUE:
-
-- ログをわかりやすく
-    - エラーをちゃんと出す
-    - `logger`の使用
-- `pathlib`を使う
-
-## TODO:
-
-- `README`の更新
-    - データセットのセットアップ方法
-    - `--help`の更新
-- レポジトリ名をaau2vにする
-- コメントの追加
-- `nn.Embedding.scale_grad_by_freq`の調査
-- 特徴が分離できているか確かめる
-    - 固有の埋め込み表現からどの程度性別の影響が取り除かれているか
-    - 性別を反転させたときにどうなるか
-    - 男性の中で、好きな男性向けジャンルが異なるグループを作って、それをクラスタとして分けられるか

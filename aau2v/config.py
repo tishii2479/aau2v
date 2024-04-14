@@ -145,8 +145,8 @@ def parse_config() -> tuple[TrainerConfig, ModelConfig]:
         max_embedding_norm=args.max_embedding_norm,
         window_size=args.window_size,
         negative_sample_size=args.negative_sample_size,
-        use_weight_tying=args.use_weight_tying,
-        use_meta=args.use_meta,
-        use_attention=args.use_attention,
+        use_weight_tying=not args.no_weight_tying,
+        use_meta=not args.no_meta,
+        use_attention=not args.no_attention,
     )
     return trainer_config, model_config

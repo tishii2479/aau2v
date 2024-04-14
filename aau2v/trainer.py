@@ -86,9 +86,9 @@ class PyTorchTrainer:
                 on_epoch_end(epoch)
 
             if self.config.save_model:
-                model_path = (
-                    Path(self.config.model_dir) / f"{self.config.model_name}-{epoch}.pt"
-                )
+                model_dir = Path(self.config.model_dir)
+                model_dir.mkdir(parents=True, exist_ok=True)
+                model_path = model_dir / f"{self.config.model_name}-{epoch}.pt"
                 torch.save(self.model, model_path)
                 print(f"saved model to {model_path}")
 

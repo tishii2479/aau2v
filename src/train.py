@@ -1,3 +1,7 @@
+"""
+Example code to train embedding models.
+"""
+
 import numpy as np
 import torch
 

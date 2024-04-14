@@ -114,7 +114,6 @@ class SequenceDatasetCenter:
 class SequenceDataset(Dataset):
     def __init__(
         self,
-        raw_sequences: dict[str, list[str]],
         sequences: list[list[int]],
         data: list[tuple[int, int]],
         left_window_size: int,
@@ -136,7 +135,6 @@ class SequenceDataset(Dataset):
                 学習するときに参照する過去の要素の個数.
                 Defaults to 8.
         """
-        self.raw_sequences = raw_sequences
         self.sequences = sequences
         self.data = data
         self.left_w = left_window_size
@@ -171,14 +169,12 @@ def create_train_valid_dataset(
         right_window_size=window_size,
     )
     train_dataset = SequenceDataset(
-        raw_sequences=raw_sequences,
         sequences=sequences,
         data=train_data,
         left_window_size=window_size,
         right_window_size=window_size,
     )
     valid_dataset = SequenceDataset(
-        raw_sequences=raw_sequences,
         sequences=sequences,
         data=valid_data,
         left_window_size=window_size,

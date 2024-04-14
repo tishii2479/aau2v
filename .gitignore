@@ -1,9 +1,5 @@
 __pycache__
-weights/
 data/
+model/
 .mypy_cache
 .ipynb_checkpoints
-example/
-cache*/
-log/
-tmp/
