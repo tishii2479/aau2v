@@ -1,9 +1,6 @@
 import collections
 import copy
-import os
-import pickle
-from pathlib import Path
-from typing import Any, Dict, List, MutableSet, Optional, Tuple
+from typing import Any, MutableSet, Optional
 
 import torch
 from sklearn import preprocessing
@@ -295,9 +292,9 @@ def to_sequential_test_data(
 
 
 def process_metadata(
-    items: Dict[str, Dict[str, str]],
-    exclude_metadata_columns: Optional[List[str]] = None,
-) -> Tuple[preprocessing.LabelEncoder, Dict[str, List[str]]]:
+    items: dict[str, dict[str, str]],
+    exclude_metadata_columns: Optional[list[str]] = None,
+) -> tuple[preprocessing.LabelEncoder, dict[str, list[str]]]:
     """Process meta datas
 
     Args:
@@ -308,7 +305,7 @@ def process_metadata(
         Tuple[LabelEncoder, Dict[str, List[str]]]:
             (Label Encoder of meta data, Dictionary of list of meta datas)
     """
-    meta_dict: Dict[str, MutableSet[str]] = {}
+    meta_dict: dict[str, MutableSet[str]] = {}
     for _, meta_data in items.items():
         for meta_name, meta_value in meta_data.items():
             if (
@@ -326,8 +323,8 @@ def process_metadata(
             else:
                 meta_dict[meta_name].add(meta_value)
 
-    all_meta_values: List[str] = []
-    new_meta_dict: Dict[str, List[str]] = {}
+    all_meta_values: list[str] = []
+    new_meta_dict: dict[str, list[str]] = {}
     for meta_name in meta_dict.keys():
         new_meta_dict[meta_name] = list(meta_dict[meta_name])
         for value in new_meta_dict[meta_name]:
@@ -340,21 +337,21 @@ def process_metadata(
 
 
 def get_meta_indices(
-    names: List[str],
+    names: list[str],
     meta_le: preprocessing.LabelEncoder,
-    metadata: Dict[str, Dict[str, Any]],
-    exclude_metadata_columns: Optional[List[str]] = None,
+    metadata: dict[str, dict[str, Any]],
+    exclude_metadata_columns: Optional[list[str]] = None,
     max_meta_size: int = 10,
-) -> Tuple[Tensor, Tensor]:
-    meta_indices: List[List[int]] = []
-    meta_weights: List[List[float]] = []
+) -> tuple[Tensor, Tensor]:
+    meta_indices: list[list[int]] = []
+    meta_weights: list[list[float]] = []
     for name in names:
         if name not in metadata:
             meta_indices.append([])
             meta_weights.append([])
             continue
-        meta_values: List[str] = []
-        meta_weight: List[float] = []
+        meta_values: list[str] = []
+        meta_weight: list[float] = []
         for meta_name, meta_value in metadata[name].items():
             if (
                 exclude_metadata_columns is not None
@@ -392,13 +389,6 @@ def get_seq_item_le(
     raw_sequences: dict[str, list[str]],
     test_raw_sequences_dict: dict[str, dict[str, list[str]]],
 ) -> tuple[preprocessing.LabelEncoder, preprocessing.LabelEncoder]:
-    def get_all_items(raw_sequences: dict[str, list[str]]) -> List[str]:
-        st = set()
-        for seq in raw_sequences.values():
-            for e in seq:
-                st.add(e)
-        return list(st)
-
     seq_le = preprocessing.LabelEncoder().fit(
         list(raw_sequences.keys())
         + sum(
@@ -412,7 +402,7 @@ def get_seq_item_le(
         )
     )
     item_le = preprocessing.LabelEncoder().fit(
-        get_all_items(raw_sequences)
+        sum(raw_sequences.values(), [])
         + sum(
             sum(
                 list(
@@ -431,30 +421,9 @@ def get_seq_item_le(
 
 def load_dataset_center(
     dataset_name: str,
-    dataset_dir: str,
-    load_dataset: bool,
-    save_dataset: bool,
     window_size: int = 5,
     data_dir: str = "data/",
 ) -> SequenceDatasetCenter:
-    pickle_path = Path(dataset_dir).joinpath(f"{dataset_name}.pickle")
-
-    if load_dataset and os.path.exists(pickle_path):
-        print(f"load cached dataset_center from: {pickle_path}")
-        with open(pickle_path, "rb") as f:
-            dataset_center: SequenceDatasetCenter = pickle.load(f)
-        return dataset_center
-
-    print("create dataset")
-
     dataset = load_raw_dataset(dataset_name=dataset_name, data_dir=data_dir)
     dataset_center = SequenceDatasetCenter(dataset, window_size=window_size)
-
-    if save_dataset:
-        os.makedirs(dataset_dir, exist_ok=True)
-        print(f"dumping dataset_center to: {pickle_path}")
-        with open(pickle_path, "wb") as f:
-            pickle.dump(dataset_center, f)
-        print(f"dumped dataset_center to: {pickle_path}")
-
     return dataset_center

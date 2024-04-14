@@ -1,152 +1,128 @@
 from argparse import ArgumentParser
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 
 @dataclass
 class TrainerConfig:
     model_name: str = "aau2v"
-    dataset_name: str = "toydata-small"
+    dataset_name: str = "toydata-paper"
     epochs: int = 3
     batch_size: int = 64
+    lr: float = 1e-3
+    weight_decay: float = 0
     verbose: bool = False
-    ignore_saved_model: bool = False
+    model_dir: str = "model"
     save_model: bool = True
-    load_dataset: bool = True
-    save_dataset: bool = True
-    model_dir: str = "cache/model/"
-    dataset_dir: str = "cache/dataset/"
     device: str = "cpu"
-
-    @property
-    def model_path(self) -> str:
-        # ISSUE: stop creating directory if model_dir does not exist
-        model_dir = Path(self.model_dir, self.dataset_name)
-        model_dir.mkdir(exist_ok=True, parents=True)
-        return str(model_dir.joinpath(f"{self.model_name}.pt"))
-
-    @property
-    def best_model_path(self) -> str:
-        # ISSUE: stop creating directory if best_model_path does not exist
-        model_dir = Path(self.model_dir, self.dataset_name)
-        model_dir.mkdir(exist_ok=True, parents=True)
-        return str(model_dir.joinpath(f"best-{self.model_name}.pt"))
 
 
 @dataclass
 class ModelConfig:
     d_model: int = 64
     init_embedding_std: float = 0.2
-    max_embedding_norm: Optional[float] = 1
+    max_embedding_norm: Optional[float] = 5
     window_size: int = 5
     negative_sample_size: int = 5
-    lr: float = 5e-5
-    weight_decay: float = 1e-8
     use_weight_tying: bool = True
     use_meta: bool = True
     use_attention: bool = True
 
 
-def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
+def parse_config() -> tuple[TrainerConfig, ModelConfig]:
     parser = ArgumentParser()
     parser.add_argument(
         "--model-name",
         type=str,
         default="aau2v",
-        help="使用するモデル",
+        help="The name of embedding model to train",
         choices=["aau2v", "user2vec"],
     )
     parser.add_argument(
         "--dataset-name",
         type=str,
         default="toydata-paper",
-        help="使用するデータセット",
+        help="The name of dataset to use for training",
         choices=[
             "toydata-paper",
             "toydata-small",
-            "toydata-seq-lengths",
             "movielens",
         ],
     )
-    parser.add_argument("--d-model", type=int, default=128, help="埋め込み表現の次元数")
+    parser.add_argument(
+        "--d-model", type=int, default=64, help="The dimension of embeddings"
+    )
     parser.add_argument(
         "--max-embedding-norm",
         type=float,
-        default=None,
-        help="埋め込み表現のノルムの最大値",
+        default=5,
+        help="The maximum l2-norm of embedding representations",
     )
     parser.add_argument(
         "--init-embedding-std",
         type=float,
         default=0.2,
-        help="埋め込み表現を初期化する時に用いる正規分布の標準偏差",
+        help="The standard deviation of the normal distribution used when initializing embeddings",
     )
     parser.add_argument(
         "--window-size",
         type=int,
         default=5,
-        help="学習する際に参照する過去の要素の個数",
+        help="The number of elements referenced during training (window_size)",
     )
     parser.add_argument(
         "--negative_sample_size",
         type=int,
         default=5,
-        help="ネガティブサンプリングのサンプル数",
-    )
-    parser.add_argument("--lr", type=float, default=0.0001, help="学習率")
-    parser.add_argument(
-        "--no-weight-tying", action="store_true", help="重み共有するかどうか"
-    )
-    parser.add_argument("--no-meta", action="store_true", help="補助情報を使うかどうか")
-    parser.add_argument(
-        "--no-attention", action="store_true", help="Attentionを使うかどうか"
-    )
-    parser.add_argument("--batch-size", type=int, default=64, help="バッチサイズ")
-    parser.add_argument("--epochs", type=int, default=3, help="エポック数")
-    parser.add_argument(
-        "--weight-decay", type=float, default=0.0001, help="L2正則化の強さ"
+        help="The sample size for negative sampling",
     )
     parser.add_argument(
-        "--verbose", action="store_true", help="ログを詳細に出すかどうか"
+        "--lr", type=float, default=1e-3, help="The learning rate when optimizing"
     )
     parser.add_argument(
-        "--ignore-saved-model",
+        "--no-weight-tying",
         action="store_true",
-        help="`model_dir`にあるモデルのパラメータを無視するかどうか",
+        help="Train model without weight-tying",
+    )
+    parser.add_argument(
+        "--no-meta",
+        action="store_true",
+        help="Train model without auxiliary information",
+    )
+    parser.add_argument(
+        "--no-attention",
+        action="store_true",
+        help="Train model without attention aggregation",
+    )
+    parser.add_argument("--batch-size", type=int, default=64, help="The batch size")
+    parser.add_argument(
+        "--epochs", type=int, default=3, help="The epoch number for training"
+    )
+    parser.add_argument(
+        "--weight-decay",
+        type=float,
+        default=0,
+        help="The strenght of weight decay.",
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", help="Whether to output logs in detail or not"
     )
     parser.add_argument(
         "--no-save-model",
         action="store_true",
-        help="`model_dir`にモデルを保存するかどうか",
-    )
-    parser.add_argument(
-        "--no-load-dataset",
-        action="store_true",
-        help="`datset_dir`からデータセットを読み込むかどうか",
-    )
-    parser.add_argument(
-        "--no-save-dataset",
-        action="store_true",
-        help="`dataset_dir`にデータセットを保存するかどうか",
+        help="Does not save model",
     )
     parser.add_argument(
         "--model-dir",
         type=str,
-        default="cache/model/",
-        help="モデルを保存するディレクトリ",
-    )
-    parser.add_argument(
-        "--dataset-dir",
-        type=str,
-        default="cache/dataset/",
-        help="データセットを保存するディレクトリ",
+        default="model",
+        help="The directory to save model weights.",
     )
     parser.add_argument(
         "--device",
         type=str,
         default="cpu",
-        help="計算を実行するデバイス",
+        help="The device on which the computation is performed",
     )
 
     args = parser.parse_args()
@@ -156,13 +132,11 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         dataset_name=args.dataset_name,
         epochs=args.epochs,
         batch_size=args.batch_size,
-        ignore_saved_model=args.ignore_saved_model,
-        save_model=(args.no_save_model is False),
-        load_dataset=(args.no_load_dataset is False),
-        save_dataset=(args.no_save_dataset is False),
+        lr=args.lr,
+        weight_decay=args.weight_decay,
         verbose=args.verbose,
         model_dir=args.model_dir,
-        dataset_dir=args.dataset_dir,
+        save_model=not args.no_save_model,
         device=args.device,
     )
     model_config = ModelConfig(
@@ -171,7 +145,8 @@ def parse_config() -> Tuple[TrainerConfig, ModelConfig]:
         max_embedding_norm=args.max_embedding_norm,
         window_size=args.window_size,
         negative_sample_size=args.negative_sample_size,
-        lr=args.lr,
-        weight_decay=args.weight_decay,
+        use_weight_tying=args.use_weight_tying,
+        use_meta=args.use_meta,
+        use_attention=args.use_attention,
     )
     return trainer_config, model_config

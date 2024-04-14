@@ -1,16 +1,16 @@
 import datetime
+from pathlib import Path
 
 import pandas as pd
 
 if __name__ == "__main__":
-    users = pd.read_csv(
-        "../data/ml-1m/users.dat", sep="::", engine="python", header=None
-    )
+    data_dir = Path("data") / "ml-1m"
+    users = pd.read_csv(data_dir / "users.dat", sep="::", engine="python", header=None)
     movies = pd.read_csv(
-        "../data/ml-1m/movies.dat", sep="::", engine="python", header=None
+        data_dir / "movies.dat", sep="::", engine="python", header=None
     )
     ratings = pd.read_csv(
-        "../data/ml-1m/ratings.dat", sep="::", engine="python", header=None
+        data_dir / "ratings.dat", sep="::", engine="python", header=None
     )
 
     users.columns = ["user_id", "gender", "age", "occupation", "zip"]
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         .rename("sequence")
     )
 
-    train_raw_sequences.to_csv("../data/ml-1m/train.csv")
-    test_raw_sequences.to_csv("../data/ml-1m/test.csv")
-    movies.to_csv("../data/ml-1m/movies.csv", index=False)
-    users.to_csv("../data/ml-1m/users.csv", index=False)
+    train_raw_sequences.to_csv(data_dir / "train.csv")
+    test_raw_sequences.to_csv(data_dir / "test.csv")
+    movies.to_csv(data_dir / "movies.csv", index=False)
+    users.to_csv(data_dir / "users.csv", index=False)

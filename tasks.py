@@ -14,9 +14,9 @@ def lint(c):  # type: ignore
         "--show-source",
         "--statistics",
     ]
-    invoke.run("poetry run flake8 src/ " + " ".join(flake_options))
+    invoke.run("poetry run flake8 aau2v/ " + " ".join(flake_options))
     mypy_options = [
-        "--follow-imports=silent",
+        "--follow-imports=skip",
         "--ignore-missing-imports",
         "--show-column-numbers",
         "--no-warn-return-any",
@@ -26,10 +26,10 @@ def lint(c):  # type: ignore
         "--disallow-untyped-defs",
         "--allow-redefinition",
     ]
-    invoke.run("poetry run mypy src/ " + " ".join(mypy_options))
+    invoke.run("poetry run mypy aau2v/ " + " ".join(mypy_options))
     black_options = [
         "--check",
         "--diff",
         "--color",
     ]
-    invoke.run("poetry run black src/ " + " ".join(black_options))
+    invoke.run("poetry run black aau2v/ " + " ".join(black_options))

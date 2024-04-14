@@ -17,9 +17,6 @@ def main() -> None:
 
     dataset_center = load_dataset_center(
         dataset_name=trainer_config.dataset_name,
-        dataset_dir=trainer_config.dataset_dir,
-        load_dataset=trainer_config.load_dataset,
-        save_dataset=trainer_config.save_dataset,
         window_size=model_config.window_size,
     )
     model = load_model(
@@ -31,7 +28,6 @@ def main() -> None:
         model=model,
         dataset_center=dataset_center,
         trainer_config=trainer_config,
-        model_config=model_config,
     )
     trainer.fit()
 

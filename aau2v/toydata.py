@@ -1,19 +1,18 @@
 import random
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import pandas as pd
 
 
 def generate_toydata(
-    data_name: str = "toydata",
     user_count_per_segment: int = 100,
     item_count_per_segment: int = 50,
-    seq_lengths: List[int] = [100],
-    genders: List[str] = ["M", "F"],
-    ages: List[str] = ["20", "30", "40", "50", "60"],
-    genres: List[str] = ["M", "E", "F"],
-    years: List[str] = ["1960", "1970", "1980", "1990", "2000"],
-    genre_ratio: Dict[str, Dict[str, float]] = {
+    seq_lengths: list[int] = [100],
+    genders: list[str] = ["M", "F"],
+    ages: list[str] = ["20", "30", "40", "50", "60"],
+    genres: list[str] = ["M", "E", "F"],
+    years: list[str] = ["1960", "1970", "1980", "1990", "2000"],
+    genre_ratio: dict[str, dict[str, float]] = {
         "M": {
             "M": 0.60,
             "E": 0.30,
@@ -25,7 +24,7 @@ def generate_toydata(
             "F": 0.60,
         },
     },
-    year_ratio: Dict[str, Dict[str, float]] = {
+    year_ratio: dict[str, dict[str, float]] = {
         "20": {
             "1960": 0.10,
             "1970": 0.10,
@@ -64,15 +63,13 @@ def generate_toydata(
     },
     test_length: int = 20,
     seed: int = 0,
-    save_to_csv: bool = False,
-    base_data_dir: str = "data/",
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     rnd = random.Random(seed)
 
-    raw_sequences: Dict[str, List[str]] = {}
-    test_raw_sequences: Dict[str, List[str]] = {}
-    users: Dict[str, Dict[str, Any]] = {}
-    items: Dict[str, Dict[str, Any]] = {}
+    raw_sequences: dict[str, list[str]] = {}
+    test_raw_sequences: dict[str, list[str]] = {}
+    users: dict[str, dict[str, Any]] = {}
+    items: dict[str, dict[str, Any]] = {}
 
     def get_user_name(user_id: int, gender: str, age: str, seq_length: int) -> str:
         return f"u_{user_id}_{gender}_{age}_{seq_length}_{gender}{user_id % 5 + 1}"
@@ -159,13 +156,5 @@ def generate_toydata(
     item_df.index.name = "item_id"
     train_df.index.name = "user_id"
     test_df.index.name = "user_id"
-
-    if save_to_csv:
-        data_dir = f"{base_data_dir}/{data_name}/"
-
-        user_df.to_csv(data_dir + "users.csv")
-        item_df.to_csv(data_dir + "items.csv")
-        train_df.to_csv(data_dir + "train.csv")
-        test_df.to_csv(data_dir + "test.csv")
 
     return train_df, test_df, user_df, item_df

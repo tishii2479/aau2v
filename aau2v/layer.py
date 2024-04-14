@@ -1,6 +1,6 @@
 import collections
 from math import sqrt
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import torch
@@ -13,7 +13,7 @@ def cosine_similarity(a: Tensor, b: Tensor) -> Tensor:
 
 
 def attention_weight(Q: Tensor, K: Tensor) -> Tensor:
-    dim = len(Q.shape) - 1  # to handle batched and unbatched data
+    dim = len(Q.shape) - 1  # to handle both batched and unbatched data
     return F.softmax(torch.matmul(Q, K.mT) / sqrt(K.size(dim)), dim=dim)
 
 
@@ -113,7 +113,7 @@ class NegativeSampling(nn.Module):
 
     def forward(
         self, h: Tensor, target_index: Tensor
-    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         r"""
         Args:
             h size of (batch_size, d_model)
@@ -240,7 +240,7 @@ class WeightSharedNegativeSampling(nn.Module):
         self,
         h: Tensor,
         target_index: Tensor,
-    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """
         Args:
             h (Tensor): (batch_size, d_model)

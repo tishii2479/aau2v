@@ -1,6 +1,6 @@
 import abc
 import collections
-from typing import Optional, Tuple
+from typing import Optional
 
 import torch
 import torch.nn.functional as F
@@ -66,7 +66,7 @@ class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
         seq_index: Tensor,
         item_indices: Tensor,
         target_index: Tensor,
-    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """
         モデルに入力を与えた時の、損失を求める直前の出力を返す
         正例と負例に対する0~1の（シグモイドを通した）出力をする
@@ -232,7 +232,7 @@ class AttentiveAuxiliaryUser2Vec(PyTorchModel):
         seq_index: Tensor,
         item_indices: Tensor,
         target_index: Tensor,
-    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         c = self.calc_prediction_vector(
             seq_index=seq_index,
             item_indices=item_indices,
@@ -334,7 +334,7 @@ class User2Vec(PyTorchModel):
         seq_index: Tensor,
         item_indices: Tensor,
         target_index: Tensor,
-    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         c = self.calc_prediction_vector(
             seq_index=seq_index,
             item_indices=item_indices,

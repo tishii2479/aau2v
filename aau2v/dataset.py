@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Optional, Union
 
 import pandas as pd
 
@@ -47,53 +48,39 @@ class RawDataset:
         Defaults to None.
     """
 
-    train_raw_sequences: Dict[str, List[str]]
-    test_raw_sequences_dict: Dict[str, Dict[str, List[str]]]
-    item_metadata: Optional[Dict[str, Dict[str, Any]]] = None
-    seq_metadata: Optional[Dict[str, Dict[str, Any]]] = None
-    exclude_seq_metadata_columns: Optional[List[str]] = None
-    exclude_item_metadata_columns: Optional[List[str]] = None
+    train_raw_sequences: dict[str, list[str]]
+    test_raw_sequences_dict: dict[str, dict[str, list[str]]]
+    item_metadata: Optional[dict[str, dict[str, Any]]] = None
+    seq_metadata: Optional[dict[str, dict[str, Any]]] = None
+    exclude_seq_metadata_columns: Optional[list[str]] = None
+    exclude_item_metadata_columns: Optional[list[str]] = None
 
 
 def load_raw_dataset(
     dataset_name: str,
-    data_dir: str = "data/",
+    data_dir: str = "data",
 ) -> RawDataset:
     match dataset_name:
         case "toydata-paper":
-            # 卒論で使った人工データ
-            data = generate_toydata(
-                data_name="toydata-paper",
-            )
+            data = generate_toydata()
             dataset = convert_toydata(*data)
         case "toydata-small":
-            # テスト用の小さいデータ
             data = generate_toydata(
-                data_name="toydata-small",
                 user_count_per_segment=50,
                 item_count_per_segment=10,
                 seq_lengths=[50],
                 test_length=10,
             )
             dataset = convert_toydata(*data)
-        case "toydata-seq-lengths":
-            # テスト用の小さいデータ
-            data = generate_toydata(
-                data_name="toydata-seq-lengths",
-                user_count_per_segment=100,
-                item_count_per_segment=10,
-                seq_lengths=[25, 50, 75, 100],
-                test_length=20,
-            )
-            dataset = convert_toydata(*data)
         case "movielens":
+            ml_data_dir = Path(data_dir) / "ml-1m"
             dataset = create_movielens_data(
-                train_path=f"{data_dir}/ml-1m/train.csv",
+                train_path=ml_data_dir / "train.csv",
                 test_paths={
-                    "test": f"{data_dir}/ml-1m/test.csv",
+                    "test": ml_data_dir / "test.csv",
                 },
-                user_path=f"{data_dir}/ml-1m/users.csv",
-                movie_path=f"{data_dir}/ml-1m/movies.csv",
+                user_path=ml_data_dir / "users.csv",
+                movie_path=ml_data_dir / "movies.csv",
             )
         case _:
             raise ValueError(f"invalid dataset-name: {dataset_name}")
@@ -134,12 +121,12 @@ def convert_toydata(
 
 
 def create_movielens_data(
-    train_path: str,
-    test_paths: Dict[str, str],
-    user_path: str,
-    movie_path: str,
-    user_columns: Optional[List[str]] = None,
-    movie_columns: Optional[List[str]] = None,
+    train_path: Union[str, Path],
+    test_paths: dict[str, Union[str, Path]],
+    user_path: Union[str, Path],
+    movie_path: Union[str, Path],
+    user_columns: Optional[list[str]] = None,
+    movie_columns: Optional[list[str]] = None,
 ) -> RawDataset:
     train_df = pd.read_csv(train_path, dtype={"user_id": str}, index_col="user_id")
     user_df = pd.read_csv(user_path, dtype={"user_id": str}, index_col="user_id")
@@ -161,7 +148,7 @@ def create_movielens_data(
     movie_df.genre = movie_df.genre.apply(lambda s: s.split("|"))
     movie_metadata = movie_df.to_dict("index")
 
-    test_raw_sequences_dict: Dict[str, Dict[str, List[str]]] = {}
+    test_raw_sequences_dict: dict[str, dict[str, list[str]]] = {}
 
     for test_name, test_path in test_paths.items():
         test_df = pd.read_csv(test_path, dtype={"user_id": str}, index_col="user_id")
