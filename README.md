@@ -21,7 +21,7 @@ $ poetry install
 ### Download movielens dataset
 
 1. Download "MovieLens 1M Dataset" from https://grouplens.org/datasets/movielens/1m/.
-2. Place `ml-1m` to directory `./data`
+2. Place `ml-1m` inside a new directory `./data`
 3. Run `$ poetry run python3 src/preprocess_movielens.py`
 
 ## Experiments

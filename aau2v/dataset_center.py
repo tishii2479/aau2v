@@ -85,6 +85,13 @@ class SequenceDatasetCenter:
             window_size=window_size,
         )
 
+        print(
+            "train:",
+            len(self.train_dataset),
+            "valid:",
+            len(self.valid_dataset),
+        )
+
         self.item_meta_indices, self.item_meta_weights = get_meta_indices(
             names=self.item_le.classes_,
             meta_le=self.item_meta_le,

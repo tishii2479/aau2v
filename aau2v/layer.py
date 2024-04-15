@@ -148,7 +148,7 @@ class NegativeSampling(nn.Module):
 
 class EmbeddingLayer(nn.Embedding):
     """
-    nn.Embeddingのラッパークラス
+    Wrapper class of nn.Embedding
     """
 
     def __init__(
@@ -223,7 +223,6 @@ class WeightSharedNegativeSampling(nn.Module):
         power: float = 0.75,
         negative_sample_size: int = 5,
     ) -> None:
-        # TODO: write doc
         super().__init__()
         self.d_model = d_model
         self.num_item_meta_types = num_item_meta_types

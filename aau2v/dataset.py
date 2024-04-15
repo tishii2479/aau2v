@@ -10,41 +10,60 @@ from aau2v.toydata import generate_toydata
 @dataclass
 class RawDataset:
     """
-    train_raw_sequences (Dict[str, List[str]])
-        生の訓練用シーケンシャルデータ
-        系列ID : [要素1, 要素2, ..., 要素n]
-        例: "doc_001", [ "私", "は", "猫" ]
-    item_metadata (Optional[Dict[str, Dict[str, Any]]], optional):
-        要素の補助情報の辞書
-        要素 : {
-            補助情報ID: 補助情報の値
+    train_raw_sequences (dict[str, list[str]])
+        Raw sequential data for training model
+        format: { sequence : [item_1, item_2, ..., item_n] }
+        example:
+        {
+            "user_001": [ "item_a", "item_b", "item_c" ],
+            "user_002": [ "item_c", "item_d", "item_a" ],
+            ...
         }
-        例: "私" : {
-            "品詞": "名詞",
-            "長さ": 1
+    item_metadata (Optional[dict[str, dict[str, Any]]], optional):
+        Dictionary of item auxiliary information
+        format: { item : { meta_name : meta_value_of_item }
+        example:
+        {
+            "item_a": {
+                "genre": "action",
+                "year": 2020,
+            },
+            "item_b": {
+                "genre": "comedy",
+                "year": 2000,
+            },
+            ...
         }
         Defaults to None.
-    seq_metadata (Optional[Dict[str, Dict[str, Any]]], optional):
-        系列の補助情報の辞書
-        系列: {
-            補助情報ID: 補助情報の値
-        }
-        例: "doc_001" : {
-            "ジャンル": 動物,
-            "単語数": 3
+    seq_metadata (Optional[dict[str, dict[str, Any]]], optional):
+        Dictionary of sequence (user) auxiliary information
+        format: { sequence : { meta_name : meta_value_of_sequence }
+        example:
+        {
+            "user_001": {
+                "gender": "M",
+                "age": 20,
+            },
+            "user_002": {
+                "genre": "F",
+                "age": 30,
+            },
+            ...
         }
         Defaults to None.
-    test_raw_sequences (Optional[Dict[str, Dict[str, List[str]]]], optional):
-        生のテスト用シーケンシャルデータ
-        複数のテストデータがあることを想定して、
-        { テストデータ名 : テストデータ } の形式で管理
-        テストデータの形式はtrain_raw_sequencesと一緒
+    test_raw_sequences (Optional[dict[str, dict[str, List[str]]]], optional):
+        Raw sequential data for testing model
+        To handle multiple test data, we manage data in dictionary format
+        format: { test_name : test_raw_sequence }
+        the format of `test_raw_sequence` is same as `train_raw_sequence`
         Defaults to None.
     exclude_seq_metadata_columns (Optional[List[str]], optional):
-        `seq_metadata`の中で補助情報として扱わない列の名前のリスト（例: 顧客IDなど）
+        List of columns which we do not use as auxiliary information in `seq_meta_data`
+        example: ["user_id"]
         Defaults to None.
     exclude_item_metadata_columns (Optional[List[str]], optional):
-        `item_metadata`の中で補助情報として扱わない列の名前のリスト（例: 商品IDなど）
+        List of columns which we do not use as auxiliary information in `item_meta_data`
+        example: ["item_id"]
         Defaults to None.
     """
 

@@ -25,18 +25,17 @@ class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
         target_index: Tensor,
     ) -> Tensor:
         """
-        モデルに入力を与えた時の損失
-
+        Calculate the loss for input.
         Args:
             seq_index (Tensor):
-                学習対象である系列のindex
+                Indices of the sequences to be learned.
                 size: (batch_size, )
             item_indices (Tensor):
-                予測に用いる直前の要素のindices
+                Indices of the items used for prediction.
                 size: (batch_size, window_size, )
             target_index (Tensor):
+                The index of ground truth item.
                 size: (batch_size, )
-
         Returns:
             loss: Tensor
         """
@@ -57,7 +56,7 @@ class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
         self, seq_index: Tensor, item_indices: Tensor, cand_item_indices: Tensor, k: int
     ) -> list[list[int]]:
         h = self.calc_prediction_vector(seq_index=seq_index, item_indices=item_indices)
-        e_v = self.embedding_item.forward(cand_item_indices)
+        e_v = self.embedding_item.forward(cand_item_indices)  # type: ignore
         return torch.matmul(h, e_v.mT).argsort(dim=1, descending=True)[:, :k].tolist()
 
     @abc.abstractmethod
@@ -68,13 +67,12 @@ class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
         target_index: Tensor,
     ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """
-        モデルに入力を与えた時の、損失を求める直前の出力を返す
-        正例と負例に対する0~1の（シグモイドを通した）出力をする
-        `forward`の中で使われることを想定している
-
+        Return the output just before calculating the loss.
+        Output a sigmoid-transformed value between 0 and 1 for
+        positive and negative examples.
+        Intended to be used within the `Model.forward()` function.
         Args:
             Same as `Model.forward()`
-
         Returns:
             (pos_out, pos_label, neg_out, neg_label)
                 : Tuple[Tensor, Tensor, Tensor, Tensor]
@@ -92,14 +90,14 @@ class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
         item_indices: Tensor,
     ) -> Tensor:
         """
-        モデルに入力を与えた時の、出力層に入力する前の予測ベクトルを返す
-        `calc_out`の中で使われることを想定している
+        Return the predicted vector before entering the output layer.
+        Intended to be used within the `Model.calc_out()` function.
 
-        Args:
-            Same as `Model.forward()`
+            Args:
+                Same as `Model.forward()`
 
-        Returns:
-            p: 予測ベクトル (batch_size, d_model)
+            Returns:
+                p: (batch_size, d_model)
         """
         raise NotImplementedError()
 
@@ -123,13 +121,9 @@ class PyTorchModel(nn.Module, metaclass=abc.ABCMeta):
             "item_meta_embedding is not supported for " + f"{self.__class__.__name__}"
         )
 
-    @property
-    def out_item_embedding(self) -> Tensor:
-        raise NotImplementedError()
-
 
 class AttentiveAuxiliaryUser2Vec(PyTorchModel):
-    """AttentiveAuxiliaryUser2Vec（AAU2V）のクラス"""
+    """AttentiveAuxiliaryUser2Vec（AAU2V）"""
 
     def __init__(
         self,
@@ -153,24 +147,6 @@ class AttentiveAuxiliaryUser2Vec(PyTorchModel):
         use_meta: bool = True,
         use_attention: bool = True,
     ) -> None:
-        """
-        TODO: 書き直す
-        AttentiveModel（提案モデル）のクラスを生成する
-
-        Args:
-            num_seq (int):
-                系列の総数
-            num_item (int):
-                要素の総数
-            num_meta (int):
-                要素の補助情報の総数
-            d_model (int):
-                埋め込み表現の次元数
-            sequences (List[List[int]]):
-                変換後の系列データ
-            negative_sample_size (int, optional):
-                ネガティブサンプリングのサンプリング数. Defaults to 30.
-        """
         super().__init__()
         self.d_model = d_model
         self.use_attention = use_attention
@@ -253,26 +229,25 @@ class AttentiveAuxiliaryUser2Vec(PyTorchModel):
             V = V
             p = torch.reshape(attention(Q, K, V), (-1, self.d_model))
         else:
-            # uとVの平均を予測ベクトルとする
             p = torch.cat([u.unsqueeze(1), V], dim=1).mean(dim=1)
 
         return p
 
     @property
     def seq_embedding(self) -> Tensor:
-        return self.embedding_seq.embedding_element.weight.data
+        return self.embedding_seq.embedding_element.weight.data  # type: ignore
 
     @property
     def item_embedding(self) -> Tensor:
-        return self.embedding_item.embedding_element.weight.data
+        return self.embedding_item.embedding_element.weight.data  # type: ignore
 
     @property
     def seq_meta_embedding(self) -> Tensor:
-        return self.embedding_seq.embedding_meta.weight.data
+        return self.embedding_seq.embedding_meta.weight.data  # type: ignore
 
     @property
     def item_meta_embedding(self) -> Tensor:
-        return self.embedding_item.embedding_meta.weight.data
+        return self.embedding_item.embedding_meta.weight.data  # type: ignore
 
 
 class User2Vec(PyTorchModel):
@@ -289,21 +264,6 @@ class User2Vec(PyTorchModel):
         max_embedding_norm: Optional[float] = None,
         negative_sample_size: int = 30,
     ) -> None:
-        """
-        Original Doc2Vecを生成する
-
-        Args:
-            num_seq (int):
-                系列の総数
-            num_item (int):
-                要素の総数
-            d_model (int):
-                埋め込み表現の次元数
-            sequences (List[List[int]]):
-                変換後の系列データ
-            negative_sample_size (int, optional):
-                ネガティブサンプリングのサンプリング数. Defaults to 30.
-        """
         super().__init__()
 
         self.embedding_seq = EmbeddingLayer(

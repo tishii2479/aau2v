@@ -5,12 +5,26 @@ import pandas as pd
 
 if __name__ == "__main__":
     data_dir = Path("data") / "ml-1m"
-    users = pd.read_csv(data_dir / "users.dat", sep="::", engine="python", header=None)
+    users = pd.read_csv(
+        data_dir / "users.dat",
+        sep="::",
+        engine="python",
+        header=None,
+        encoding="latin-1",
+    )
     movies = pd.read_csv(
-        data_dir / "movies.dat", sep="::", engine="python", header=None
+        data_dir / "movies.dat",
+        sep="::",
+        engine="python",
+        header=None,
+        encoding="latin-1",
     )
     ratings = pd.read_csv(
-        data_dir / "ratings.dat", sep="::", engine="python", header=None
+        data_dir / "ratings.dat",
+        sep="::",
+        engine="python",
+        header=None,
+        encoding="latin-1",
     )
 
     users.columns = ["user_id", "gender", "age", "occupation", "zip"]
