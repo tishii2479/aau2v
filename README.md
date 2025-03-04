@@ -1,5 +1,9 @@
 # Implementation of AAU2V (Attentive and Auxiliary-Informative User2Vec)
 
+## Original Paper
+
+https://www.dbpia.co.kr/Journal/articleDetail?nodeId=NODE12014511
+
 ## Requirements
 
 ```shell
